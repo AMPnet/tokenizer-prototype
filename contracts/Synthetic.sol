@@ -1,0 +1,133 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import { IIssuer } from "./interfaces/IIssuer.sol";
+
+contract Synthetic is ERC20 {
+
+    enum SyntheticState { CREATION, TOKENIZED }
+
+    //------------------------
+    //  STATE
+    //------------------------
+    address public creator;
+    IIssuer public issuer;
+    uint256 public categoryId;
+    SyntheticState public state;
+
+    //------------------------
+    //  MODIFIERS
+    //------------------------
+    modifier atState(SyntheticState _state) {
+        require(
+            state == _state,
+            "This functionality is not allowed while in the current Synthetic state."
+        );
+        _;
+    }
+
+    modifier walletApproved(address _wallet) {
+        require(
+            issuer.isWalletApproved(_wallet),
+            "This functionality is not allowed. Wallet is not approved by the Issuer."
+        );
+        _;
+    }
+
+    //------------------------
+    //  CONSTRUCTOR
+    //------------------------
+    constructor(
+        IIssuer _issuer,
+        uint256 _categoryId,
+        SyntheticState _state,
+        uint256 _totalShares,
+        string memory _name,
+        string memory _symbol
+    ) ERC20(_name, _symbol)
+    {
+        creator = _msgSender();
+        issuer = _issuer;
+        categoryId = _categoryId;
+        state = _state;
+        _mint(_msgSender(), _totalShares);
+    }
+
+    //------------------------
+    //  EDIT STATE FUNCTIONS
+    //------------------------
+    function addShareholder(address shareholder, uint256 amount)
+        public
+        atState(SyntheticState.CREATION) 
+        returns (bool) {
+        require(
+            _msgSender() == creator,
+            "Only Synthetic creator can call this function."
+        );
+        _transfer(creator, shareholder, amount);
+        if (balanceOf(creator) == 0) {
+            state = SyntheticState.TOKENIZED;
+        }
+        return true;
+    }
+
+    //------------------------
+    //  ERC20 OVERRIDES
+    //------------------------
+    function transfer(address recipient, uint256 amount)
+        public
+        override
+        atState(SyntheticState.TOKENIZED)
+        walletApproved(_msgSender())
+        walletApproved(recipient)
+        returns (bool)
+    {
+        return super.transfer(recipient, amount);
+    }
+
+    function approve(address spender, uint256 amount)
+        public
+        override
+        atState(SyntheticState.TOKENIZED)
+        walletApproved(_msgSender())
+        walletApproved(spender)
+        returns (bool)
+    {
+        return super.approve(spender, amount);
+    }
+
+    function transferFrom(address sender, address recipient, uint256 amount)
+        public
+        override
+        atState(SyntheticState.TOKENIZED)
+        walletApproved(sender)
+        walletApproved(recipient)
+        returns (bool)
+    {
+        return super.transferFrom(sender, recipient, amount);
+    }
+
+    function increaseAllowance(address spender, uint256 addedValue)
+        public
+        override
+        atState(SyntheticState.TOKENIZED)
+        walletApproved(_msgSender())
+        walletApproved(spender)
+        returns (bool)
+    {
+        return super.increaseAllowance(spender, addedValue);
+    }
+
+    function decreaseAllowance(address spender, uint256 subtractedValue)
+        public
+        override
+        atState(SyntheticState.TOKENIZED)
+        walletApproved(_msgSender())
+        walletApproved(spender)
+        returns (bool)
+    {
+        return super.decreaseAllowance(spender, subtractedValue);
+    }
+
+}
