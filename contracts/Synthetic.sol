@@ -39,26 +39,27 @@ contract Synthetic is ERC20 {
     //  CONSTRUCTOR
     //------------------------
     constructor(
+        address _creator,
         IIssuer _issuer,
-        uint256 _categoryId,
         SyntheticState _state,
+        uint256 _categoryId,
         uint256 _totalShares,
         string memory _name,
         string memory _symbol
     ) ERC20(_name, _symbol)
     {
-        creator = _msgSender();
+        creator = _creator;
         issuer = _issuer;
         categoryId = _categoryId;
         state = _state;
-        _mint(_msgSender(), _totalShares);
+        _mint(_creator, _totalShares);
     }
 
     //------------------------
     //  EDIT STATE FUNCTIONS
     //------------------------
     function addShareholder(address shareholder, uint256 amount)
-        public
+        external
         atState(SyntheticState.CREATION) 
         returns (bool) {
         require(
@@ -81,6 +82,7 @@ contract Synthetic is ERC20 {
         atState(SyntheticState.TOKENIZED)
         walletApproved(_msgSender())
         walletApproved(recipient)
+        walletApproved(address(this))
         returns (bool)
     {
         return super.transfer(recipient, amount);
@@ -92,6 +94,7 @@ contract Synthetic is ERC20 {
         atState(SyntheticState.TOKENIZED)
         walletApproved(_msgSender())
         walletApproved(spender)
+        walletApproved(address(this))
         returns (bool)
     {
         return super.approve(spender, amount);
@@ -103,6 +106,7 @@ contract Synthetic is ERC20 {
         atState(SyntheticState.TOKENIZED)
         walletApproved(sender)
         walletApproved(recipient)
+        walletApproved(address(this))
         returns (bool)
     {
         return super.transferFrom(sender, recipient, amount);
@@ -114,6 +118,7 @@ contract Synthetic is ERC20 {
         atState(SyntheticState.TOKENIZED)
         walletApproved(_msgSender())
         walletApproved(spender)
+        walletApproved(address(this))
         returns (bool)
     {
         return super.increaseAllowance(spender, addedValue);
@@ -125,6 +130,7 @@ contract Synthetic is ERC20 {
         atState(SyntheticState.TOKENIZED)
         walletApproved(_msgSender())
         walletApproved(spender)
+        walletApproved(address(this))
         returns (bool)
     {
         return super.decreaseAllowance(spender, subtractedValue);
