@@ -2,17 +2,18 @@
 pragma solidity ^0.8.0;
 
 import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import { ISynthetic } from "./interfaces/ISynthetic.sol";
 import { IIssuer } from "./interfaces/IIssuer.sol";
 
-contract Synthetic is ERC20 {
+contract Synthetic is ISynthetic, ERC20 {
 
     enum SyntheticState { CREATION, TOKENIZED }
 
     //------------------------
     //  STATE
     //------------------------
-    address public creator;
-    IIssuer public issuer;
+    address public override creator;
+    IIssuer public override issuer;
     uint256 public categoryId;
     SyntheticState public state;
 
@@ -59,8 +60,9 @@ contract Synthetic is ERC20 {
     //  EDIT STATE FUNCTIONS
     //------------------------
     function addShareholder(address shareholder, uint256 amount)
-        external
-        atState(SyntheticState.CREATION) 
+        external 
+        override
+        atState(SyntheticState.CREATION)
         returns (bool) {
         require(
             _msgSender() == creator,
@@ -71,6 +73,13 @@ contract Synthetic is ERC20 {
             state = SyntheticState.TOKENIZED;
         }
         return true;
+    }
+
+    //------------------------
+    //  ISynthetic IMPL
+    //------------------------
+    function totalShares() external view override returns (uint256) {
+        return totalSupply();
     }
 
     //------------------------
