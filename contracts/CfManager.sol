@@ -4,8 +4,9 @@ pragma solidity ^0.8.0;
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { ISynthetic } from "./interfaces/ISynthetic.sol";
+import { ICfManager } from "./interfaces/ICfManager.sol";
 
-contract CrowdfundingManager is Ownable {
+contract CfManager is ICfManager, Ownable {
 
     ISynthetic public synthetic;
     uint256 public minInvestment;
@@ -26,16 +27,17 @@ contract CrowdfundingManager is Ownable {
         endsAt = _endsAt;
     }
 
-    function setSynthetic(ISynthetic _synthetic) external {
+    function setSynthetic(address _synthetic) override external {
+        ISynthetic synth = ISynthetic(_synthetic);
         require(
-            address(synthetic) == address(0),
+            address(synth) == address(0),
             "Synthetic address already set."
         );
         require(
-            _synthetic.totalShares() >= minInvestment,
+            synth.totalShares() >= minInvestment,
             "Min investment must be less than total Synthetic value (shares)."
         );
-        synthetic = _synthetic;
+        synthetic = synth;
     }
 
     function invest(uint256 amount) external {

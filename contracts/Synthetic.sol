@@ -4,10 +4,9 @@ pragma solidity ^0.8.0;
 import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { ISynthetic } from "./interfaces/ISynthetic.sol";
 import { IIssuer } from "./interfaces/IIssuer.sol";
+import { SyntheticState } from "./Enums.sol";
 
 contract Synthetic is ISynthetic, ERC20 {
-
-    enum SyntheticState { CREATION, TOKENIZED }
 
     //------------------------
     //  STATE
@@ -41,7 +40,7 @@ contract Synthetic is ISynthetic, ERC20 {
     //------------------------
     constructor(
         address _creator,
-        IIssuer _issuer,
+        address _issuer,
         SyntheticState _state,
         uint256 _categoryId,
         uint256 _totalShares,
@@ -50,7 +49,7 @@ contract Synthetic is ISynthetic, ERC20 {
     ) ERC20(_name, _symbol)
     {
         creator = _creator;
-        issuer = _issuer;
+        issuer = IIssuer(_issuer);
         categoryId = _categoryId;
         state = _state;
         _mint(_creator, _totalShares);
