@@ -1,20 +1,28 @@
 import { ethers } from "hardhat";
-import { BigNumber, Contract, Signer } from "ethers";
+import { Contract, ContractFactory, Signer } from "ethers";
 import { expect } from "chai";
+import { currentTimeWithDaysOffset } from "./util";
 
 describe("Full test", function () {
   
   let deployer: Signer;
   let issuerOwner: Signer;
   let cfManagerOwner: Signer;
-  
+  let investor: Signer;
+
+  let Issuer: ContractFactory;
+  let issuer: Contract;
+
   let stablecoin: Contract;
 
+  let factories: Map<String, ContractFactory> = new Map();
+
   beforeEach(async function () {
-    let accounts: Signer[] = await ethers.getSigners();
+    const accounts: Signer[] = await ethers.getSigners();
     deployer        = accounts[0];
     issuerOwner     = accounts[1];
     cfManagerOwner  = accounts[2];
+    investor        = accounts[3];
     await initStablecoin();
   });
 
@@ -25,23 +33,99 @@ describe("Full test", function () {
           3)successfully fund the project
     `,
     async function () {
-      let amount = ethers.utils.parseEther("1");
-      await expect(
-        () => sendStablecoin(issuerOwner, amount)
-      ).to.changeTokenBalance(stablecoin, issuerOwner, amount);
+      //// Create factories
+      const CfManagerFactory = await ethers.getContractFactory("CfManagerFactory", deployer);
+      const cfManagerFactory = await CfManagerFactory.deploy();
+      factories[cfManagerFactory.address] = CfManagerFactory.interface;
+
+      const SyntheticFactory = await ethers.getContractFactory("SyntheticFactory", deployer);
+      const syntheticFactory = await SyntheticFactory.deploy();
+      factories[syntheticFactory.address] = SyntheticFactory.interface;
+
+      //// Deploy issuer
+      Issuer = await ethers.getContractFactory("Issuer", issuerOwner);
+      issuer = await Issuer.deploy(
+        stablecoin.address,
+        syntheticFactory.address,
+        cfManagerFactory.address
+      );
+      factories[issuer.address] = Issuer.interface;
+      await issuer.approveWallet(await cfManagerOwner.getAddress());
+
+      //// Deploy crowdfunding campaign (creates campaign + synthetic)
+      const [cfManager, synthetic] = await createCfManager(
+        cfManagerOwner,
+        0,
+        10000000,
+        "WESPA Spaces",
+        "aWSPA",
+        100,
+        10000000,
+        currentTimeWithDaysOffset(1)
+      )
+
+      //// Activate new investor and fund his wallet with stablecoin
+      const investorAddress = await investor.getAddress();
+      await issuer.approveWallet(investorAddress);
+      await stablecoin.transfer(investorAddress, ethers.utils.parseEther(String(10000000)));
+
+      //// Fully fund the campaign and check if Synthetic is in state TOKENIZED
+      const investorUSDC = stablecoin.connect(investor);
+      await investorUSDC.approve(cfManager.address, ethers.utils.parseEther(String(10000000)));
+      const investorCfManager = cfManager.connect(investor);
+      await investorCfManager.invest(ethers.utils.parseEther(String(10000000))); 
+      let syntheticState = await synthetic.state();
+      expect(syntheticState).to.be.equal(1);
     }
-    // TODO: - Implement test.
   );
 
   async function initStablecoin() {
-    const supply = ethers.utils.parseEther("100000");
+    const supply = ethers.utils.parseEther("1000000000000");
     const USDC = await ethers.getContractFactory("USDC", deployer);
     stablecoin = await USDC.deploy(supply);
+    factories[stablecoin.address] = USDC.interface;
   }
 
-  async function sendStablecoin(to: Signer, amount: BigNumber) {
-    let toAddress = await to.getAddress();
-    await stablecoin.transfer(toAddress, amount);
+  async function createCfManager(
+    from: Signer,
+    categoryId: Number,
+    totalShares: Number,
+    name: String,
+    symbol: String,
+    minInvestment: Number,
+    maxInvestment: Number,
+    endsAt: Number
+  ): Promise<[Contract, Contract]> {
+    const issuerWithSigner = issuer.connect(from);
+    const cfManagerTx = await issuerWithSigner.createCrowdfundingCampaign(
+      categoryId,
+      ethers.utils.parseEther(totalShares.toString()),
+      name,
+      symbol,
+      ethers.utils.parseEther(minInvestment.toString()),
+      ethers.utils.parseEther(maxInvestment.toString()),
+      endsAt
+    );
+    const receipt = await ethers.provider.getTransactionReceipt(cfManagerTx.hash);
+
+    let cfManagerAddress;
+    let syntheticAddress;
+    for (const log of receipt.logs) {
+      const contractFactory = factories[log.address];
+      if (contractFactory) {
+        const parsedLog = contractFactory.parseLog(log);
+        switch (parsedLog.name) {
+          case "SyntheticCreated": { syntheticAddress = parsedLog.args[0]; break; }
+          case "CfManagerCreated": { cfManagerAddress = parsedLog.args[0]; break; }
+        }
+      }
+    }
+
+    console.log("CfManager deployed at: ", cfManagerAddress);
+    console.log("Synthetic deplyed at: ", syntheticAddress);
+    const cfManager = await ethers.getContractAt("CfManager", cfManagerAddress);
+    const synthetic = await ethers.getContractAt("Synthetic", syntheticAddress);
+    return [cfManager, synthetic];
   }
-  
+
 });

@@ -30,7 +30,7 @@ contract CfManager is ICfManager, Ownable {
     function setSynthetic(address _synthetic) override external {
         ISynthetic synth = ISynthetic(_synthetic);
         require(
-            address(synth) == address(0),
+            address(synthetic) == address(0),
             "Synthetic address already set."
         );
         require(

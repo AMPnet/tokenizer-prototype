@@ -23,6 +23,9 @@ contract Issuer is IIssuer, Ownable {
         cfManagerFactory = ICfManagerFactory(_cfManagerFactory);
     }
 
+    event CfManagerCreated(address _cfManager);
+    event SyntheticCreated(address _synthetic);
+
     modifier walletApproved(address _wallet) {
         require(
             approvedWallets[_wallet],
@@ -45,7 +48,7 @@ contract Issuer is IIssuer, Ownable {
         SyntheticState _state,
         string memory _name,
         string memory _symbol
-    ) external walletApproved(msg.sender)
+    ) external walletApproved(msg.sender) returns (address)
     {
         address synthetic = syntheticFactory.create(
             msg.sender,
@@ -57,6 +60,8 @@ contract Issuer is IIssuer, Ownable {
             _symbol
         );
         synthetics.push(synthetic);
+        emit SyntheticCreated(synthetic);
+        return synthetic;
     }
 
     function createCrowdfundingCampaign(
@@ -67,7 +72,7 @@ contract Issuer is IIssuer, Ownable {
         uint256 _minInvestment,
         uint256 _maxInvestment,
         uint256 _endsAt
-    ) external walletApproved(msg.sender) 
+    ) external walletApproved(msg.sender) returns(address)
     {
         address manager = cfManagerFactory.create(
             _minInvestment,
@@ -86,6 +91,9 @@ contract Issuer is IIssuer, Ownable {
         ICfManager(manager).setSynthetic(synthetic);
         synthetics.push(synthetic);
         cfManagers.push(manager);
+        emit CfManagerCreated(manager);
+        emit SyntheticCreated(synthetic);
+        return manager;
     }
 
     function isWalletApproved(address _wallet) external view override returns (bool) {
