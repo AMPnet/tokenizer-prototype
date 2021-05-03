@@ -2,11 +2,11 @@
 pragma solidity ^0.8.0;
 
 import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import { ISynthetic } from "./interfaces/ISynthetic.sol";
+import { IAsset } from "./interfaces/IAsset.sol";
 import { IIssuer } from "./interfaces/IIssuer.sol";
-import { SyntheticState } from "./Enums.sol";
+import { AssetState } from "./Enums.sol";
 
-contract Synthetic is ISynthetic, ERC20 {
+contract Asset is IAsset, ERC20 {
 
     //------------------------
     //  STATE
@@ -14,15 +14,15 @@ contract Synthetic is ISynthetic, ERC20 {
     address public override creator;
     IIssuer public override issuer;
     uint256 public categoryId;
-    SyntheticState public state;
+    AssetState public state;
 
     //------------------------
     //  MODIFIERS
     //------------------------
-    modifier atState(SyntheticState _state) {
+    modifier atState(AssetState _state) {
         require(
             state == _state,
-            "This functionality is not allowed while in the current Synthetic state."
+            "This functionality is not allowed while in the current Asset state."
         );
         _;
     }
@@ -41,7 +41,7 @@ contract Synthetic is ISynthetic, ERC20 {
     constructor(
         address _creator,
         address _issuer,
-        SyntheticState _state,
+        AssetState _state,
         uint256 _categoryId,
         uint256 _totalShares,
         string memory _name,
@@ -61,21 +61,21 @@ contract Synthetic is ISynthetic, ERC20 {
     function addShareholder(address shareholder, uint256 amount)
         external 
         override
-        atState(SyntheticState.CREATION)
+        atState(AssetState.CREATION)
         returns (bool) {
         require(
             _msgSender() == creator,
-            "Only Synthetic creator can call this function."
+            "Only Asset creator can call this function."
         );
         _transfer(creator, shareholder, amount);
         if (balanceOf(creator) == 0) {
-            state = SyntheticState.TOKENIZED;
+            state = AssetState.TOKENIZED;
         }
         return true;
     }
 
     //------------------------
-    //  ISynthetic IMPL
+    //  IAsset IMPL
     //------------------------
     function totalShares() external view override returns (uint256) {
         return totalSupply();
@@ -87,7 +87,7 @@ contract Synthetic is ISynthetic, ERC20 {
     function transfer(address recipient, uint256 amount)
         public
         override
-        atState(SyntheticState.TOKENIZED)
+        atState(AssetState.TOKENIZED)
         walletApproved(_msgSender())
         walletApproved(recipient)
         walletApproved(address(this))
@@ -99,7 +99,7 @@ contract Synthetic is ISynthetic, ERC20 {
     function approve(address spender, uint256 amount)
         public
         override
-        atState(SyntheticState.TOKENIZED)
+        atState(AssetState.TOKENIZED)
         walletApproved(_msgSender())
         walletApproved(spender)
         walletApproved(address(this))
@@ -111,7 +111,7 @@ contract Synthetic is ISynthetic, ERC20 {
     function transferFrom(address sender, address recipient, uint256 amount)
         public
         override
-        atState(SyntheticState.TOKENIZED)
+        atState(AssetState.TOKENIZED)
         walletApproved(sender)
         walletApproved(recipient)
         walletApproved(address(this))
@@ -123,7 +123,7 @@ contract Synthetic is ISynthetic, ERC20 {
     function increaseAllowance(address spender, uint256 addedValue)
         public
         override
-        atState(SyntheticState.TOKENIZED)
+        atState(AssetState.TOKENIZED)
         walletApproved(_msgSender())
         walletApproved(spender)
         walletApproved(address(this))
@@ -135,7 +135,7 @@ contract Synthetic is ISynthetic, ERC20 {
     function decreaseAllowance(address spender, uint256 subtractedValue)
         public
         override
-        atState(SyntheticState.TOKENIZED)
+        atState(AssetState.TOKENIZED)
         walletApproved(_msgSender())
         walletApproved(spender)
         walletApproved(address(this))

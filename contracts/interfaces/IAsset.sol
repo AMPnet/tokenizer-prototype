@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import { IIssuer } from "./IIssuer.sol";
 
-interface ISynthetic {
+interface IAsset {
     function issuer() external returns (IIssuer);
     function creator() external returns (address);
     function totalShares() external returns (uint256);

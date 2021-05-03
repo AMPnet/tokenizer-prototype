@@ -4,27 +4,27 @@ pragma solidity ^0.8.0;
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IIssuer } from "./interfaces/IIssuer.sol";
 import { ICfManager } from "./interfaces/ICfManager.sol";
-import { ISyntheticFactory } from "./interfaces/ISyntheticFactory.sol";
+import { IAssetFactory } from "./interfaces/IAssetFactory.sol";
 import { ICfManagerFactory } from "./interfaces/ICfManagerFactory.sol";
-import { SyntheticState } from "./Enums.sol";
+import { AssetState } from "./Enums.sol";
 
 contract Issuer is IIssuer, Ownable {
 
     address public override stablecoin;
-    ISyntheticFactory public syntheticFactory;
+    IAssetFactory public assetFactory;
     ICfManagerFactory public cfManagerFactory;
     mapping (address => bool) public approvedWallets;
-    address[] public synthetics;
+    address[] public assets;
     address[] public cfManagers;
 
-    constructor(address _stablecoin, address _syntheticFactory, address _cfManagerFactory) {
+    constructor(address _stablecoin, address _assetFactory, address _cfManagerFactory) {
         stablecoin = _stablecoin;
-        syntheticFactory = ISyntheticFactory(_syntheticFactory);
+        assetFactory = IAssetFactory(_assetFactory);
         cfManagerFactory = ICfManagerFactory(_cfManagerFactory);
     }
 
     event CfManagerCreated(address _cfManager);
-    event SyntheticCreated(address _synthetic);
+    event AssetCreated(address _asset);
 
     modifier walletApproved(address _wallet) {
         require(
@@ -42,15 +42,15 @@ contract Issuer is IIssuer, Ownable {
         approvedWallets[_wallet] = false;
     }
 
-    function createSynthetic(
+    function createAsset(
         uint256 _categoryId,
         uint256 _totalShares,
-        SyntheticState _state,
+        AssetState _state,
         string memory _name,
         string memory _symbol
     ) external walletApproved(msg.sender) returns (address)
     {
-        address synthetic = syntheticFactory.create(
+        address asset = assetFactory.create(
             msg.sender,
             address(this),
             _state,
@@ -59,9 +59,9 @@ contract Issuer is IIssuer, Ownable {
             _name,
             _symbol
         );
-        synthetics.push(synthetic);
-        emit SyntheticCreated(synthetic);
-        return synthetic;
+        assets.push(asset);
+        emit AssetCreated(asset);
+        return asset;
     }
 
     function createCrowdfundingCampaign(
@@ -79,20 +79,20 @@ contract Issuer is IIssuer, Ownable {
             _maxInvestment,
             _endsAt  
         );
-        address synthetic = syntheticFactory.create(
+        address asset = assetFactory.create(
             manager,
             address(this),
-            SyntheticState.CREATION,
+            AssetState.CREATION,
             _categoryId,
             _totalShares,
             _name,
             _symbol
         );
-        ICfManager(manager).setSynthetic(synthetic);
-        synthetics.push(synthetic);
+        ICfManager(manager).setAsset(asset);
+        assets.push(asset);
         cfManagers.push(manager);
         emit CfManagerCreated(manager);
-        emit SyntheticCreated(synthetic);
+        emit AssetCreated(asset);
         return manager;
     }
 

@@ -38,22 +38,22 @@ describe("Full test", function () {
       const cfManagerFactory = await CfManagerFactory.deploy();
       factories[cfManagerFactory.address] = CfManagerFactory.interface;
 
-      const SyntheticFactory = await ethers.getContractFactory("SyntheticFactory", deployer);
-      const syntheticFactory = await SyntheticFactory.deploy();
-      factories[syntheticFactory.address] = SyntheticFactory.interface;
+      const AssetFactory = await ethers.getContractFactory("AssetFactory", deployer);
+      const assetFactory = await AssetFactory.deploy();
+      factories[assetFactory.address] = AssetFactory.interface;
 
       //// Deploy issuer
       Issuer = await ethers.getContractFactory("Issuer", issuerOwner);
       issuer = await Issuer.deploy(
         stablecoin.address,
-        syntheticFactory.address,
+        assetFactory.address,
         cfManagerFactory.address
       );
       factories[issuer.address] = Issuer.interface;
       await issuer.approveWallet(await cfManagerOwner.getAddress());
 
-      //// Deploy crowdfunding campaign (creates campaign + synthetic)
-      const [cfManager, synthetic] = await createCfManager(
+      //// Deploy crowdfunding campaign (creates campaign + asset)
+      const [cfManager, asset] = await createCfManager(
         cfManagerOwner,
         0,
         10000000,
@@ -69,13 +69,13 @@ describe("Full test", function () {
       await issuer.approveWallet(investorAddress);
       await stablecoin.transfer(investorAddress, ethers.utils.parseEther(String(10000000)));
 
-      //// Fully fund the campaign and check if Synthetic is in state TOKENIZED
+      //// Fully fund the campaign and check if Asset is in state TOKENIZED
       const investorUSDC = stablecoin.connect(investor);
       await investorUSDC.approve(cfManager.address, ethers.utils.parseEther(String(10000000)));
       const investorCfManager = cfManager.connect(investor);
       await investorCfManager.invest(ethers.utils.parseEther(String(10000000))); 
-      let syntheticState = await synthetic.state();
-      expect(syntheticState).to.be.equal(1);
+      const assetState = await asset.state();
+      expect(assetState).to.be.equal(1);
     }
   );
 
@@ -109,23 +109,23 @@ describe("Full test", function () {
     const receipt = await ethers.provider.getTransactionReceipt(cfManagerTx.hash);
 
     let cfManagerAddress;
-    let syntheticAddress;
+    let assetAddress;
     for (const log of receipt.logs) {
       const contractFactory = factories[log.address];
       if (contractFactory) {
         const parsedLog = contractFactory.parseLog(log);
         switch (parsedLog.name) {
-          case "SyntheticCreated": { syntheticAddress = parsedLog.args[0]; break; }
+          case "AssetCreated": { assetAddress = parsedLog.args[0]; break; }
           case "CfManagerCreated": { cfManagerAddress = parsedLog.args[0]; break; }
         }
       }
     }
 
     console.log("CfManager deployed at: ", cfManagerAddress);
-    console.log("Synthetic deplyed at: ", syntheticAddress);
+    console.log("Asset deplyed at: ", assetAddress);
     const cfManager = await ethers.getContractAt("CfManager", cfManagerAddress);
-    const synthetic = await ethers.getContractAt("Synthetic", syntheticAddress);
-    return [cfManager, synthetic];
+    const asset = await ethers.getContractAt("Asset", assetAddress);
+    return [cfManager, asset];
   }
 
 });

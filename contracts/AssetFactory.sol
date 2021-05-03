@@ -1,23 +1,23 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { ISyntheticFactory } from "./interfaces/ISyntheticFactory.sol";
-import { Synthetic } from "./Synthetic.sol";
-import { SyntheticState } from "./Enums.sol";
+import { IAssetFactory } from "./interfaces/IAssetFactory.sol";
+import { Asset } from "./Asset.sol";
+import { AssetState } from "./Enums.sol";
 
-contract SyntheticFactory is ISyntheticFactory {
+contract AssetFactory is IAssetFactory {
 
     function create(
         address _creator,
         address _issuer,
-        SyntheticState _state,
+        AssetState _state,
         uint256 _categoryId,
         uint256 _totalShares,
         string memory _name,
         string memory _symbol
     ) public override returns (address)
     {
-        return address(new Synthetic(
+        return address(new Asset(
             _creator,
             _issuer,
             _state,
