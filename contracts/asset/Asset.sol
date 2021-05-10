@@ -3,9 +3,9 @@ pragma solidity ^0.8.0;
 
 import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { ERC20Snapshot } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Snapshot.sol";
-import { IAsset } from "./interfaces/IAsset.sol";
-import { IIssuer } from "./interfaces/IIssuer.sol";
-import { AssetState } from "./Enums.sol";
+import { IAsset } from "../asset/IAsset.sol";
+import { IIssuer } from "../issuer/IIssuer.sol";
+import { AssetState } from "../shared/Enums.sol";
 
 contract Asset is IAsset, ERC20Snapshot {
 

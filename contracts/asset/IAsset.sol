@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { IIssuer } from "./IIssuer.sol";
+import { IIssuer } from "../issuer/IIssuer.sol";
 
 interface IAsset {
     function issuer() external view returns (IIssuer);

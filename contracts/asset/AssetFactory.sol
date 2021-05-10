@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { IAssetFactory } from "./interfaces/IAssetFactory.sol";
-import { Asset } from "./Asset.sol";
-import { AssetState } from "./Enums.sol";
+import { IAssetFactory } from "../asset/IAssetFactory.sol";
+import { Asset } from "../asset/Asset.sol";
+import { AssetState } from "../shared/Enums.sol";
 
 contract AssetFactory is IAssetFactory {
 

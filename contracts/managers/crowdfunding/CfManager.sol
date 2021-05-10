@@ -3,8 +3,8 @@ pragma solidity ^0.8.0;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { IAsset } from "./interfaces/IAsset.sol";
-import { ICfManager } from "./interfaces/ICfManager.sol";
+import { IAsset } from "../../asset/IAsset.sol";
+import { ICfManager } from "../crowdfunding/ICfManager.sol";
 
 contract CfManager is ICfManager, Ownable {
 

@@ -5,9 +5,9 @@ import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import { IAsset } from "./interfaces/IAsset.sol";
-import { IPayoutManager } from "./interfaces/IPayoutManager.sol";
-import { IERC20Snapshot } from "./interfaces/IERC20Snapshot.sol";
+import { IAsset } from "../../asset/IAsset.sol";
+import { IPayoutManager } from "../payout/IPayoutManager.sol";
+import { IERC20Snapshot } from "./IERC20Snapshot.sol";
 
 contract PayoutManager is Ownable {
 
@@ -25,7 +25,7 @@ contract PayoutManager is Ownable {
     Payout[] public payouts;
     mapping (uint256 => uint256) public snapshotToPayout;
 
-    constructor(address assetAddress) {
+    constructor(address owner, address assetAddress)  {
         asset = IAsset(assetAddress);
     }
 

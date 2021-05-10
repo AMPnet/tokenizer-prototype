@@ -2,11 +2,11 @@
 pragma solidity ^0.8.0;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { IIssuer } from "./interfaces/IIssuer.sol";
-import { ICfManager } from "./interfaces/ICfManager.sol";
-import { IAssetFactory } from "./interfaces/IAssetFactory.sol";
-import { ICfManagerFactory } from "./interfaces/ICfManagerFactory.sol";
-import { AssetState } from "./Enums.sol";
+import { IIssuer } from "../issuer/IIssuer.sol";
+import { ICfManager } from "../managers/crowdfunding/ICfManager.sol";
+import { IAssetFactory } from "../asset/IAssetFactory.sol";
+import { ICfManagerFactory } from "../managers/crowdfunding/ICfManagerFactory.sol";
+import { AssetState } from "../shared/Enums.sol";
 
 contract Issuer is IIssuer, Ownable {
 

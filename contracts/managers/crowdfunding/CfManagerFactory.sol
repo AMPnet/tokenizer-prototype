@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { ICfManagerFactory } from "./interfaces/ICfManagerFactory.sol";
+import { ICfManagerFactory } from "./ICfManagerFactory.sol";
 import { CfManager } from "./CfManager.sol";
 
 contract CfManagerFactory is ICfManagerFactory {
