@@ -23,9 +23,6 @@ contract Issuer is IIssuer, Ownable {
         cfManagerFactory = ICfManagerFactory(_cfManagerFactory);
     }
 
-    event CfManagerCreated(address _cfManager);
-    event AssetCreated(address _asset);
-
     modifier walletApproved(address _wallet) {
         require(
             approvedWallets[_wallet],
@@ -60,7 +57,6 @@ contract Issuer is IIssuer, Ownable {
             _symbol
         );
         assets.push(asset);
-        emit AssetCreated(asset);
         return asset;
     }
 
@@ -75,6 +71,7 @@ contract Issuer is IIssuer, Ownable {
     ) external walletApproved(msg.sender) returns(address)
     {
         address manager = cfManagerFactory.create(
+            msg.sender,
             _minInvestment,
             _maxInvestment,
             _endsAt  
@@ -91,8 +88,6 @@ contract Issuer is IIssuer, Ownable {
         ICfManager(manager).setAsset(asset);
         assets.push(asset);
         cfManagers.push(manager);
-        emit CfManagerCreated(manager);
-        emit AssetCreated(asset);
         return manager;
     }
 

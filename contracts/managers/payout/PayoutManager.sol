@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
@@ -9,7 +8,7 @@ import { IAsset } from "../../asset/IAsset.sol";
 import { IPayoutManager } from "../payout/IPayoutManager.sol";
 import { IERC20Snapshot } from "./IERC20Snapshot.sol";
 
-contract PayoutManager is Ownable {
+contract PayoutManager is IPayoutManager {
 
     using SafeERC20 for IERC20;
 
@@ -21,12 +20,19 @@ contract PayoutManager is Ownable {
         mapping (address => uint256) released;
     }
 
+    address public owner;
     IAsset public asset;
     Payout[] public payouts;
     mapping (uint256 => uint256) public snapshotToPayout;
 
-    constructor(address owner, address assetAddress)  {
-        asset = IAsset(assetAddress);
+    constructor(address _owner, address _assetAddress)  {
+        owner = _owner;
+        asset = IAsset(_assetAddress);
+    }
+
+    modifier onlyOwner {
+        require(msg.sender == owner);
+        _;
     }
 
     function createNewPayout(string memory description, uint256 amount) external onlyOwner {
@@ -41,7 +47,7 @@ contract PayoutManager is Ownable {
         snapshotToPayout[snapshotId] = payouts.length - 1; 
     }
 
-    function release(address account, uint256 snapshotId) external {
+    function release(address account, uint256 snapshotId) external override {
         Payout storage payout = payouts[snapshotToPayout[snapshotId]];
         uint256 sharesAtSnapshot = _shares(account, snapshotId);
         require(sharesAtSnapshot > 0, "Account has no shares.");
@@ -54,19 +60,19 @@ contract PayoutManager is Ownable {
         IERC20(asset.issuer().stablecoin()).safeTransfer(account, payment);
     }
 
-    function totalShares() external view returns (uint256) {
+    function totalShares() external view override returns (uint256) {
         return asset.totalShares();
     }
 
-    function totalReleased(uint256 snapshotId) external view returns (uint256) {
+    function totalReleased(uint256 snapshotId) external view override returns (uint256) {
         return payouts[snapshotToPayout[snapshotId]].totalReleased;
     }
 
-    function shares(address account, uint256 snapshotId) public view returns (uint256) {
+    function shares(address account, uint256 snapshotId) external view override returns (uint256) {
         return _shares(account, snapshotId);
     }
 
-    function released(address account, uint256 snapshotId) public view returns (uint256) {
+    function released(address account, uint256 snapshotId) external view override returns (uint256) {
         return payouts[snapshotToPayout[snapshotId]].released[account];
     }
 

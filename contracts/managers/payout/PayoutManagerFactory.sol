@@ -6,8 +6,12 @@ import { PayoutManager } from "./PayoutManager.sol";
 
 contract PayoutManagerFactory is IPayoutManagerFactory {
 
+    event PayoutManagerCreated(address _payoutManager);
+
     function create(address owner, address assetAddress) public override returns (address) {
-        return address(new PayoutManager(owner, assetAddress));
+        address payoutManager = address(new PayoutManager(owner, assetAddress));
+        emit PayoutManagerCreated(payoutManager);
+        return payoutManager;
     }
 
 }

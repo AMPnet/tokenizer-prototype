@@ -6,6 +6,8 @@ import { Asset } from "../asset/Asset.sol";
 import { AssetState } from "../shared/Enums.sol";
 
 contract AssetFactory is IAssetFactory {
+    
+    event AssetCreated(address _asset);
 
     function create(
         address _creator,
@@ -17,7 +19,7 @@ contract AssetFactory is IAssetFactory {
         string memory _symbol
     ) public override returns (address)
     {
-        return address(new Asset(
+        address asset = address(new Asset(
             _creator,
             _issuer,
             _state,
@@ -26,6 +28,8 @@ contract AssetFactory is IAssetFactory {
             _name,
             _symbol
         ));
+        emit AssetCreated(asset);
+        return asset;
     }
 
 }

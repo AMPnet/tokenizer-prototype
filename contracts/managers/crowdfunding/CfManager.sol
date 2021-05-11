@@ -1,19 +1,23 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IAsset } from "../../asset/IAsset.sol";
 import { ICfManager } from "../crowdfunding/ICfManager.sol";
 
-contract CfManager is ICfManager, Ownable {
+contract CfManager is ICfManager {
 
+    address public owner;
     IAsset public asset;
     uint256 public minInvestment;
     uint256 public maxInvestment;
     uint256 public endsAt;
 
-    constructor(uint256 _minInvestment, uint256 _maxInvestment, uint256 _endsAt) {
+    constructor(address _owner, uint256 _minInvestment, uint256 _maxInvestment, uint256 _endsAt) {
+        require(
+            _minInvestment > 0,
+            "Min investment must be greater than 0."
+        );
         require(
             _maxInvestment >= _minInvestment,
             "Max investment must be greater than or equal to min investment."
@@ -22,6 +26,7 @@ contract CfManager is ICfManager, Ownable {
             _endsAt > block.timestamp,
             "Ends at value has to be in the future."
         );
+        owner = _owner;
         minInvestment = _minInvestment;
         maxInvestment = _maxInvestment;
         endsAt = _endsAt;

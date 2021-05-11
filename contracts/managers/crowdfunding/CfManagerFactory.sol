@@ -6,17 +6,23 @@ import { CfManager } from "./CfManager.sol";
 
 contract CfManagerFactory is ICfManagerFactory {
 
+    event CfManagerCreated(address _cfManager);
+
     function create(
+        address _owner,
         uint256 _minInvestment,
         uint256 _maxInvestment,
         uint256 _endsAt
     ) public override returns (address)
     {
-        return address(new CfManager(
+        address cfManager = address(new CfManager(
+            _owner,
             _minInvestment,
             _maxInvestment,
             _endsAt
         ));
+        emit CfManagerCreated(cfManager);
+        return cfManager;
     }
 
 }
