@@ -145,4 +145,11 @@ contract Asset is IAsset, ERC20Snapshot {
         return super.decreaseAllowance(spender, subtractedValue);
     }
 
+    //------------------------
+    //  ERC20Snapshot
+    //------------------------
+    function snapshot() external override returns (uint256) {
+        return _snapshot();
+    }
+
 }

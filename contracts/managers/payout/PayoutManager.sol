@@ -35,11 +35,10 @@ contract PayoutManager is IPayoutManager {
         _;
     }
 
-    function createNewPayout(string memory description, uint256 amount) external onlyOwner {
+    function createPayout(string memory description, uint256 amount) external onlyOwner {
         IERC20 stablecoin = IERC20(asset.issuer().stablecoin()); 
-        uint256 snapshotId = IERC20Snapshot(address(asset)).snapshot();
+        uint256 snapshotId = asset.snapshot();
         stablecoin.transferFrom(msg.sender, address(this), amount);
-        
         Payout storage payout = payouts.push();
         payout.snapshotId = snapshotId;
         payout.description = description;
