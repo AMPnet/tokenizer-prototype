@@ -78,6 +78,11 @@ describe("Full test", function () {
       );
       await issuer.approveWallet(asset.address);
 
+      //// Set and fetch asset info
+      const assetInfoHashIPFS = "QmYA2fn8cMbVWo4v95RwcwJVyQsNtnEwHerfWR8UNtEwoE";
+      await asset.setInfo(assetInfoHashIPFS);
+      expect(await asset.info(assetInfoHashIPFS)).to.be.equal(assetInfoHashIPFS);
+
       //// Activate new investor and fund his wallet with stablecoin
       const cfManagerOwnerAddress = await cfManagerOwner.getAddress();
       const firstRevenuePayout = 10000000;

@@ -70,13 +70,15 @@ contract Issuer is IIssuer, Ownable {
         uint256 _endsAt
     ) external walletApproved(msg.sender) returns(address)
     {
-        address manager = cfManagerFactory.create(
+        address manager;
+        address asset;
+        manager = cfManagerFactory.create(
             msg.sender,
             _minInvestment,
             _maxInvestment,
             _endsAt  
         );
-        address asset = assetFactory.create(
+        asset = assetFactory.create(
             manager,
             address(this),
             AssetState.CREATION,

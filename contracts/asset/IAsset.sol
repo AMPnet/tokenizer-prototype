@@ -9,4 +9,5 @@ interface IAsset {
     function totalShares() external view returns (uint256);
     function addShareholder(address shareholder, uint256 amount) external returns (bool);
     function snapshot() external returns (uint256);
+    function info() external returns (string memory);
 }

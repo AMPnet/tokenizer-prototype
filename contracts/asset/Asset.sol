@@ -16,6 +16,7 @@ contract Asset is IAsset, ERC20Snapshot {
     IIssuer public override issuer;
     uint256 public categoryId;
     AssetState public state;
+    string public override info;
 
     //------------------------
     //  MODIFIERS
@@ -32,6 +33,14 @@ contract Asset is IAsset, ERC20Snapshot {
         require(
             issuer.isWalletApproved(_wallet),
             "This functionality is not allowed. Wallet is not approved by the Issuer."
+        );
+        _;
+    }
+
+    modifier creatorOnly(address _wallet) {
+        require(
+            _wallet == creator,
+            "Only asset creator can make this action."
         );
         _;
     }
@@ -63,16 +72,18 @@ contract Asset is IAsset, ERC20Snapshot {
         external 
         override
         atState(AssetState.CREATION)
-        returns (bool) {
-        require(
-            _msgSender() == creator,
-            "Only Asset creator can call this function."
-        );
+        creatorOnly(msg.sender)
+        returns (bool)
+    {
         _transfer(creator, shareholder, amount);
         if (balanceOf(creator) == 0) {
             state = AssetState.TOKENIZED;
         }
         return true;
+    }
+
+    function setInfo(string memory _info) external creatorOnly(msg.sender) {
+        info = _info;
     }
 
     //------------------------
