@@ -78,11 +78,6 @@ describe("Full test", function () {
       );
       await issuer.approveWallet(asset.address);
 
-      //// Set and fetch asset info
-      const assetInfoHashIPFS = "QmYA2fn8cMbVWo4v95RwcwJVyQsNtnEwHerfWR8UNtEwoE";
-      await asset.setInfo(assetInfoHashIPFS);
-      expect(await asset.info(assetInfoHashIPFS)).to.be.equal(assetInfoHashIPFS);
-
       //// Activate new investor and fund his wallet with stablecoin
       const cfManagerOwnerAddress = await cfManagerOwner.getAddress();
       const firstRevenuePayout = 10000000;
@@ -121,6 +116,11 @@ describe("Full test", function () {
       //// Check project fully funded
       const assetState = await asset.state();
       expect(assetState).to.be.equal(1);
+
+      //// Set and fetch asset info
+      const assetInfoHashIPFS = "QmYA2fn8cMbVWo4v95RwcwJVyQsNtnEwHerfWR8UNtEwoE";
+      await asset.connect(cfManagerOwner).setInfo(assetInfoHashIPFS);
+      expect(await asset.info()).to.be.equal(assetInfoHashIPFS);
 
       //// Create Payment Manager and make the first payment
       const payoutManager = await createPayoutManager(cfManagerOwner, asset.address);

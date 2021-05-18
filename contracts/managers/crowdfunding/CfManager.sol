@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IAsset } from "../../asset/IAsset.sol";
 import { ICfManager } from "../crowdfunding/ICfManager.sol";
+import { AssetState } from "../../shared/Enums.sol";
 
 contract CfManager is ICfManager {
 
@@ -71,7 +72,9 @@ contract CfManager is ICfManager {
         );
 
         stablecoin.transferFrom(msg.sender, address(this), amount);
-        asset.addShareholder(msg.sender, amount);
+        if (asset.addShareholder(msg.sender, amount)) {
+            asset.setCreator(owner);
+        }
     }
 
 }

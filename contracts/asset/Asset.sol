@@ -15,7 +15,7 @@ contract Asset is IAsset, ERC20Snapshot {
     address public override creator;
     IIssuer public override issuer;
     uint256 public categoryId;
-    AssetState public state;
+    AssetState public override state;
     string public override info;
 
     //------------------------
@@ -78,8 +78,18 @@ contract Asset is IAsset, ERC20Snapshot {
         _transfer(creator, shareholder, amount);
         if (balanceOf(creator) == 0) {
             state = AssetState.TOKENIZED;
+            return true;
         }
-        return true;
+        return false;
+    }
+
+    function setCreator(address _creator)
+        external
+        override
+        creatorOnly(msg.sender)
+        atState(AssetState.TOKENIZED)
+    {
+        creator = _creator;
     }
 
     function setInfo(string memory _info) external creatorOnly(msg.sender) {
