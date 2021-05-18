@@ -13,10 +13,10 @@ describe("Full test", function () {
   let jane: Signer;
   let frank: Signer;
 
-  let Issuer: ContractFactory;
   let issuer: Contract;
   let stablecoin: Contract;
   let payoutManagerFactory: Contract;
+  let issuerFactory: Contract;
 
   let factories: Map<String, ContractFactory> = new Map();
 
@@ -43,22 +43,24 @@ describe("Full test", function () {
       const CfManagerFactory = await ethers.getContractFactory("CfManagerFactory", deployer);
       const cfManagerFactory = await CfManagerFactory.deploy();
       factories[cfManagerFactory.address] = CfManagerFactory.interface;
-
-      const PayoutManagerFactory = await ethers.getContractFactory("PayoutManagerFactory", deployer);
-      payoutManagerFactory = await PayoutManagerFactory.deploy();
       
       const AssetFactory = await ethers.getContractFactory("AssetFactory", deployer);
       const assetFactory = await AssetFactory.deploy();
       factories[assetFactory.address] = AssetFactory.interface;
 
+      const PayoutManagerFactory = await ethers.getContractFactory("PayoutManagerFactory", deployer);
+      payoutManagerFactory = await PayoutManagerFactory.deploy();
+
+      const IssuerFactory = await ethers.getContractFactory("IssuerFactory", deployer);
+      issuerFactory = await IssuerFactory.deploy();
+
       //// Deploy issuer
-      Issuer = await ethers.getContractFactory("Issuer", issuerOwner);
-      issuer = await Issuer.deploy(
+      issuer = await createIssuer(
+        issuerOwner,
         stablecoin.address,
         assetFactory.address,
         cfManagerFactory.address
       );
-      factories[issuer.address] = Issuer.interface;
       await issuer.approveWallet(await cfManagerOwner.getAddress());
 
       //// Deploy crowdfunding campaign (creates campaign + asset). Activate asset.
@@ -163,6 +165,30 @@ describe("Full test", function () {
     const USDC = await ethers.getContractFactory("USDC", deployer);
     stablecoin = await USDC.deploy(supply);
     factories[stablecoin.address] = USDC.interface;
+  }
+
+  async function createIssuer(
+    from: Signer,
+    stablecoinAddress: String,
+    assetFactoryAddress: String,
+    cfManagerFactoryAddress: String
+  ): Promise<Contract> {
+    const fromAddress = await from.getAddress();
+    const issuerFactoryWithSigner = issuerFactory.connect(from);
+    const issuerTx = await issuerFactoryWithSigner.create(
+      fromAddress,
+      stablecoinAddress,
+      assetFactoryAddress,
+      cfManagerFactoryAddress
+    );
+    const receipt = await ethers.provider.getTransactionReceipt(issuerTx.hash);
+    for (const log of receipt.logs) {
+      const parsedLog = issuerFactory.interface.parseLog(log);
+      if (parsedLog.name == "IssuerCreated") {
+        return (await ethers.getContractAt("Issuer", parsedLog.args[0])).connect(from);
+      }
+    }
+    throw new Error("Issuer creation transaction failed.")
   }
 
   async function createCfManager(

@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IIssuer } from "../issuer/IIssuer.sol";
 import { ICfManager } from "../managers/crowdfunding/ICfManager.sol";
 import { IAssetFactory } from "../asset/IAssetFactory.sol";
 import { ICfManagerFactory } from "../managers/crowdfunding/ICfManagerFactory.sol";
 import { AssetState } from "../shared/Enums.sol";
 
-contract Issuer is IIssuer, Ownable {
+contract Issuer is IIssuer {
 
+    address public owner;
     address public override stablecoin;
     IAssetFactory public assetFactory;
     ICfManagerFactory public cfManagerFactory;
@@ -17,10 +17,16 @@ contract Issuer is IIssuer, Ownable {
     address[] public assets;
     address[] public cfManagers;
 
-    constructor(address _stablecoin, address _assetFactory, address _cfManagerFactory) {
+    constructor(address _owner, address _stablecoin, address _assetFactory, address _cfManagerFactory) {
+        owner = _owner;
         stablecoin = _stablecoin;
         assetFactory = IAssetFactory(_assetFactory);
         cfManagerFactory = ICfManagerFactory(_cfManagerFactory);
+    }
+
+    modifier onlyOwner {
+        require(msg.sender == owner);
+        _;
     }
 
     modifier walletApproved(address _wallet) {
