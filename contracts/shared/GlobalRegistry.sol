@@ -11,6 +11,8 @@ contract GlobalRegistry is Ownable, IGlobalRegistry {
     address public override cfManagerFactory;
     address public override payoutManagerFactory;
 
+    mapping(uint256 => string) public auditingProcedures;
+
     constructor(
         address _issuerFactory,
         address _assetFactory,
@@ -38,6 +40,10 @@ contract GlobalRegistry is Ownable, IGlobalRegistry {
     
     function updatePayoutManagerFactory(address newPayoutManagerFactory) external onlyOwner {
         payoutManagerFactory = newPayoutManagerFactory;
+    }
+
+    function setAuditingProcedure(uint256 categoryId, string memory ipfsHash) external onlyOwner {
+        auditingProcedures[categoryId] = ipfsHash;
     }
 
 }
