@@ -107,6 +107,12 @@ describe("Full test", function () {
       await asset.connect(cfManagerOwner).setInfo(assetInfoHashIPFS);
       expect(await asset.info()).to.be.equal(assetInfoHashIPFS);
 
+      //// Set and fetch auditing procedure
+      const auditingProcedureIpfsHash = "QmYA2fn8cMbVWo4v95RwcwJVyQsNtnEwHerfWR8UNtEwoE";
+      const assetId = await asset.categoryId();
+      await registry.setAuditingProcedure(assetId, auditingProcedureIpfsHash);
+      expect(await registry.auditingProcedures(assetId)).to.be.equal(auditingProcedureIpfsHash);
+
       //// Create Payment Manager and make the first payment
       const payoutManager = await createPayoutManager(cfManagerOwner, asset.address);
       const cfManagerOwnerUSDC = stablecoin.connect(cfManagerOwner);
