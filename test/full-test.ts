@@ -8,15 +8,13 @@ describe("Full test", function () {
   let deployer: Signer;
   let issuerOwner: Signer;
   let cfManagerOwner: Signer;
-  let bob: Signer;
   let alice: Signer;
   let jane: Signer;
   let frank: Signer;
 
+  let registry: Contract;
   let issuer: Contract;
   let stablecoin: Contract;
-  let payoutManagerFactory: Contract;
-  let issuerFactory: Contract;
 
   let factories: Map<String, ContractFactory> = new Map();
 
@@ -25,11 +23,11 @@ describe("Full test", function () {
     deployer        = accounts[0];
     issuerOwner     = accounts[1];
     cfManagerOwner  = accounts[2];
-    bob             = accounts[3];
-    alice           = accounts[4];
-    jane            = accounts[5];
-    frank           = accounts[6];
-    await initStablecoin();
+    alice           = accounts[3];
+    jane            = accounts[4];
+    frank           = accounts[5];
+    await deployStablecoin();
+    await deployGlobalRegistry();
   });
 
   it(
@@ -39,28 +37,13 @@ describe("Full test", function () {
           3)successfully fund the project
     `,
     async function () {
-      //// Create factories
-      const CfManagerFactory = await ethers.getContractFactory("CfManagerFactory", deployer);
-      const cfManagerFactory = await CfManagerFactory.deploy();
-      factories[cfManagerFactory.address] = CfManagerFactory.interface;
-      
-      const AssetFactory = await ethers.getContractFactory("AssetFactory", deployer);
-      const assetFactory = await AssetFactory.deploy();
-      factories[assetFactory.address] = AssetFactory.interface;
-
-      const PayoutManagerFactory = await ethers.getContractFactory("PayoutManagerFactory", deployer);
-      payoutManagerFactory = await PayoutManagerFactory.deploy();
-
-      const IssuerFactory = await ethers.getContractFactory("IssuerFactory", deployer);
-      issuerFactory = await IssuerFactory.deploy();
 
       //// Deploy issuer
       issuer = await createIssuer(
         issuerOwner,
-        stablecoin.address,
-        assetFactory.address,
-        cfManagerFactory.address
+        stablecoin.address
       );
+      console.log(`Issuer deployed at: ${issuer.address}`);
       await issuer.approveWallet(await cfManagerOwner.getAddress());
 
       //// Deploy crowdfunding campaign (creates campaign + asset). Activate asset.
@@ -160,26 +143,57 @@ describe("Full test", function () {
     }
   );
 
-  async function initStablecoin() {
+  async function deployStablecoin() {
     const supply = ethers.utils.parseEther("1000000000000");
     const USDC = await ethers.getContractFactory("USDC", deployer);
     stablecoin = await USDC.deploy(supply);
+    console.log(`Stablecoin deployed at: ${stablecoin.address}`);
     factories[stablecoin.address] = USDC.interface;
+  }
+
+  async function deployGlobalRegistry() {
+    const GlobalRegistry = await ethers.getContractFactory("GlobalRegistry", deployer);
+    
+    const IssuerFactory = await ethers.getContractFactory("IssuerFactory", deployer);
+    const AssetFactory = await ethers.getContractFactory("AssetFactory", deployer);
+    const CfManagerFactory = await ethers.getContractFactory("CfManagerFactory", deployer);
+    const PayoutManagerFactory = await ethers.getContractFactory("PayoutManagerFactory", deployer);
+
+    const issuerFactory = await IssuerFactory.deploy();
+    factories[issuerFactory.address] = IssuerFactory;
+    console.log(`IssuerFactory deployed at: ${issuerFactory.address}`);
+
+    const assetFactory = await AssetFactory.deploy();
+    factories[assetFactory.address] = AssetFactory;
+    console.log(`AssetFactory deployed at: ${assetFactory.address}`);
+
+    const cfManagerFactory = await CfManagerFactory.deploy();
+    factories[cfManagerFactory.address] = CfManagerFactory;
+    console.log(`CfManagerFactory deployed at: ${cfManagerFactory.address}`);
+
+    const payoutManagerFactory = await PayoutManagerFactory.deploy();
+    factories[payoutManagerFactory.address] = PayoutManagerFactory;
+    console.log(`PayoutManagerFactory deployed at: ${payoutManagerFactory.address}`);
+
+    registry = await GlobalRegistry.deploy(
+      issuerFactory.address,
+      assetFactory.address,
+      cfManagerFactory.address,
+      payoutManagerFactory.address
+    );
+    console.log(`Global Registry deployed at: ${registry.address}`);
   }
 
   async function createIssuer(
     from: Signer,
-    stablecoinAddress: String,
-    assetFactoryAddress: String,
-    cfManagerFactoryAddress: String
+    stablecoinAddress: String
   ): Promise<Contract> {
     const fromAddress = await from.getAddress();
-    const issuerFactoryWithSigner = issuerFactory.connect(from);
-    const issuerTx = await issuerFactoryWithSigner.create(
+    const issuerFactory = (await ethers.getContractAt("IssuerFactory", await registry.issuerFactory())).connect(from);
+    const issuerTx = await issuerFactory.create(
       fromAddress,
       stablecoinAddress,
-      assetFactoryAddress,
-      cfManagerFactoryAddress
+      registry.address
     );
     const receipt = await ethers.provider.getTransactionReceipt(issuerTx.hash);
     for (const log of receipt.logs) {
@@ -188,7 +202,7 @@ describe("Full test", function () {
         return (await ethers.getContractAt("Issuer", parsedLog.args[0])).connect(from);
       }
     }
-    throw new Error("Issuer creation transaction failed.")
+    throw new Error("Issuer creation transaction failed.");
   }
 
   async function createCfManager(
@@ -218,7 +232,7 @@ describe("Full test", function () {
     for (const log of receipt.logs) {
       const contractFactory = factories[log.address];
       if (contractFactory) {
-        const parsedLog = contractFactory.parseLog(log);
+        const parsedLog = contractFactory.interface.parseLog(log);
         switch (parsedLog.name) {
           case "AssetCreated": { assetAddress = parsedLog.args[0]; break; }
           case "CfManagerCreated": { cfManagerAddress = parsedLog.args[0]; break; }
@@ -238,8 +252,8 @@ describe("Full test", function () {
     assetAddress: String
   ): Promise<Contract> {
     const fromAddress = await from.getAddress();
-    const payoutManagerFactoryWithSigner = payoutManagerFactory.connect(from);
-    const payoutManagerTx = await payoutManagerFactoryWithSigner.create(fromAddress, assetAddress);
+    const payoutManagerFactory = (await ethers.getContractAt("PayoutManagerFactory", await registry.payoutManagerFactory())).connect(from);
+    const payoutManagerTx = await payoutManagerFactory.create(fromAddress, assetAddress);
     const receipt = await ethers.provider.getTransactionReceipt(payoutManagerTx.hash);
     for (const log of receipt.logs) {
       const parsedLog = payoutManagerFactory.interface.parseLog(log);
@@ -247,7 +261,7 @@ describe("Full test", function () {
         return ethers.getContractAt("PayoutManager", parsedLog.args[0]);
       }
     }
-    throw new Error("PayoutManager transaction failed.")
+    throw new Error("PayoutManager transaction failed.");
   }
 
 });
