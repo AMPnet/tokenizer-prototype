@@ -6,22 +6,21 @@ import { ICfManager } from "../managers/crowdfunding/ICfManager.sol";
 import { IAssetFactory } from "../asset/IAssetFactory.sol";
 import { ICfManagerFactory } from "../managers/crowdfunding/ICfManagerFactory.sol";
 import { AssetState } from "../shared/Enums.sol";
+import { IGlobalRegistry } from "../shared/IGlobalRegistry.sol";
 
 contract Issuer is IIssuer {
 
     address public owner;
     address public override stablecoin;
-    IAssetFactory public assetFactory;
-    ICfManagerFactory public cfManagerFactory;
+    IGlobalRegistry public registry;
     mapping (address => bool) public approvedWallets;
     address[] public assets;
     address[] public cfManagers;
 
-    constructor(address _owner, address _stablecoin, address _assetFactory, address _cfManagerFactory) {
+    constructor(address _owner, address _stablecoin, address _registry) {
         owner = _owner;
         stablecoin = _stablecoin;
-        assetFactory = IAssetFactory(_assetFactory);
-        cfManagerFactory = ICfManagerFactory(_cfManagerFactory);
+        registry = IGlobalRegistry(_registry);
     }
 
     modifier onlyOwner {
@@ -53,7 +52,7 @@ contract Issuer is IIssuer {
         string memory _symbol
     ) external walletApproved(msg.sender) returns (address)
     {
-        address asset = assetFactory.create(
+        address asset = IAssetFactory(registry.assetFactory()).create(
             msg.sender,
             address(this),
             _state,
@@ -78,13 +77,13 @@ contract Issuer is IIssuer {
     {
         address manager;
         address asset;
-        manager = cfManagerFactory.create(
+        manager = ICfManagerFactory(registry.cfManagerFactory()).create(
             msg.sender,
             _minInvestment,
             _maxInvestment,
             _endsAt  
         );
-        asset = assetFactory.create(
+        asset = IAssetFactory(registry.assetFactory()).create(
             manager,
             address(this),
             AssetState.CREATION,

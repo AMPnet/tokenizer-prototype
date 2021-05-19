@@ -11,15 +11,13 @@ contract IssuerFactory is IIssuerFactory {
     function create(
         address _owner,
         address _stablecoin, 
-        address _assetFactory, 
-        address _cfManagerFactory
+        address _registry
     ) external override returns (address) 
     {
         address issuer = address(new Issuer(
             _owner,
             _stablecoin,
-            _assetFactory,
-            _cfManagerFactory
+            _registry
         ));
         emit IssuerCreated(issuer);
         return issuer;

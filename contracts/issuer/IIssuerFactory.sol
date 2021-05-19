@@ -5,7 +5,6 @@ interface IIssuerFactory {
     function create(
         address _owner,
         address _stablecoin, 
-        address _assetFactory, 
-        address _cfManagerFactory
+        address _registry
     ) external returns (address);
 }
