@@ -10,7 +10,9 @@ interface IAsset {
     function totalShares() external view returns (uint256);
     function info() external returns (string memory);
     function state() external returns (AssetState);
-    function addShareholder(address shareholder, uint256 amount) external returns (bool);
+    function addShareholder(address shareholder, uint256 amount) external;
+    function removeShareholder(address shareholder, uint256 amount) external;
+    function finalize() external;
     function snapshot() external returns (uint256);
     function setCreator(address newCreator) external;
 }

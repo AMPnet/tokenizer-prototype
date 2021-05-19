@@ -37,9 +37,9 @@ contract Asset is IAsset, ERC20Snapshot {
         _;
     }
 
-    modifier creatorOnly(address _wallet) {
+    modifier creatorOnly() {
         require(
-            _wallet == creator,
+            msg.sender == creator,
             "Only asset creator can make this action."
         );
         _;
@@ -71,28 +71,40 @@ contract Asset is IAsset, ERC20Snapshot {
     function addShareholder(address shareholder, uint256 amount)
         external 
         override
+        creatorOnly
         atState(AssetState.CREATION)
-        creatorOnly(msg.sender)
-        returns (bool)
     {
         _transfer(creator, shareholder, amount);
-        if (balanceOf(creator) == 0) {
-            state = AssetState.TOKENIZED;
-            return true;
-        }
-        return false;
+    }
+
+    function removeShareholder(address shareholder, uint256 amount)
+        external
+        override
+        creatorOnly
+        atState(AssetState.CREATION)
+    {
+        _transfer(shareholder, creator, amount);
+    }
+
+    function finalize()
+        external
+        override
+        creatorOnly
+        atState(AssetState.CREATION)
+    {
+        state = AssetState.TOKENIZED;
     }
 
     function setCreator(address _creator)
         external
         override
-        creatorOnly(msg.sender)
+        creatorOnly
         atState(AssetState.TOKENIZED)
     {
         creator = _creator;
     }
 
-    function setInfo(string memory _info) external creatorOnly(msg.sender) {
+    function setInfo(string memory _info) external creatorOnly {
         info = _info;
     }
 

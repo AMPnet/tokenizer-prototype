@@ -4,6 +4,9 @@ import { expect } from "chai";
 import { currentTimeWithDaysOffset } from "./util";
 
 describe("Full test", function () {
+
+  const ASSET_CREATION_STATE = 0;
+  const ASSET_TOKENIZED_STATE = 1;
   
   let deployer: Signer;
   let issuerOwner: Signer;
@@ -86,21 +89,29 @@ describe("Full test", function () {
       const frankAddress = await frank.getAddress();
       await issuer.approveWallet(frankAddress);
 
-      //// Alice invests 30%
+      //// Alice invests 30%, cancels, and then invests again
       const aliceUSDC = stablecoin.connect(alice);
-      await aliceUSDC.approve(cfManager.address, ethers.utils.parseEther(String(aliceInvestment)));
+      const aliceInvestmentWei = ethers.utils.parseEther(String(aliceInvestment));
+      await aliceUSDC.approve(cfManager.address, aliceInvestmentWei);
       const aliceCfManager = cfManager.connect(alice);
-      await aliceCfManager.invest(ethers.utils.parseEther(String(aliceInvestment)));
+      await aliceCfManager.invest(aliceInvestmentWei);
 
-      //// Jane invests 70%
+      //// Jane invests 70%, cancels, and then invests again
       const janeUSDC = stablecoin.connect(jane);
-      await janeUSDC.approve(cfManager.address, ethers.utils.parseEther(String(janeInvestment)));
+      const janeInvestmentWei = ethers.utils.parseEther(String(janeInvestment));
+      await janeUSDC.approve(cfManager.address, janeInvestmentWei);
       const janeCfManager = cfManager.connect(jane);
-      await janeCfManager.invest(ethers.utils.parseEther(String(janeInvestment)));
+      await janeCfManager.invest(janeInvestmentWei);
+      expect(await stablecoin.balanceOf(janeAddress)).to.be.equal(0);
+      await janeCfManager.cancelInvestment();
+      expect(await stablecoin.balanceOf(janeAddress)).to.be.equal(janeInvestmentWei);
+      await janeUSDC.approve(cfManager.address, janeInvestmentWei);
+      await janeCfManager.invest(janeInvestmentWei);
 
-      //// Check project fully funded
-      const assetState = await asset.state();
-      expect(assetState).to.be.equal(1);
+      //// Campaign Manager finalizes the crowdfunding process
+      await cfManager.connect(cfManagerOwner).finalize();
+      expect(await asset.state()).to.be.equal(ASSET_TOKENIZED_STATE);
+      expect(await asset.creator()).to.be.equal(cfManagerOwnerAddress);
 
       //// Set and fetch asset info
       const assetInfoHashIPFS = "QmYA2fn8cMbVWo4v95RwcwJVyQsNtnEwHerfWR8UNtEwoE";
