@@ -122,9 +122,11 @@ contract CfManager is ICfManager {
             IERC20(address(asset)).balanceOf(address(this)) == 0,
             "Can only finalize fully funded Assets."
         );
+        finalized = true;
         asset.finalize();
         asset.setCreator(owner);
-        finalized = true;
+        IERC20 stablecoin = IERC20(asset.issuer().stablecoin());
+        stablecoin.safeTransfer(msg.sender, stablecoin.balanceOf(address(this)));
     }
 
 }

@@ -66,12 +66,9 @@ describe("Full test", function () {
       );
       await issuer.approveWallet(asset.address);
 
-      //// Activate new investor and fund his wallet with stablecoin
+      //// Activate crowdfunding manager wallet
       const cfManagerOwnerAddress = await cfManagerOwner.getAddress();
-      const firstRevenuePayout = 10000000;
-      const secondRevenuePayout = 10000000;
       await issuer.approveWallet(cfManagerOwnerAddress);
-      await stablecoin.transfer(cfManagerOwnerAddress, ethers.utils.parseEther(String(firstRevenuePayout + secondRevenuePayout)));
 
       //// Activate new investor and fund his wallet with stablecoin
       const aliceAddress = await alice.getAddress();
@@ -112,6 +109,7 @@ describe("Full test", function () {
       await cfManager.connect(cfManagerOwner).finalize();
       expect(await asset.state()).to.be.equal(ASSET_TOKENIZED_STATE);
       expect(await asset.creator()).to.be.equal(cfManagerOwnerAddress);
+      expect(await stablecoin.balanceOf(cfManagerOwnerAddress)).to.be.equal(ethers.utils.parseEther(String(investmentCap)));
 
       //// Set and fetch asset info
       const assetInfoHashIPFS = "QmYA2fn8cMbVWo4v95RwcwJVyQsNtnEwHerfWR8UNtEwoE";
@@ -125,6 +123,9 @@ describe("Full test", function () {
       expect(await registry.auditingProcedures(assetId)).to.be.equal(auditingProcedureIpfsHash);
 
       //// Create Payment Manager and make the first payment
+      const firstRevenuePayout = 10000000;
+      const secondRevenuePayout = 10000000;
+      await stablecoin.transfer(cfManagerOwnerAddress, ethers.utils.parseEther(String(firstRevenuePayout + secondRevenuePayout)));
       const payoutManager = await createPayoutManager(cfManagerOwner, asset.address);
       const cfManagerOwnerUSDC = stablecoin.connect(cfManagerOwner);
       const firstRevenuePayoutWei = ethers.utils.parseEther(String(firstRevenuePayout));
