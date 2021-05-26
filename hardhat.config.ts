@@ -1,6 +1,11 @@
 import { task } from "hardhat/config";
 import "@nomiclabs/hardhat-waffle";
+<<<<<<< HEAD
 import "solidity-coverage";
+=======
+import * as dotenv from 'dotenv';
+dotenv.config();
+>>>>>>> master
 
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html
@@ -20,4 +25,10 @@ task("accounts", "Prints the list of accounts", async (args, hre) => {
  */
 module.exports = {
   solidity: "0.8.0",
+  networks: {
+    ropsten: {
+      url: process.env.INFURA_ROPSTEN_URL,
+      accounts: [process.env.PRIVATE_KEY]
+    }
+  }
 };
