@@ -1,10 +1,10 @@
 import { ethers } from "hardhat";
 import { ContractFactory, Signer, Contract } from "ethers";
 import { expect } from "chai";
-import { smockit, smoddit } from "@eth-optimism/smock";
 
 import { Errors } from "./errors";
 import { Events } from "./events";
+import * as Mocks from  "./mocks";
 import { mapToObject } from "./util";
 
 describe("Asset", function() {
@@ -42,24 +42,6 @@ describe("Asset", function() {
             ASSET_NAME,
             ASSET_TICKER
         );
-    }
-
-    async function generateIssuerMock(approvedWallets: Map<String, Boolean> = new Map()) {
-        if (approvedWallets.size === 0) {
-            const Issuer: ContractFactory = await ethers.getContractFactory("Issuer");
-            const issuer = await Issuer.deploy(ADDRESS_ZERO, ADDRESS_ZERO, ADDRESS_ZERO);
-            const issuerMock = await smockit(issuer);
-            issuerMock.smocked.isWalletApproved.will.return.with(true);
-            return issuerMock;
-        } else {
-            const IssuerModifiable = await smoddit("Issuer");
-            const issuerModifiable = await IssuerModifiable.deploy(ADDRESS_ZERO, ADDRESS_ZERO, ADDRESS_ZERO);
-            const approvedWalletsObj = mapToObject(approvedWallets);
-            await issuerModifiable.smodify.put({
-                approvedWallets: approvedWalletsObj
-            });
-            return issuerModifiable;
-        }
     }
 
     before(async function () {
@@ -111,11 +93,15 @@ describe("Asset", function() {
                 address1Balance: ethers.constants.Zero
             }
             
-            const issuer = await generateIssuerMock(new Map<String, Boolean>([
-                [deployerAddress, true],
-                [address1, true]
-            ]));
+            const issuer = await Mocks.createIssuerModifiable();
             await deployAsset(AssetState.TOKENIZED, issuer.address);
+            issuer.smodify.put({
+                approvedWallets: mapToObject(new Map<String, Boolean>([
+                    [deployerAddress, true],
+                    [address1, true],
+                    [asset.address, true]
+                ]))
+            });
 
             expect(await asset.balanceOf(deployerAddress)).to.be.equal(Snapshot.deployerBalance);
             expect(await asset.balanceOf(address1)).to.be.equal(Snapshot.address1Balance);
