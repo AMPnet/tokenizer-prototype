@@ -6,6 +6,8 @@ import "./IIssuerFactory.sol";
 
 contract IssuerFactory is IIssuerFactory {
 
+    address[] public instances;
+
     event IssuerCreated(address _asset);
 
     function create(
@@ -19,8 +21,11 @@ contract IssuerFactory is IIssuerFactory {
             _stablecoin,
             _registry
         ));
+        instances.push(issuer);
         emit IssuerCreated(issuer);
         return issuer;
     }
+
+    function getInstances() external override view returns (address[] memory) { return instances; }
 
 }

@@ -8,4 +8,6 @@ interface ICfManagerFactory {
         uint256 _maxInvestment,
         uint256 _endsAt
     ) external returns (address);
+
+    function getInstances() external view returns (address[] memory);
 }

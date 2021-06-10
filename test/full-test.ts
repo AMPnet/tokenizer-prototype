@@ -29,7 +29,7 @@ describe("Full test", function () {
     jane            = accounts[4];
     frank           = accounts[5];
 
-    stablecoin = await helpers.deployStablecoin(deployer, "USDT", "1000000000000");
+    stablecoin = await helpers.deployStablecoin(deployer, "1000000000000");
     registry = await helpers.deployGlobalRegistry(deployer);
   });
 
@@ -113,6 +113,11 @@ describe("Full test", function () {
       expect(await asset.creator()).to.be.equal(cfManagerOwnerAddress);
       expect(await stablecoin.balanceOf(cfManagerOwnerAddress)).to.be.equal(ethers.utils.parseEther(String(investmentCap)));
 
+      //// Set and fetch issuer info
+      const issuerInfoHashIPFS = "QmYA2fn8cMbVWo4v95RwcwJVyQsNtnEwHerfWR8UNtEwoE";
+      await issuer.connect(issuerOwner).setInfo(issuerInfoHashIPFS);
+      expect(await issuer.info()).to.be.equal(issuerInfoHashIPFS);
+
       //// Set and fetch asset info
       const assetInfoHashIPFS = "QmYA2fn8cMbVWo4v95RwcwJVyQsNtnEwHerfWR8UNtEwoE";
       await asset.connect(cfManagerOwner).setInfo(assetInfoHashIPFS);
@@ -160,6 +165,32 @@ describe("Full test", function () {
       await payoutManager.release(frankAddress, secondPayoutSnapshotID);
       expect(await stablecoin.balanceOf(aliceAddress)).to.be.equal(expectedAliceFirstPayoutCut.add(expectedAliceSecondPayoutCut));
       expect(await stablecoin.balanceOf(frankAddress)).to.be.equal(expectedFankSecondPayoutCut);
+
+
+      //// Fetch all the instances from contracts - check the data
+      const issuerFactoryInstances = await (await ethers.getContractAt("IssuerFactory", await registry.issuerFactory())).getInstances();
+      expect(issuerFactoryInstances).to.have.lengthOf(1);
+      expect(issuer.address).to.be.oneOf(issuerFactoryInstances);
+
+      const assetFactoryInstances = await (await ethers.getContractAt("AssetFactory", await registry.assetFactory())).getInstances();
+      expect(assetFactoryInstances).to.have.lengthOf(1);
+      expect(asset.address).to.be.oneOf(assetFactoryInstances);
+
+      const cfManagerFactoryInstances = await (await ethers.getContractAt("CfManagerFactory", await registry.cfManagerFactory())).getInstances();
+      expect(cfManagerFactoryInstances).to.have.lengthOf(1);
+      expect(cfManager.address).to.be.oneOf(cfManagerFactoryInstances);
+
+      const payoutManagerFactoryInstances = await (await ethers.getContractAt("PayoutManagerFactory", await registry.payoutManagerFactory())).getInstances();
+      expect(payoutManagerFactoryInstances).to.have.lengthOf(1);
+      expect(payoutManager.address).to.be.oneOf(payoutManagerFactoryInstances);
+
+      const issuerAssetInstances = await issuer.getAssets();
+      expect(issuerAssetInstances).to.have.lengthOf(1);
+      expect(asset.address).to.be.oneOf(issuerAssetInstances);
+
+      const issuerCfManagerInstances = await issuer.getCfManagers();
+      expect(issuerCfManagerInstances).to.have.lengthOf(1);
+      expect(cfManager.address).to.be.oneOf(issuerCfManagerInstances);
     }
   );
 

@@ -16,6 +16,7 @@ contract Issuer is IIssuer {
     mapping (address => bool) public approvedWallets;
     address[] public assets;
     address[] public cfManagers;
+    string public override info;
 
     constructor(address _owner, address _stablecoin, address _registry) {
         owner = _owner;
@@ -42,6 +43,10 @@ contract Issuer is IIssuer {
 
     function suspendWallet(address _wallet) external onlyOwner {
         approvedWallets[_wallet] = false;
+    }
+
+    function setInfo(string memory _info) external onlyOwner {
+        info = _info;
     }
 
     function createAsset(
@@ -101,5 +106,9 @@ contract Issuer is IIssuer {
     function isWalletApproved(address _wallet) external view override returns (bool) {
         return approvedWallets[_wallet];
     }
+
+    function getAssets() external override view returns (address[] memory) { return assets; }
+
+    function getCfManagers() external override view returns (address[] memory) { return cfManagers; }
 
 }

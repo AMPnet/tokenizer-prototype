@@ -3,9 +3,9 @@ import { Contract, ContractFactory, Signer } from "ethers";
 
 const factories: Map<String, ContractFactory> = new Map();
 
-export async function deployStablecoin(deployer: Signer, ticker: string, supply: string): Promise<Contract> {
+export async function deployStablecoin(deployer: Signer, supply: string): Promise<Contract> {
     const supplyWei = ethers.utils.parseEther(supply);
-    const USDC = await ethers.getContractFactory(ticker, deployer);
+    const USDC = await ethers.getContractFactory("USDC", deployer);
     const stablecoin = await USDC.deploy(supplyWei);
     console.log(`Stablecoin deployed at: ${stablecoin.address}`);
     factories[stablecoin.address] = USDC.interface;

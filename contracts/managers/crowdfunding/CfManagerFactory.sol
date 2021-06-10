@@ -8,6 +8,8 @@ contract CfManagerFactory is ICfManagerFactory {
 
     event CfManagerCreated(address _cfManager);
 
+    address[] public instances;
+
     function create(
         address _owner,
         uint256 _minInvestment,
@@ -21,8 +23,11 @@ contract CfManagerFactory is ICfManagerFactory {
             _maxInvestment,
             _endsAt
         ));
+        instances.push(cfManager);
         emit CfManagerCreated(cfManager);
         return cfManager;
     }
+
+    function getInstances() external override view returns (address[] memory) { return instances; }
 
 }

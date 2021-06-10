@@ -1,4 +1,5 @@
 import { ethers } from "hardhat";
+import * as helpers from "../util/helpers";
 
 async function main() {
     const PROCEDURE_IPFS = "QmUutXQm7FWVWjHiSFENprk7j7KDwW3NCqkAtDJdgEazj9";

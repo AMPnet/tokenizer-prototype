@@ -9,6 +9,8 @@ contract AssetFactory is IAssetFactory {
     
     event AssetCreated(address _asset);
 
+    address[] public instances;
+
     function create(
         address _creator,
         address _issuer,
@@ -28,8 +30,11 @@ contract AssetFactory is IAssetFactory {
             _name,
             _symbol
         ));
+        instances.push(asset);
         emit AssetCreated(asset);
         return asset;
     }
 
+    function getInstances() external override view returns (address[] memory) { return instances; }
+    
 }

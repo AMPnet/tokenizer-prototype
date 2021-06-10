@@ -7,4 +7,6 @@ interface IIssuerFactory {
         address _stablecoin, 
         address _registry
     ) external returns (address);
+
+    function getInstances() external view returns (address[] memory);
 }

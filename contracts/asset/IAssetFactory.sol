@@ -13,4 +13,6 @@ interface IAssetFactory {
         string memory _name,
         string memory _symbol
     ) external returns (address);
+    
+    function getInstances() external view returns (address[] memory);
 }
