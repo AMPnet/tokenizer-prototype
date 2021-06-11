@@ -23,8 +23,16 @@ module.exports = {
   solidity: "0.8.0",
   networks: {
     ropsten: {
-      url: process.env.INFURA_ROPSTEN_URL,
-      accounts: [process.env.PRIVATE_KEY]
+      url: process.env.ROPSTEN_RPC,
+      accounts: {
+        mnemonic: process.env.SEED_PHRASE
+      }
+    },
+    mumbai: {
+      url: process.env.MUMBAI_RPC,
+      accounts: {
+        mnemonic: process.env.SEED_PHRASE
+      }
     }
   }
 };

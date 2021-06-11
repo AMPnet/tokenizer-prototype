@@ -1,14 +1,12 @@
 import { ethers } from "hardhat";
 import { Contract, ContractFactory, Signer } from "ethers";
 import { expect } from "chai";
-import { currentTimeWithDaysOffset } from "./util";
+import { currentTimeWithDaysOffset } from "../util/helpers";
 import * as helpers from "../util/helpers";
+import { AssetState } from "../util/types";
 
 describe("Full test", function () {
 
-  const ASSET_CREATION_STATE = 0;
-  const ASSET_TOKENIZED_STATE = 1;
-  
   let deployer: Signer;
   let issuerOwner: Signer;
   let cfManagerOwner: Signer;
@@ -109,7 +107,7 @@ describe("Full test", function () {
 
       //// Campaign Manager finalizes the crowdfunding process
       await cfManager.connect(cfManagerOwner).finalize();
-      expect(await asset.state()).to.be.equal(ASSET_TOKENIZED_STATE);
+      expect(await asset.state()).to.be.equal(AssetState.TOKENIZED);
       expect(await asset.creator()).to.be.equal(cfManagerOwnerAddress);
       expect(await stablecoin.balanceOf(cfManagerOwnerAddress)).to.be.equal(ethers.utils.parseEther(String(investmentCap)));
 

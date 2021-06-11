@@ -2,38 +2,59 @@ import { ethers } from "hardhat";
 import * as helpers from "../util/helpers";
 
 async function main() {
-    const PROCEDURE_IPFS = "QmUutXQm7FWVWjHiSFENprk7j7KDwW3NCqkAtDJdgEazj9";
-    const ADDRESS_ZERO = ethers.constants.AddressZero;
-    
-    const ASSET_CATEGORY_ID = 42;
-    const ASSET_TOKENIZED_STATE = 1;
-    const ASSET_TOTAL_SHARES = ethers.utils.parseEther("100");
-    const ASSET_IPFS = "QmdxwTrkQAmXSs7FEbMXJWrBqYQfZ6j9o5BzYrNLLuw4xg";
+  const accounts = await ethers.getSigners();
+  const deployer = accounts[0];
+  const deployerAddress = await accounts[0].getAddress();
+  const tokenizedAssetShareholderA = await accounts[1].getAddress();
+  const tokenizedAssetShareholderB = await accounts[2].getAddress();
 
-    const accounts = await ethers.getSigners();
-    const deployerAddress = await accounts[0].getAddress();
+  const stablecoin = await helpers.deployStablecoin(deployer, "7000000");
+  const registry = await helpers.deployGlobalRegistry(deployer);
+  const issuer = await helpers.createIssuer(deployer, registry, stablecoin.address);
 
-    const GlobalRegistry = await ethers.getContractFactory("GlobalRegistry");
-    const globalRegistry = await GlobalRegistry.deploy(ADDRESS_ZERO, ADDRESS_ZERO, ADDRESS_ZERO, ADDRESS_ZERO);
-    console.log("globalRegistry", globalRegistry.address);
+  await issuer.approveWallet(deployerAddress);
+  await issuer.approveWallet(tokenizedAssetShareholderA);
+  await issuer.approveWallet(tokenizedAssetShareholderB);
 
-    const setAuditingProcedureResult = await globalRegistry.setAuditingProcedure(ASSET_CATEGORY_ID, PROCEDURE_IPFS);
-    console.log("setAuditingProcedureResult", setAuditingProcedureResult);
+  const [cfManager, crowdfundingAsset] = await helpers.createCfManager(
+    deployer,
+    issuer,
+    13,
+    1000000,
+    "Test Asset 1",
+    "TA-1",
+    10000,
+    1000000,
+    helpers.currentTimeWithDaysOffset(100),
+  );
+  await issuer.approveWallet(crowdfundingAsset.address);
 
-    const Asset = await ethers.getContractFactory("Asset");
-    const asset = await Asset.deploy(
-        deployerAddress,
-        ADDRESS_ZERO,
-        ASSET_TOKENIZED_STATE,
-        ASSET_CATEGORY_ID,
-        ASSET_TOTAL_SHARES,
-        "APX(CRESE12)",
-        "AAPX Swedish Commercial Real-Estate-Synthetic #12"
-    );
-    console.log("asset", asset.address);
+  const tokenizedAsset = await helpers.createAsset(
+    deployer,
+    issuer,
+    13,
+    1000000,
+    "Test Asset 2",
+    "TA-2",
+  );
 
-    const setAssetInfoResult = await asset.setInfo(ASSET_IPFS);
-    console.log("setAssetInfoResult", setAssetInfoResult);
+  await tokenizedAsset.addShareholder(
+    tokenizedAssetShareholderA,
+    ethers.utils.parseEther(String("500000"))
+  );
+  await tokenizedAsset.addShareholder(
+    tokenizedAssetShareholderB,
+    ethers.utils.parseEther(String("500000"))
+  );
+
+  const payoutManager = await helpers.createPayoutManager(
+    deployer,
+    registry,
+    tokenizedAsset.address
+  );
+  const revenuePayoutWei = ethers.utils.parseEther(String(10000));
+  await stablecoin.approve(payoutManager.address, revenuePayoutWei);
+  await payoutManager.createPayout("Q3/2020 Ape-le shareholders payout timeee", revenuePayoutWei);
 }
 
 main()
