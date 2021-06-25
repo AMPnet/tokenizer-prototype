@@ -4,13 +4,14 @@ import * as helpers from "../util/helpers";
 async function main() {
   const accounts = await ethers.getSigners();
   const deployer = accounts[0];
+
   const deployerAddress = await accounts[0].getAddress();
   const tokenizedAssetShareholderA = await accounts[1].getAddress();
   const tokenizedAssetShareholderB = await accounts[2].getAddress();
 
   const stablecoin = await helpers.deployStablecoin(deployer, "7000000");
   const registry = await helpers.deployGlobalRegistry(deployer);
-  const issuer = await helpers.createIssuer(deployer, registry, stablecoin.address);
+  const issuer = await helpers.createIssuer(deployer, registry, stablecoin.address, "info-hash");
 
   await issuer.approveWallet(deployerAddress);
   await issuer.approveWallet(tokenizedAssetShareholderA);

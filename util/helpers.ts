@@ -50,14 +50,16 @@ export async function deployGlobalRegistry(deployer: Signer): Promise<Contract> 
 export async function createIssuer(
   from: Signer,
   registry: Contract,
-  stablecoinAddress: String
+  stablecoinAddress: String,
+  info: String
 ): Promise<Contract> {
   const fromAddress = await from.getAddress();
   const issuerFactory = (await ethers.getContractAt("IssuerFactory", await registry.issuerFactory())).connect(from);
   const issuerTx = await issuerFactory.create(
     fromAddress,
     stablecoinAddress,
-    registry.address
+    registry.address,
+    info
   );
   const receipt = await ethers.provider.getTransactionReceipt(issuerTx.hash);
   for (const log of receipt.logs) {

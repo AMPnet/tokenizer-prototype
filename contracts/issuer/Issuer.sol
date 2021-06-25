@@ -18,10 +18,11 @@ contract Issuer is IIssuer {
     address[] public cfManagers;
     string public override info;
 
-    constructor(address _owner, address _stablecoin, address _registry) {
+    constructor(address _owner, address _stablecoin, address _registry, string memory _info) {
         owner = _owner;
         stablecoin = _stablecoin;
         registry = IGlobalRegistry(_registry);
+        info = _info;
     }
 
     modifier onlyOwner {
@@ -78,7 +79,7 @@ contract Issuer is IIssuer {
         uint256 _minInvestment,
         uint256 _maxInvestment,
         uint256 _endsAt
-    ) external walletApproved(msg.sender) returns(address)
+    ) external onlyOwner returns(address)
     {
         address manager;
         address asset;

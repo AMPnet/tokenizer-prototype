@@ -22,7 +22,7 @@ describe("Full test", function () {
     const accounts: Signer[] = await ethers.getSigners();
     deployer        = accounts[0];
     issuerOwner     = accounts[1];
-    cfManagerOwner  = accounts[2];
+    cfManagerOwner  = accounts[1];
     alice           = accounts[3];
     jane            = accounts[4];
     frank           = accounts[5];
@@ -43,7 +43,8 @@ describe("Full test", function () {
       issuer = await helpers.createIssuer(
         issuerOwner,
         registry,
-        stablecoin.address
+        stablecoin.address,
+        "info-hash"
       );
       console.log(`Issuer deployed at: ${issuer.address}`);
       await issuer.approveWallet(await cfManagerOwner.getAddress());
