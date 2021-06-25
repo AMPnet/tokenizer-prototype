@@ -51,6 +51,7 @@ export async function createIssuer(
   from: Signer,
   registry: Contract,
   stablecoinAddress: String,
+  walletApproverAddress: String,
   info: String
 ): Promise<Contract> {
   const fromAddress = await from.getAddress();
@@ -59,6 +60,7 @@ export async function createIssuer(
     fromAddress,
     stablecoinAddress,
     registry.address,
+    walletApproverAddress,
     info
   );
   const receipt = await ethers.provider.getTransactionReceipt(issuerTx.hash);

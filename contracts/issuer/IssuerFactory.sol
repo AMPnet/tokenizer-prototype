@@ -13,7 +13,8 @@ contract IssuerFactory is IIssuerFactory {
     function create(
         address _owner,
         address _stablecoin,
-        address _registry, 
+        address _registry,
+        address _walletApprover,
         string memory _info
     ) external override returns (address) 
     {
@@ -23,6 +24,7 @@ contract IssuerFactory is IIssuerFactory {
             _owner,
             _stablecoin,
             _registry,
+            _walletApprover,
             _info
         ));
         instances.push(issuer);

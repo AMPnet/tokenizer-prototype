@@ -13,6 +13,7 @@ describe("Full test", function () {
   let alice: Signer;
   let jane: Signer;
   let frank: Signer;
+  let walletApprover: Signer
 
   let registry: Contract;
   let issuer: Contract;
@@ -26,6 +27,7 @@ describe("Full test", function () {
     alice           = accounts[3];
     jane            = accounts[4];
     frank           = accounts[5];
+    walletApprover  = accounts[6];
 
     stablecoin = await helpers.deployStablecoin(deployer, "1000000000000");
     registry = await helpers.deployGlobalRegistry(deployer);
@@ -44,10 +46,12 @@ describe("Full test", function () {
         issuerOwner,
         registry,
         stablecoin.address,
+        await walletApprover.getAddress(),
         "info-hash"
       );
       console.log(`Issuer deployed at: ${issuer.address}`);
-      await issuer.approveWallet(await cfManagerOwner.getAddress());
+      const issuerWalletApprover = issuer.connect(walletApprover);
+      await issuerWalletApprover.approveWallet(await cfManagerOwner.getAddress());
 
       //// Deploy crowdfunding campaign (creates campaign + asset). Activate asset.
       const categoryId = 0;
@@ -65,27 +69,27 @@ describe("Full test", function () {
         maxInvestment,
         currentTimeWithDaysOffset(1)
       );
-      await issuer.approveWallet(asset.address);
+      await issuerWalletApprover.approveWallet(asset.address);
 
       //// Activate crowdfunding manager wallet
       const cfManagerOwnerAddress = await cfManagerOwner.getAddress();
-      await issuer.approveWallet(cfManagerOwnerAddress);
+      await issuerWalletApprover.approveWallet(cfManagerOwnerAddress);
 
       //// Activate new investor and fund his wallet with stablecoin
       const aliceAddress = await alice.getAddress();
       const aliceInvestment = 3000000;
-      await issuer.approveWallet(aliceAddress);
+      await issuerWalletApprover.approveWallet(aliceAddress);
       await stablecoin.transfer(aliceAddress, ethers.utils.parseEther(String(aliceInvestment)));
 
       //// Activate new investor and fund his wallet with stablecoin
       const janeAddress = await jane.getAddress();
       const janeInvestment = 7000000;
-      await issuer.approveWallet(janeAddress);
+      await issuerWalletApprover.approveWallet(janeAddress);
       await stablecoin.transfer(janeAddress, ethers.utils.parseEther(String(janeInvestment)));
 
       //// Activate new investor and fund his wallet with stablecoin
       const frankAddress = await frank.getAddress();
-      await issuer.approveWallet(frankAddress);
+      await issuerWalletApprover.approveWallet(frankAddress);
 
       //// Alice invests 30%, cancels, and then invests again
       const aliceUSDC = stablecoin.connect(alice);

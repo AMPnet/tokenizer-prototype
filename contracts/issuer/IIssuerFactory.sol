@@ -6,6 +6,7 @@ interface IIssuerFactory {
         address _owner,
         address _stablecoin,
         address _registry,
+        address _walletApprover,
         string memory _info
     ) external returns (address);
 

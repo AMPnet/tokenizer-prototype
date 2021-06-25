@@ -14,21 +14,28 @@ contract Issuer is IIssuer {
     address public owner;
     address public override stablecoin;
     IGlobalRegistry public registry;
+    address public walletApprover;
     mapping (address => bool) public approvedWallets;
     address[] public assets;
     address[] public cfManagers;
     string public override info;
 
-    constructor(uint256 _id, address _owner, address _stablecoin, address _registry, string memory _info) {
+    constructor(uint256 _id, address _owner, address _stablecoin, address _registry, address _walletApprover, string memory _info) {
         id = _id;
         owner = _owner;
         stablecoin = _stablecoin;
         registry = IGlobalRegistry(_registry);
+        walletApprover = _walletApprover;
         info = _info;
     }
 
     modifier onlyOwner {
         require(msg.sender == owner);
+        _;
+    }
+
+    modifier onlyWalletApprover {
+        require(msg.sender == walletApprover);
         _;
     }
 
@@ -40,16 +47,20 @@ contract Issuer is IIssuer {
         _;
     }
 
-    function approveWallet(address _wallet) external onlyOwner {
+    function approveWallet(address _wallet) external onlyWalletApprover {
         approvedWallets[_wallet] = true;
     }
 
-    function suspendWallet(address _wallet) external onlyOwner {
+    function suspendWallet(address _wallet) external onlyWalletApprover {
         approvedWallets[_wallet] = false;
     }
 
     function setInfo(string memory _info) external onlyOwner {
         info = _info;
+    }
+
+    function changeWalletApprover(address newWalletApprover) external onlyOwner {
+        walletApprover = newWalletApprover;
     }
 
     function createAsset(
