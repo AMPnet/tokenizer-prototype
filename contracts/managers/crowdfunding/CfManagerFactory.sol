@@ -17,7 +17,9 @@ contract CfManagerFactory is ICfManagerFactory {
         uint256 _endsAt
     ) public override returns (address)
     {
+        uint256 _id = instances.length;
         address cfManager = address(new CfManager(
+            _id,
             _owner,
             _minInvestment,
             _maxInvestment,

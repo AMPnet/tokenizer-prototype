@@ -11,7 +11,8 @@ contract PayoutManagerFactory is IPayoutManagerFactory {
     address[] public instances;
 
     function create(address owner, address assetAddress) public override returns (address) {
-        address payoutManager = address(new PayoutManager(owner, assetAddress));
+        uint256 id = instances.length;
+        address payoutManager = address(new PayoutManager(id, owner, assetAddress));
         instances.push(payoutManager);
         emit PayoutManagerCreated(payoutManager);
         return payoutManager;

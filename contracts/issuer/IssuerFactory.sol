@@ -17,7 +17,9 @@ contract IssuerFactory is IIssuerFactory {
         string memory _info
     ) external override returns (address) 
     {
+        uint256 _id = instances.length;
         address issuer = address(new Issuer(
+            _id,
             _owner,
             _stablecoin,
             _registry,

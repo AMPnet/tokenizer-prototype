@@ -190,6 +190,12 @@ describe("Full test", function () {
       const issuerCfManagerInstances = await issuer.getCfManagers();
       expect(issuerCfManagerInstances).to.have.lengthOf(1);
       expect(cfManager.address).to.be.oneOf(issuerCfManagerInstances);
+
+      // Check contract ids
+      expect(await issuer.id()).to.be.equal(0);
+      expect(await cfManager.id()).to.be.equal(0);
+      expect(await asset.id()).to.be.equal(0);
+      expect(await payoutManager.id()).to.be.equal(0);
     }
   );
 

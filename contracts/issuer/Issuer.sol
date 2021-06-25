@@ -10,6 +10,7 @@ import { IGlobalRegistry } from "../shared/IGlobalRegistry.sol";
 
 contract Issuer is IIssuer {
 
+    uint256 public id;
     address public owner;
     address public override stablecoin;
     IGlobalRegistry public registry;
@@ -18,7 +19,8 @@ contract Issuer is IIssuer {
     address[] public cfManagers;
     string public override info;
 
-    constructor(address _owner, address _stablecoin, address _registry, string memory _info) {
+    constructor(uint256 _id, address _owner, address _stablecoin, address _registry, string memory _info) {
+        id = _id;
         owner = _owner;
         stablecoin = _stablecoin;
         registry = IGlobalRegistry(_registry);

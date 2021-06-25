@@ -20,12 +20,14 @@ contract PayoutManager is IPayoutManager {
         mapping (address => uint256) released;
     }
 
+    uint256 public id;
     address public owner;
     IAsset public asset;
     Payout[] public payouts;
     mapping (uint256 => uint256) public snapshotToPayout;
 
-    constructor(address _owner, address _assetAddress)  {
+    constructor(uint256 _id, address _owner, address _assetAddress)  {
+        id = _id;
         owner = _owner;
         asset = IAsset(_assetAddress);
     }

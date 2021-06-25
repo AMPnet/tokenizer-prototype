@@ -12,6 +12,7 @@ contract Asset is IAsset, ERC20Snapshot {
     //------------------------
     //  STATE
     //------------------------
+    uint256 public id;
     address public override creator;
     IIssuer public override issuer;
     uint256 public categoryId;
@@ -49,6 +50,7 @@ contract Asset is IAsset, ERC20Snapshot {
     //  CONSTRUCTOR
     //------------------------
     constructor(
+        uint256 _id,
         address _creator,
         address _issuer,
         AssetState _state,
@@ -58,6 +60,7 @@ contract Asset is IAsset, ERC20Snapshot {
         string memory _symbol
     ) ERC20(_name, _symbol)
     {
+        id = _id;
         creator = _creator;
         issuer = IIssuer(_issuer);
         categoryId = _categoryId;

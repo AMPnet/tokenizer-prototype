@@ -10,6 +10,7 @@ import { AssetState } from "../../shared/Enums.sol";
 contract CfManager is ICfManager {
     using SafeERC20 for IERC20;
 
+    uint256 public id;
     address public owner;
     IAsset public asset;
     uint256 public minInvestment;
@@ -17,7 +18,7 @@ contract CfManager is ICfManager {
     uint256 public endsAt;
     bool public finalized;
 
-    constructor(address _owner, uint256 _minInvestment, uint256 _maxInvestment, uint256 _endsAt) {
+    constructor(uint256 _id, address _owner, uint256 _minInvestment, uint256 _maxInvestment, uint256 _endsAt) {
         require(
             _minInvestment > 0,
             "Min investment must be greater than 0."
@@ -30,6 +31,7 @@ contract CfManager is ICfManager {
             _endsAt > block.timestamp,
             "Ends at value has to be in the future."
         );
+        id = _id;
         owner = _owner;
         minInvestment = _minInvestment;
         maxInvestment = _maxInvestment;

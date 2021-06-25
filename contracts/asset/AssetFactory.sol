@@ -21,7 +21,9 @@ contract AssetFactory is IAssetFactory {
         string memory _symbol
     ) public override returns (address)
     {
+        uint256 _id = instances.length;
         address asset = address(new Asset(
+            _id,
             _creator,
             _issuer,
             _state,
