@@ -8,27 +8,27 @@ contract IssuerFactory is IIssuerFactory {
 
     address[] public instances;
 
-    event IssuerCreated(address _asset);
+    event IssuerCreated(address indexed creator, address asset, uint256 timestamp);
 
     function create(
-        address _owner,
-        address _stablecoin,
-        address _registry,
-        address _walletApprover,
-        string memory _info
-    ) external override returns (address) 
+        address owner,
+        address stablecoin,
+        address registry,
+        address walletApprover,
+        string memory info
+    ) external override returns (address)
     {
-        uint256 _id = instances.length;
+        uint256 id = instances.length;
         address issuer = address(new Issuer(
-            _id,
-            _owner,
-            _stablecoin,
-            _registry,
-            _walletApprover,
-            _info
+            id,
+            owner,
+            stablecoin,
+            registry,
+            walletApprover,
+            info
         ));
         instances.push(issuer);
-        emit IssuerCreated(issuer);
+        emit IssuerCreated(owner, issuer, block.timestamp);
         return issuer;
     }
 

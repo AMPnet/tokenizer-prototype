@@ -5,124 +5,182 @@ import { IIssuer } from "../issuer/IIssuer.sol";
 import { ICfManager } from "../managers/crowdfunding/ICfManager.sol";
 import { IAssetFactory } from "../asset/IAssetFactory.sol";
 import { ICfManagerFactory } from "../managers/crowdfunding/ICfManagerFactory.sol";
-import { AssetState } from "../shared/Enums.sol";
 import { IGlobalRegistry } from "../shared/IGlobalRegistry.sol";
+import { IssuerState, InfoEntry } from "../shared/Structs.sol";
+import { AssetFundingState } from "../shared/Enums.sol";
 
 contract Issuer is IIssuer {
 
-    uint256 public id;
-    address public owner;
-    address public override stablecoin;
-    IGlobalRegistry public registry;
-    address public walletApprover;
+    //------------------------
+    //  STATE
+    //------------------------
+    IssuerState private state;
+    InfoEntry[] private infoHistory;
     mapping (address => bool) public approvedWallets;
     address[] public assets;
     address[] public cfManagers;
-    string public override info;
 
-    constructor(uint256 _id, address _owner, address _stablecoin, address _registry, address _walletApprover, string memory _info) {
-        id = _id;
-        owner = _owner;
-        stablecoin = _stablecoin;
-        registry = IGlobalRegistry(_registry);
-        walletApprover = _walletApprover;
-        info = _info;
+    //------------------------
+    //  EVENTS
+    //------------------------
+    event WalletApprove(address approver, address wallet, uint256 timestamp);
+    event WalletSuspend(address approver, address wallet, uint256 timestamp);
+    event ChangeWalletApprover(address oldWalletApprover, address newWalletApprover, uint256 timestamp);
+    event SetInfo(string info, address setter);
+
+    //------------------------
+    //  CONSTRUCTOR
+    //------------------------
+    constructor(
+        uint256 id,
+        address owner,
+        address stablecoin,
+        address registry,
+        address walletApprover,
+        string memory info
+    ) {
+        infoHistory.push(InfoEntry(
+            info,
+            block.timestamp
+        ));
+        state = IssuerState(
+            id,
+            owner,
+            stablecoin,
+            IGlobalRegistry(registry),
+            walletApprover,
+            info
+        );
     }
 
+    //------------------------
+    //  MODIFIERS
+    //------------------------
     modifier onlyOwner {
-        require(msg.sender == owner);
+        require(msg.sender == state.owner);
         _;
     }
 
     modifier onlyWalletApprover {
-        require(msg.sender == walletApprover);
+        require(msg.sender == state.walletApprover);
         _;
     }
 
-    modifier walletApproved(address _wallet) {
+    modifier walletApproved(address wallet) {
         require(
-            approvedWallets[_wallet],
+            approvedWallets[wallet],
             "This action is forbidden. Wallet not approved by the Issuer."
         );
         _;
     }
 
-    function approveWallet(address _wallet) external onlyWalletApprover {
-        approvedWallets[_wallet] = true;
+    //------------------------
+    //  STATE CHANGE FUNCTIONS
+    //------------------------
+    function approveWallet(address wallet) external onlyWalletApprover {
+        approvedWallets[wallet] = true;
+        emit WalletApprove(msg.sender, wallet, block.timestamp);
     }
 
-    function suspendWallet(address _wallet) external onlyWalletApprover {
-        approvedWallets[_wallet] = false;
+    function suspendWallet(address wallet) external onlyWalletApprover {
+        approvedWallets[wallet] = false;
+        emit WalletSuspend(msg.sender, wallet, block.timestamp);
     }
 
-    function setInfo(string memory _info) external onlyOwner {
-        info = _info;
+    function setInfo(string memory info) external onlyOwner {
+        infoHistory.push(InfoEntry(
+            info,
+            block.timestamp
+        ));
+        state.info = info;
+        emit SetInfo(info, msg.sender);
     }
 
     function changeWalletApprover(address newWalletApprover) external onlyOwner {
-        walletApprover = newWalletApprover;
+        state.walletApprover = newWalletApprover;
+        emit ChangeWalletApprover(state.walletApprover, newWalletApprover, block.timestamp);
     }
 
     function createAsset(
-        uint256 _categoryId,
-        uint256 _totalShares,
-        AssetState _state,
-        string memory _name,
-        string memory _symbol
-    ) external walletApproved(msg.sender) returns (address)
+        uint256 initialTokenSupply,
+        uint256 initialPricePerToken,
+        AssetFundingState fundingState,
+        string memory name,
+        string memory symbol,
+        string memory info
+    ) external onlyOwner returns (address)
     {
-        address asset = IAssetFactory(registry.assetFactory()).create(
+        address asset = IAssetFactory(state.registry.assetFactory()).create(
             msg.sender,
             address(this),
-            _state,
-            _categoryId,
-            _totalShares,
-            _name,
-            _symbol
+            fundingState,
+            initialTokenSupply,
+            initialPricePerToken,
+            name,
+            symbol,
+            info
         );
         assets.push(asset);
         return asset;
     }
 
     function createCrowdfundingCampaign(
-        uint256 _categoryId,
-        uint256 _totalShares,
-        string memory _name,
-        string memory _symbol,
-        uint256 _minInvestment,
-        uint256 _maxInvestment,
-        uint256 _endsAt
+        uint256 initialTokenSupply,
+        uint256 initialPricePerToken,
+        string memory name,
+        string memory symbol,
+        uint256 minInvestment,
+        uint256 maxInvestment,
+        uint256 endsAt,
+        string memory campaignInfo,
+        string memory assetInfo
     ) external onlyOwner returns(address)
     {
         address manager;
         address asset;
-        manager = ICfManagerFactory(registry.cfManagerFactory()).create(
-            msg.sender,
-            _minInvestment,
-            _maxInvestment,
-            _endsAt  
-        );
-        asset = IAssetFactory(registry.assetFactory()).create(
-            manager,
-            address(this),
-            AssetState.CREATION,
-            _categoryId,
-            _totalShares,
-            _name,
-            _symbol
-        );
+        {
+            manager = ICfManagerFactory(state.registry.cfManagerFactory()).create(
+                msg.sender,
+                initialPricePerToken,
+                minInvestment,
+                maxInvestment,
+                endsAt,
+                campaignInfo
+            );
+        }
+        {
+            asset = IAssetFactory(state.registry.assetFactory()).create(
+                manager,
+                address(this),
+                AssetFundingState.CREATION,
+                initialTokenSupply,
+                initialPricePerToken,
+                name,
+                symbol,
+                assetInfo
+            );
+        }
         ICfManager(manager).setAsset(asset);
         assets.push(asset);
         cfManagers.push(manager);
         return manager;
     }
 
-    function isWalletApproved(address _wallet) external view override returns (bool) {
-        return approvedWallets[_wallet];
-    }
+    //------------------------
+    //  IIssuer IMPL
+    //------------------------
+    function getState() external override view returns (IssuerState memory) { return state; }
 
     function getAssets() external override view returns (address[] memory) { return assets; }
 
     function getCfManagers() external override view returns (address[] memory) { return cfManagers; }
+    
+    function isWalletApproved(address wallet) external view override returns (bool) {
+        return approvedWallets[wallet];
+    }
+
+    function getInfoHistory() external view override returns (InfoEntry[] memory) {
+        return infoHistory;
+    }
 
 }

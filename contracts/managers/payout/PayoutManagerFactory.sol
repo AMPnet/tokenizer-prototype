@@ -6,15 +6,15 @@ import { PayoutManager } from "./PayoutManager.sol";
 
 contract PayoutManagerFactory is IPayoutManagerFactory {
 
-    event PayoutManagerCreated(address _payoutManager);
+    event PayoutManagerCreated(address indexed creator, address payoutManager, uint256 timestamp);
 
     address[] public instances;
 
-    function create(address owner, address assetAddress) public override returns (address) {
+    function create(address owner, address assetAddress, string memory info) public override returns (address) {
         uint256 id = instances.length;
-        address payoutManager = address(new PayoutManager(id, owner, assetAddress));
+        address payoutManager = address(new PayoutManager(id, owner, assetAddress, info));
         instances.push(payoutManager);
-        emit PayoutManagerCreated(payoutManager);
+        emit PayoutManagerCreated(owner, payoutManager, block.timestamp);
         return payoutManager;
     }
 

@@ -53,9 +53,9 @@ export async function createIssuer(
   stablecoinAddress: String,
   walletApproverAddress: String,
   info: String
-): Promise<Contract> {
+) {
   const fromAddress = await from.getAddress();
-  const issuerFactory = (await ethers.getContractAt("IssuerFactory", await registry.issuerFactory())).connect(from);
+  const issuerFactory = (await ethers.getContractAt("IssuerFactory", "0xF9ddA99dFD9bC285815D057C4dDf05B4275e22C1")).connect(from);
   const issuerTx = await issuerFactory.create(
     fromAddress,
     stablecoinAddress,
@@ -63,16 +63,18 @@ export async function createIssuer(
     walletApproverAddress,
     info
   );
-  const receipt = await ethers.provider.getTransactionReceipt(issuerTx.hash);
-  for (const log of receipt.logs) {
-    const parsedLog = issuerFactory.interface.parseLog(log);
-    if (parsedLog.name == "IssuerCreated") {
-      const issuerAddress = parsedLog.args[0];
-      console.log(`Issuer deployed at: ${issuerAddress}; Owner: ${fromAddress}`);
-      return (await ethers.getContractAt("Issuer", parsedLog.args[0])).connect(from);
-    }
-  }
-  throw new Error("Issuer creation transaction failed.");
+  console.log("issuerTx", issuerTx);
+  // const receipt = await ethers.provider.getTransactionReceipt(issuerTx.hash);
+  // for (const log of receipt.logs) {
+  //   const parsedLog = issuerFactory.interface.parseLog(log);
+  //   if (parsedLog.name == "IssuerCreated") {
+  //     const issuerAddress = parsedLog.args[0];
+  //     console.log(`Issuer deployed at: ${issuerAddress}; Owner: ${fromAddress}`);
+  //     return (await ethers.getContractAt("Issuer", parsedLog.args[0])).connect(from);
+  //   }
+  // }
+  // throw new Error("Issuer creation transaction failed.");
+  
 }
 
 export async function createCfManager(

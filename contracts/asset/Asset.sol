@@ -5,34 +5,73 @@ import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { ERC20Snapshot } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Snapshot.sol";
 import { IAsset } from "../asset/IAsset.sol";
 import { IIssuer } from "../issuer/IIssuer.sol";
-import { AssetState } from "../shared/Enums.sol";
+import { AssetFundingState } from "../shared/Enums.sol";
+import { AssetState, InfoEntry } from "../shared/Structs.sol";
 
 contract Asset is IAsset, ERC20Snapshot {
 
     //------------------------
     //  STATE
     //------------------------
-    uint256 public id;
-    address public override creator;
-    IIssuer public override issuer;
-    uint256 public categoryId;
-    AssetState public override state;
-    string public override info;
+    InfoEntry[] private infoHistory;
+    AssetState private state;
+
+    //------------------------
+    //  EVENTS
+    //------------------------
+    event TransferToShareholder(address indexed shareholder, uint256 amount, uint256 timestamp);
+    event RemoveFromShareholder(address indexed shareholder, uint256 amount, uint256 timestamp);
+    event Finalize(address caller, address creator);
+    event SetCreator(address indexed oldCreator, address indexed newCreator, uint256 timestamp);
+    event SetInfo(string info, address setter);
+
+    //------------------------
+    //  CONSTRUCTOR
+    //------------------------
+    constructor(
+        uint256 id,
+        address creator,
+        address issuer,
+        AssetFundingState fundingState,
+        uint256 initialTokenSupply,
+        uint256 initialPricePerToken,
+        string memory name,
+        string memory symbol,
+        string memory info
+    ) ERC20(name, symbol)
+    {
+        infoHistory.push(InfoEntry(
+            info,
+            block.timestamp
+        ));
+        state = AssetState(
+            id,
+            creator,
+            initialTokenSupply,
+            initialPricePerToken,
+            IIssuer(issuer),
+            fundingState,
+            info,
+            name,
+            symbol
+        );
+        _mint(creator, initialTokenSupply);
+    }
 
     //------------------------
     //  MODIFIERS
     //------------------------
-    modifier atState(AssetState _state) {
+    modifier atFundingState(AssetFundingState fundingState) {
         require(
-            state == _state,
-            "This functionality is not allowed while in the current Asset state."
+            state.fundingState == fundingState,
+            "This functionality is not allowed while in the current Asset funding state."
         );
         _;
     }
 
-    modifier walletApproved(address _wallet) {
+    modifier walletApproved(address wallet) {
         require(
-            issuer.isWalletApproved(_wallet),
+            state.issuer.isWalletApproved(wallet),
             "This functionality is not allowed. Wallet is not approved by the Issuer."
         );
         _;
@@ -40,82 +79,75 @@ contract Asset is IAsset, ERC20Snapshot {
 
     modifier creatorOnly() {
         require(
-            msg.sender == creator,
+            msg.sender == state.creator,
             "Only asset creator can make this action."
         );
         _;
     }
 
     //------------------------
-    //  CONSTRUCTOR
-    //------------------------
-    constructor(
-        uint256 _id,
-        address _creator,
-        address _issuer,
-        AssetState _state,
-        uint256 _categoryId,
-        uint256 _totalShares,
-        string memory _name,
-        string memory _symbol
-    ) ERC20(_name, _symbol)
-    {
-        id = _id;
-        creator = _creator;
-        issuer = IIssuer(_issuer);
-        categoryId = _categoryId;
-        state = _state;
-        _mint(_creator, _totalShares);
-    }
-
-    //------------------------
-    //  EDIT STATE FUNCTIONS
+    //  IAsset IMPL
     //------------------------
     function addShareholder(address shareholder, uint256 amount)
         external 
         override
         creatorOnly
-        atState(AssetState.CREATION)
+        atFundingState(AssetFundingState.CREATION)
     {
-        _transfer(creator, shareholder, amount);
+        _transfer(state.creator, shareholder, amount);
+        emit TransferToShareholder(shareholder, amount, block.timestamp);
     }
 
     function removeShareholder(address shareholder, uint256 amount)
         external
         override
         creatorOnly
-        atState(AssetState.CREATION)
+        atFundingState(AssetFundingState.CREATION)
     {
-        _transfer(shareholder, creator, amount);
+        _transfer(shareholder, state.creator, amount);
+        emit RemoveFromShareholder(shareholder, amount, block.timestamp);
     }
 
-    function finalize()
+    function finalize(address owner)
         external
         override
         creatorOnly
-        atState(AssetState.CREATION)
+        atFundingState(AssetFundingState.CREATION)
     {
-        state = AssetState.TOKENIZED;
+        state.fundingState = AssetFundingState.TOKENIZED;
+        state.creator = owner;
+        emit Finalize(msg.sender, owner);
     }
 
-    function setCreator(address _creator)
+    function setCreator(address creator)
         external
         override
         creatorOnly
-        atState(AssetState.TOKENIZED)
+        atFundingState(AssetFundingState.TOKENIZED)
     {
-        creator = _creator;
+        state.creator = creator;
+        emit SetCreator(msg.sender, creator, block.timestamp);
     }
 
-    function setInfo(string memory _info) external creatorOnly {
-        info = _info;
+    function setInfo(string memory info) external creatorOnly {
+        infoHistory.push(InfoEntry(
+            info,
+            block.timestamp
+        ));
+        state.info = info;
+        emit SetInfo(info, msg.sender);
     }
 
-    //------------------------
-    //  IAsset IMPL
-    //------------------------
     function totalShares() external view override returns (uint256) {
         return totalSupply();
+    }
+
+    function getState() external view override returns (AssetState memory) {
+        return state;
+    }
+
+    function getInfoHistory() external view override returns (InfoEntry[] memory) {
+        return infoHistory;
     }
 
     //------------------------
@@ -124,10 +156,9 @@ contract Asset is IAsset, ERC20Snapshot {
     function transfer(address recipient, uint256 amount)
         public
         override
-        atState(AssetState.TOKENIZED)
+        atFundingState(AssetFundingState.TOKENIZED)
         walletApproved(_msgSender())
         walletApproved(recipient)
-        walletApproved(address(this))
         returns (bool)
     {
         return super.transfer(recipient, amount);
@@ -136,10 +167,9 @@ contract Asset is IAsset, ERC20Snapshot {
     function approve(address spender, uint256 amount)
         public
         override
-        atState(AssetState.TOKENIZED)
+        atFundingState(AssetFundingState.TOKENIZED)
         walletApproved(_msgSender())
         walletApproved(spender)
-        walletApproved(address(this))
         returns (bool)
     {
         return super.approve(spender, amount);
@@ -148,10 +178,9 @@ contract Asset is IAsset, ERC20Snapshot {
     function transferFrom(address sender, address recipient, uint256 amount)
         public
         override
-        atState(AssetState.TOKENIZED)
+        atFundingState(AssetFundingState.TOKENIZED)
         walletApproved(sender)
         walletApproved(recipient)
-        walletApproved(address(this))
         returns (bool)
     {
         return super.transferFrom(sender, recipient, amount);
@@ -160,10 +189,9 @@ contract Asset is IAsset, ERC20Snapshot {
     function increaseAllowance(address spender, uint256 addedValue)
         public
         override
-        atState(AssetState.TOKENIZED)
+        atFundingState(AssetFundingState.TOKENIZED)
         walletApproved(_msgSender())
         walletApproved(spender)
-        walletApproved(address(this))
         returns (bool)
     {
         return super.increaseAllowance(spender, addedValue);
@@ -172,10 +200,9 @@ contract Asset is IAsset, ERC20Snapshot {
     function decreaseAllowance(address spender, uint256 subtractedValue)
         public
         override
-        atState(AssetState.TOKENIZED)
+        atFundingState(AssetFundingState.TOKENIZED)
         walletApproved(_msgSender())
         walletApproved(spender)
-        walletApproved(address(this))
         returns (bool)
     {
         return super.decreaseAllowance(spender, subtractedValue);

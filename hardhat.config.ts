@@ -28,6 +28,12 @@ module.exports = {
         mnemonic: process.env.SEED_PHRASE
       }
     },
+    goerli: {
+      url: "https://goerli.infura.io/v3/08664baf7af14eda956db2b71a79f12f",
+      accounts: {
+        mnemonic: "pride mercy describe result ripple wasp meat organ invest feature avoid boy"
+      }
+    },
     mumbai: {
       url: process.env.MUMBAI_RPC,
       accounts: {

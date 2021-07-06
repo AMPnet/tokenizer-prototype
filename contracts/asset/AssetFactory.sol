@@ -3,37 +3,39 @@ pragma solidity ^0.8.0;
 
 import { IAssetFactory } from "../asset/IAssetFactory.sol";
 import { Asset } from "../asset/Asset.sol";
-import { AssetState } from "../shared/Enums.sol";
+import { AssetFundingState } from "../shared/Enums.sol";
 
 contract AssetFactory is IAssetFactory {
     
-    event AssetCreated(address _asset);
+    event AssetCreated(address indexed creator, address asset, uint256 timestamp);
 
     address[] public instances;
 
     function create(
-        address _creator,
-        address _issuer,
-        AssetState _state,
-        uint256 _categoryId,
-        uint256 _totalShares,
-        string memory _name,
-        string memory _symbol
+        address creator,
+        address issuer,
+        AssetFundingState fundingState,
+        uint256 initialTokenSupply,
+        uint256 initialPricePerToken,
+        string memory name,
+        string memory symbol,
+        string memory info
     ) public override returns (address)
     {
-        uint256 _id = instances.length;
+        uint256 id = instances.length;
         address asset = address(new Asset(
-            _id,
-            _creator,
-            _issuer,
-            _state,
-            _categoryId,
-            _totalShares,
-            _name,
-            _symbol
+            id,
+            creator,
+            issuer,
+            fundingState,
+            initialTokenSupply,
+            initialPricePerToken,
+            name,
+            symbol,
+            info
         ));
         instances.push(asset);
-        emit AssetCreated(asset);
+        emit AssetCreated(creator, asset, block.timestamp);
         return asset;
     }
 
