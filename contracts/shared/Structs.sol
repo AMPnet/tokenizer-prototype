@@ -8,11 +8,10 @@ import { AssetFundingState } from "../shared/Enums.sol";
 
 struct AssetState {
     uint256 id;
-    address creator;
+    address owner;
     uint256 initialTokenSupply;
-    uint256 initialPricePerToken;
+    bool whitelistRequiredForTransfer;
     IIssuer issuer;
-    AssetFundingState fundingState;
     string info;
     string name;
     string symbol;
@@ -22,7 +21,6 @@ struct IssuerState {
     uint256 id;
     address owner;
     address stablecoin;
-    IGlobalRegistry registry;
     address walletApprover;
     string info;
 }
@@ -36,6 +34,21 @@ struct CfManagerState {
     uint256 maxInvestment;
     uint256 endsAt;
     bool finalized;
+    string info;
+}
+
+struct CfManagerSoftcapState {
+    uint256 id;
+    address owner;
+    IAsset asset;
+    uint256 initialPricePerToken;
+    uint256 softCap;
+    bool whitelistRequired;
+    bool finalized;
+    bool cancelled;
+    uint256 totalClaimableTokens;
+    uint256 totalInvestorsCount;
+    uint256 totalClaimsCount;
     string info;
 }
 

@@ -5,6 +5,7 @@ import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { ERC20Snapshot } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Snapshot.sol";
 import { IAsset } from "../asset/IAsset.sol";
 import { IIssuer } from "../issuer/IIssuer.sol";
+import { AssetFundingState } from "../shared/Enums.sol";
 import { AssetState, InfoEntry } from "../shared/Structs.sol";
 
 contract Asset is IAsset, ERC20Snapshot {
@@ -18,19 +19,22 @@ contract Asset is IAsset, ERC20Snapshot {
     //------------------------
     //  EVENTS
     //------------------------
-    event SetOwner(address indexed oldOwner, address indexed newOwner, uint256 timestamp);
+    event TransferToShareholder(address indexed shareholder, uint256 amount, uint256 timestamp);
+    event RemoveFromShareholder(address indexed shareholder, uint256 amount, uint256 timestamp);
+    event Finalize(address caller, address creator);
+    event SetCreator(address indexed oldCreator, address indexed newCreator, uint256 timestamp);
     event SetInfo(string info, address setter);
-    event SetWhitelistRequiredForTransfer(address indexed caller, bool whitelistRequiredForTransfer, uint256 timestamp);
 
     //------------------------
     //  CONSTRUCTOR
     //------------------------
     constructor(
         uint256 id,
-        address owner,
+        address creator,
         address issuer,
+        AssetFundingState fundingState,
         uint256 initialTokenSupply,
-        bool whitelistRequiredForTransfer,
+        uint256 initialPricePerToken,
         string memory name,
         string memory symbol,
         string memory info
@@ -42,31 +46,40 @@ contract Asset is IAsset, ERC20Snapshot {
         ));
         state = AssetState(
             id,
-            owner,
+            creator,
             initialTokenSupply,
-            whitelistRequiredForTransfer,
+            initialPricePerToken,
             IIssuer(issuer),
+            fundingState,
             info,
             name,
             symbol
         );
-        _mint(owner, initialTokenSupply);
+        _mint(creator, initialTokenSupply);
     }
 
     //------------------------
     //  MODIFIERS
     //------------------------
+    modifier atFundingState(AssetFundingState fundingState) {
+        require(
+            state.fundingState == fundingState,
+            "This functionality is not allowed while in the current Asset funding state."
+        );
+        _;
+    }
+
     modifier walletApproved(address wallet) {
         require(
-            !state.whitelistRequiredForTransfer || (state.whitelistRequiredForTransfer && state.issuer.isWalletApproved(wallet)),
+            state.issuer.isWalletApproved(wallet),
             "This functionality is not allowed. Wallet is not approved by the Issuer."
         );
         _;
     }
 
-    modifier ownerOnly() {
+    modifier creatorOnly() {
         require(
-            msg.sender == state.owner,
+            msg.sender == state.creator,
             "Only asset creator can make this action."
         );
         _;
@@ -75,27 +88,54 @@ contract Asset is IAsset, ERC20Snapshot {
     //------------------------
     //  IAsset IMPL
     //------------------------
-    function setOwner(address newOwner)
-        external
+    function addShareholder(address shareholder, uint256 amount)
+        external 
         override
-        ownerOnly
+        creatorOnly
+        atFundingState(AssetFundingState.CREATION)
     {
-        state.owner = newOwner;
-        emit SetOwner(msg.sender, newOwner, block.timestamp);
+        _transfer(state.creator, shareholder, amount);
+        emit TransferToShareholder(shareholder, amount, block.timestamp);
     }
 
-    function setInfo(string memory info) external ownerOnly {
+    function removeShareholder(address shareholder, uint256 amount)
+        external
+        override
+        creatorOnly
+        atFundingState(AssetFundingState.CREATION)
+    {
+        _transfer(shareholder, state.creator, amount);
+        emit RemoveFromShareholder(shareholder, amount, block.timestamp);
+    }
+
+    function finalize(address owner)
+        external
+        override
+        creatorOnly
+        atFundingState(AssetFundingState.CREATION)
+    {
+        state.fundingState = AssetFundingState.TOKENIZED;
+        state.creator = owner;
+        emit Finalize(msg.sender, owner);
+    }
+
+    function setCreator(address creator)
+        external
+        override
+        creatorOnly
+        atFundingState(AssetFundingState.TOKENIZED)
+    {
+        state.creator = creator;
+        emit SetCreator(msg.sender, creator, block.timestamp);
+    }
+
+    function setInfo(string memory info) external creatorOnly {
         infoHistory.push(InfoEntry(
             info,
             block.timestamp
         ));
         state.info = info;
         emit SetInfo(info, msg.sender);
-    }
-
-    function setWhitelistRequiredForTransfer(bool whitelistRequiredForTransfer) external ownerOnly {
-        state.whitelistRequiredForTransfer = whitelistRequiredForTransfer;
-        emit SetWhitelistRequiredForTransfer(msg.sender, whitelistRequiredForTransfer, block.timestamp);
     }
 
     function totalShares() external view override returns (uint256) {
@@ -116,6 +156,7 @@ contract Asset is IAsset, ERC20Snapshot {
     function transfer(address recipient, uint256 amount)
         public
         override
+        atFundingState(AssetFundingState.TOKENIZED)
         walletApproved(_msgSender())
         walletApproved(recipient)
         returns (bool)
@@ -126,6 +167,7 @@ contract Asset is IAsset, ERC20Snapshot {
     function approve(address spender, uint256 amount)
         public
         override
+        atFundingState(AssetFundingState.TOKENIZED)
         walletApproved(_msgSender())
         walletApproved(spender)
         returns (bool)
@@ -136,6 +178,7 @@ contract Asset is IAsset, ERC20Snapshot {
     function transferFrom(address sender, address recipient, uint256 amount)
         public
         override
+        atFundingState(AssetFundingState.TOKENIZED)
         walletApproved(sender)
         walletApproved(recipient)
         returns (bool)
@@ -146,6 +189,7 @@ contract Asset is IAsset, ERC20Snapshot {
     function increaseAllowance(address spender, uint256 addedValue)
         public
         override
+        atFundingState(AssetFundingState.TOKENIZED)
         walletApproved(_msgSender())
         walletApproved(spender)
         returns (bool)
@@ -156,6 +200,7 @@ contract Asset is IAsset, ERC20Snapshot {
     function decreaseAllowance(address spender, uint256 subtractedValue)
         public
         override
+        atFundingState(AssetFundingState.TOKENIZED)
         walletApproved(_msgSender())
         walletApproved(spender)
         returns (bool)

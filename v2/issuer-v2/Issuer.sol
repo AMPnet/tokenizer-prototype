@@ -2,7 +2,12 @@
 pragma solidity ^0.8.0;
 
 import { IIssuer } from "../issuer/IIssuer.sol";
+import { ICfManager } from "../managers/crowdfunding/ICfManager.sol";
+import { IAssetFactory } from "../asset/IAssetFactory.sol";
+import { ICfManagerFactory } from "../managers/crowdfunding/ICfManagerFactory.sol";
+import { IGlobalRegistry } from "../shared/IGlobalRegistry.sol";
 import { IssuerState, InfoEntry } from "../shared/Structs.sol";
+import { AssetFundingState } from "../shared/Enums.sol";
 
 contract Issuer is IIssuer {
 
@@ -12,6 +17,8 @@ contract Issuer is IIssuer {
     IssuerState private state;
     InfoEntry[] private infoHistory;
     mapping (address => bool) public approvedWallets;
+    address[] public assets;
+    address[] public cfManagers;
 
     //------------------------
     //  EVENTS
@@ -28,6 +35,7 @@ contract Issuer is IIssuer {
         uint256 id,
         address owner,
         address stablecoin,
+        address registry,
         address walletApprover,
         string memory info
     ) {
@@ -39,6 +47,7 @@ contract Issuer is IIssuer {
             id,
             owner,
             stablecoin,
+            IGlobalRegistry(registry),
             walletApprover,
             info
         );
@@ -54,6 +63,14 @@ contract Issuer is IIssuer {
 
     modifier onlyWalletApprover {
         require(msg.sender == state.walletApprover);
+        _;
+    }
+
+    modifier walletApproved(address wallet) {
+        require(
+            approvedWallets[wallet],
+            "This action is forbidden. Wallet not approved by the Issuer."
+        );
         _;
     }
 
@@ -84,10 +101,79 @@ contract Issuer is IIssuer {
         emit ChangeWalletApprover(state.walletApprover, newWalletApprover, block.timestamp);
     }
 
+    function createAsset(
+        uint256 initialTokenSupply,
+        uint256 initialPricePerToken,
+        AssetFundingState fundingState,
+        string memory name,
+        string memory symbol,
+        string memory info
+    ) external onlyOwner returns (address)
+    {
+        address asset = IAssetFactory(state.registry.assetFactory()).create(
+            msg.sender,
+            address(this),
+            fundingState,
+            initialTokenSupply,
+            initialPricePerToken,
+            name,
+            symbol,
+            info
+        );
+        assets.push(asset);
+        return asset;
+    }
+
+    function createCrowdfundingCampaign(
+        uint256 initialTokenSupply,
+        uint256 initialPricePerToken,
+        string memory name,
+        string memory symbol,
+        uint256 minInvestment,
+        uint256 maxInvestment,
+        uint256 endsAt,
+        string memory campaignInfo,
+        string memory assetInfo
+    ) external onlyOwner returns(address)
+    {
+        address manager;
+        address asset;
+        {
+            manager = ICfManagerFactory(state.registry.cfManagerFactory()).create(
+                msg.sender,
+                initialPricePerToken,
+                minInvestment,
+                maxInvestment,
+                endsAt,
+                campaignInfo
+            );
+        }
+        {
+            asset = IAssetFactory(state.registry.assetFactory()).create(
+                manager,
+                address(this),
+                AssetFundingState.CREATION,
+                initialTokenSupply,
+                initialPricePerToken,
+                name,
+                symbol,
+                assetInfo
+            );
+        }
+        ICfManager(manager).setAsset(asset);
+        assets.push(asset);
+        cfManagers.push(manager);
+        return manager;
+    }
+
     //------------------------
     //  IIssuer IMPL
     //------------------------
     function getState() external override view returns (IssuerState memory) { return state; }
+
+    function getAssets() external override view returns (address[] memory) { return assets; }
+
+    function getCfManagers() external override view returns (address[] memory) { return cfManagers; }
     
     function isWalletApproved(address wallet) external view override returns (bool) {
         return approvedWallets[wallet];

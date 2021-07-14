@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import { IAssetFactory } from "../asset/IAssetFactory.sol";
 import { Asset } from "../asset/Asset.sol";
+import { AssetFundingState } from "../shared/Enums.sol";
 
 contract AssetFactory is IAssetFactory {
     
@@ -13,8 +14,9 @@ contract AssetFactory is IAssetFactory {
     function create(
         address creator,
         address issuer,
+        AssetFundingState fundingState,
         uint256 initialTokenSupply,
-        bool whitelistRequiredForTransfer,
+        uint256 initialPricePerToken,
         string memory name,
         string memory symbol,
         string memory info
@@ -25,8 +27,9 @@ contract AssetFactory is IAssetFactory {
             id,
             creator,
             issuer,
+            fundingState,
             initialTokenSupply,
-            whitelistRequiredForTransfer,
+            initialPricePerToken,
             name,
             symbol,
             info

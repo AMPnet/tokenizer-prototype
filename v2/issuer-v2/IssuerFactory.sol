@@ -13,6 +13,7 @@ contract IssuerFactory is IIssuerFactory {
     function create(
         address owner,
         address stablecoin,
+        address registry,
         address walletApprover,
         string memory info
     ) external override returns (address)
@@ -22,6 +23,7 @@ contract IssuerFactory is IIssuerFactory {
             id,
             owner,
             stablecoin,
+            registry,
             walletApprover,
             info
         ));
