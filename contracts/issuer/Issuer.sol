@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { IIssuer } from "../issuer/IIssuer.sol";
+import "../issuer/IIssuer.sol";
 import { IssuerState, InfoEntry } from "../shared/Structs.sol";
 
 contract Issuer is IIssuer {
@@ -12,6 +12,7 @@ contract Issuer is IIssuer {
     IssuerState private state;
     InfoEntry[] private infoHistory;
     mapping (address => bool) public approvedWallets;
+    mapping (address => bool) private approvedCampaigns;
 
     //------------------------
     //  EVENTS
@@ -19,7 +20,9 @@ contract Issuer is IIssuer {
     event WalletApprove(address approver, address wallet, uint256 timestamp);
     event WalletSuspend(address approver, address wallet, uint256 timestamp);
     event ChangeWalletApprover(address oldWalletApprover, address newWalletApprover, uint256 timestamp);
-    event SetInfo(string info, address setter);
+    event SetInfo(string info, address setter, uint256 timestamp);
+    event CampaignApprove(address approver, address campaign, uint256 timestamp);
+    event CampaignSuspend(address approver, address campaign, uint256 timestamp);
 
     //------------------------
     //  CONSTRUCTOR
@@ -70,27 +73,37 @@ contract Issuer is IIssuer {
         emit WalletSuspend(msg.sender, wallet, block.timestamp);
     }
 
-    function setInfo(string memory info) external onlyOwner {
-        infoHistory.push(InfoEntry(
-            info,
-            block.timestamp
-        ));
-        state.info = info;
-        emit SetInfo(info, msg.sender);
-    }
-
     function changeWalletApprover(address newWalletApprover) external onlyOwner {
         state.walletApprover = newWalletApprover;
         emit ChangeWalletApprover(state.walletApprover, newWalletApprover, block.timestamp);
     }
 
+    function approveCampaign(address campaign) external onlyOwner {
+        approvedCampaigns[campaign] = true;
+        emit CampaignApprove(msg.sender, campaign, block.timestamp);
+    }
+
+    function suspendCampaign(address campaign) external onlyOwner {
+        approvedCampaigns[campaign] = false;
+        emit CampaignSuspend(msg.sender, campaign, block.timestamp);
+    }
+
     //------------------------
     //  IIssuer IMPL
     //------------------------
+    function setInfo(string memory info) external override onlyOwner {
+        infoHistory.push(InfoEntry(
+            info,
+            block.timestamp
+        ));
+        state.info = info;
+        emit SetInfo(info, msg.sender, block.timestamp);
+    }
+
     function getState() external override view returns (IssuerState memory) { return state; }
     
     function isWalletApproved(address wallet) external view override returns (bool) {
-        return approvedWallets[wallet];
+        return approvedWallets[wallet] || approvedCampaigns[wallet];
     }
 
     function getInfoHistory() external view override returns (InfoEntry[] memory) {

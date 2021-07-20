@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 interface IIssuerFactory {
+    
     function create(
         address _owner,
         address _stablecoin,

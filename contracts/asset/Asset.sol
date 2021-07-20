@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import { ERC20Snapshot } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Snapshot.sol";
-import { IAsset } from "../asset/IAsset.sol";
-import { IIssuer } from "../issuer/IIssuer.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Snapshot.sol";
+import "../asset/IAsset.sol";
+import "../issuer/IIssuer.sol";
 import { AssetState, InfoEntry } from "../shared/Structs.sol";
 
 contract Asset is IAsset, ERC20Snapshot {
@@ -18,9 +18,9 @@ contract Asset is IAsset, ERC20Snapshot {
     //------------------------
     //  EVENTS
     //------------------------
-    event SetOwner(address indexed oldOwner, address indexed newOwner, uint256 timestamp);
-    event SetInfo(string info, address setter);
-    event SetWhitelistRequiredForTransfer(address indexed caller, bool whitelistRequiredForTransfer, uint256 timestamp);
+    event SetOwner(address oldOwner, address newOwner, uint256 timestamp);
+    event SetInfo(string info, address setter, uint256 timestamp);
+    event SetWhitelistRequiredForTransfer(address caller, bool whitelistRequiredForTransfer, uint256 timestamp);
 
     //------------------------
     //  CONSTRUCTOR
@@ -43,6 +43,7 @@ contract Asset is IAsset, ERC20Snapshot {
         state = AssetState(
             id,
             owner,
+            address(0),
             initialTokenSupply,
             whitelistRequiredForTransfer,
             IIssuer(issuer),
@@ -58,7 +59,9 @@ contract Asset is IAsset, ERC20Snapshot {
     //------------------------
     modifier walletApproved(address wallet) {
         require(
-            !state.whitelistRequiredForTransfer || (state.whitelistRequiredForTransfer && state.issuer.isWalletApproved(wallet)),
+            wallet == state.owner || 
+            !state.whitelistRequiredForTransfer || 
+            (state.whitelistRequiredForTransfer && state.issuer.isWalletApproved(wallet)),
             "This functionality is not allowed. Wallet is not approved by the Issuer."
         );
         _;
@@ -84,13 +87,13 @@ contract Asset is IAsset, ERC20Snapshot {
         emit SetOwner(msg.sender, newOwner, block.timestamp);
     }
 
-    function setInfo(string memory info) external ownerOnly {
+    function setInfo(string memory info) external override ownerOnly {
         infoHistory.push(InfoEntry(
             info,
             block.timestamp
         ));
         state.info = info;
-        emit SetInfo(info, msg.sender);
+        emit SetInfo(info, msg.sender, block.timestamp);
     }
 
     function setWhitelistRequiredForTransfer(bool whitelistRequiredForTransfer) external ownerOnly {
@@ -108,6 +111,10 @@ contract Asset is IAsset, ERC20Snapshot {
 
     function getInfoHistory() external view override returns (InfoEntry[] memory) {
         return infoHistory;
+    }
+
+    function getDecimals() external view override returns (uint256) {
+        return uint256(decimals());
     }
 
     //------------------------

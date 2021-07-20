@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import { IAsset } from "../../asset/IAsset.sol";
-import { IPayoutManager } from "../payout/IPayoutManager.sol";
-import { IERC20Snapshot } from "./IERC20Snapshot.sol";
+import "../../asset/IAsset.sol";
+import "../payout/IPayoutManager.sol";
+import "./IERC20Snapshot.sol";
 import { PayoutManagerState, InfoEntry } from "../../shared/Structs.sol";
 
 contract PayoutManager is IPayoutManager {
@@ -32,9 +32,9 @@ contract PayoutManager is IPayoutManager {
     //------------------------
     //  EVENTS
     //------------------------
-    event CreatePayout(address indexed creator, uint256 payoutId, uint256 amount, uint256 timestamp);
-    event Release(address indexed investor, uint256 payoutId, uint256 amount, uint256 timestamp);
-    event SetInfo(string info, address setter);
+    event CreatePayout(address creator, uint256 payoutId, uint256 amount, uint256 timestamp);
+    event Release(address indexed investor, address asset, uint256 payoutId, uint256 amount, uint256 timestamp);
+    event SetInfo(string info, address setter, uint256 timestamp);
 
     //------------------------
     //  CONSTRUCTOR
@@ -71,18 +71,18 @@ contract PayoutManager is IPayoutManager {
         emit CreatePayout(msg.sender, payoutId, amount, block.timestamp);
     }
 
-    function setInfo(string memory info) external onlyOwner {
+    //------------------------
+    //  IPayoutManager IMPL
+    //------------------------
+    function setInfo(string memory info) external override onlyOwner {
         infoHistory.push(InfoEntry(
             info,
             block.timestamp
         ));
         state.info = info;
-        emit SetInfo(info, msg.sender);
+        emit SetInfo(info, msg.sender, block.timestamp);
     }
 
-    //------------------------
-    //  IPayoutManager IMPL
-    //------------------------
     function release(address account, uint256 snapshotId) external override {
         uint256 payoutId = snapshotToPayout[snapshotId];
         Payout storage payout = payouts[payoutId];
@@ -95,7 +95,7 @@ contract PayoutManager is IPayoutManager {
         payout.released[account] += payment;
         payout.totalReleased += payment;
         _stablecoin().safeTransfer(account, payment);
-        emit Release(account, payoutId, payment, block.timestamp);
+        emit Release(account, address(state.asset), payoutId, payment, block.timestamp);
     }
 
     function totalShares() external view override returns (uint256) {
@@ -116,6 +116,10 @@ contract PayoutManager is IPayoutManager {
 
     function getInfoHistory() external view override returns (InfoEntry[] memory) {
         return infoHistory;
+    }
+
+    function getState() external view override returns (PayoutManagerState memory) {
+        return state;
     }
 
     //------------------------

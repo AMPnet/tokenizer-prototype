@@ -8,7 +8,7 @@ contract IssuerFactory is IIssuerFactory {
 
     address[] public instances;
 
-    event IssuerCreated(address indexed creator, address asset, uint256 timestamp);
+    event IssuerCreated(address indexed creator, address asset, uint256 id, uint256 timestamp);
 
     function create(
         address owner,
@@ -26,7 +26,7 @@ contract IssuerFactory is IIssuerFactory {
             info
         ));
         instances.push(issuer);
-        emit IssuerCreated(owner, issuer, block.timestamp);
+        emit IssuerCreated(owner, issuer, id, block.timestamp);
         return issuer;
     }
 

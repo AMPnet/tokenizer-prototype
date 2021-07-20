@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { IAssetFactory } from "../asset/IAssetFactory.sol";
-import { Asset } from "../asset/Asset.sol";
+import "../asset/IAssetFactory.sol";
+import "../asset/Asset.sol";
 
 contract AssetFactory is IAssetFactory {
     
-    event AssetCreated(address indexed creator, address asset, uint256 timestamp);
+    event AssetCreated(address indexed creator, address asset, uint256 id, uint256 timestamp);
 
     address[] public instances;
+    mapping (address => address[]) instancesPerIssuer;
 
     function create(
         address creator,
@@ -32,10 +33,14 @@ contract AssetFactory is IAssetFactory {
             info
         ));
         instances.push(asset);
-        emit AssetCreated(creator, asset, block.timestamp);
+        instancesPerIssuer[issuer].push(asset);
+        emit AssetCreated(creator, asset, id, block.timestamp);
         return asset;
     }
 
     function getInstances() external override view returns (address[] memory) { return instances; }
     
+    function getInstancesForIssuer(address issuer) external override view returns (address[] memory) { 
+        return instancesPerIssuer[issuer];
+    }
 }

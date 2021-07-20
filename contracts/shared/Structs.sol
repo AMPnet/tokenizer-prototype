@@ -9,6 +9,7 @@ import { AssetFundingState } from "../shared/Enums.sol";
 struct AssetState {
     uint256 id;
     address owner;
+    address mirroredToken;
     uint256 initialTokenSupply;
     bool whitelistRequiredForTransfer;
     IIssuer issuer;
@@ -41,7 +42,7 @@ struct CfManagerSoftcapState {
     uint256 id;
     address owner;
     IAsset asset;
-    uint256 initialPricePerToken;
+    uint256 tokenPrice;
     uint256 softCap;
     bool whitelistRequired;
     bool finalized;
@@ -49,6 +50,7 @@ struct CfManagerSoftcapState {
     uint256 totalClaimableTokens;
     uint256 totalInvestorsCount;
     uint256 totalClaimsCount;
+    uint256 totalFundsRaised;
     string info;
 }
 

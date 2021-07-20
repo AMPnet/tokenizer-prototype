@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { InfoEntry } from "../../shared/Structs.sol";
+import { InfoEntry, PayoutManagerState } from "../../shared/Structs.sol";
 
 interface IPayoutManager {
     function totalShares() external view returns (uint256);
@@ -10,4 +10,6 @@ interface IPayoutManager {
     function released(address account, uint256 snapshotId) external view returns (uint256);
     function release(address account, uint256 snapshotId) external;
     function getInfoHistory() external view returns (InfoEntry[] memory);
+    function setInfo(string memory info) external;
+    function getState() external view returns (PayoutManagerState memory);
 }

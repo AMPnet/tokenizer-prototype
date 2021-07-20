@@ -1,36 +1,45 @@
 import { ethers } from "hardhat";
-import { Contract, ContractFactory, Signer } from "ethers";
+import { Contract, Signer, BigNumber } from "ethers";
 import { expect } from "chai";
-import { currentTimeWithDaysOffset } from "../util/helpers";
 import * as helpers from "../util/helpers";
-import { AssetState } from "../util/types";
 
 describe("Full test", function () {
 
+  //////// FACTORIES ////////
+  let issuerFactory: Contract;
+  let assetFactory: Contract;
+  let cfManagerFactory: Contract;
+  let payoutManagerFactory: Contract;
+
+  //////// SIGNERS ////////
   let deployer: Signer;
   let issuerOwner: Signer;
-  let cfManagerOwner: Signer;
   let alice: Signer;
   let jane: Signer;
   let frank: Signer;
   let walletApprover: Signer
 
-  let registry: Contract;
-  let issuer: Contract;
+  //////// CONTRACTS ////////
   let stablecoin: Contract;
+  let issuer: Contract;
+  let asset: Contract;
 
   beforeEach(async function () {
     const accounts: Signer[] = await ethers.getSigners();
     deployer        = accounts[0];
     issuerOwner     = accounts[1];
-    cfManagerOwner  = accounts[1];
     alice           = accounts[3];
     jane            = accounts[4];
     frank           = accounts[5];
     walletApprover  = accounts[6];
 
     stablecoin = await helpers.deployStablecoin(deployer, "1000000000000");
-    registry = await helpers.deployGlobalRegistry(deployer);
+    
+    const factories = await helpers.deployFactories(deployer);
+    issuerFactory = factories[0];
+    assetFactory = factories[1];
+    cfManagerFactory = factories[2];
+    payoutManagerFactory = factories[3];
   });
 
   it(
@@ -41,165 +50,189 @@ describe("Full test", function () {
     `,
     async function () {
 
-      //// Deploy issuer
+      //// Create issuer and update info
+      const issuerInfoHash = "issuer-info-ipfs-hash";
+      const updatedIssuerInfoHash = "updated-issuer-info-ipfs-hash";
       issuer = await helpers.createIssuer(
         issuerOwner,
-        registry,
-        stablecoin.address,
+        stablecoin,
         await walletApprover.getAddress(),
-        "info-hash"
+        issuerInfoHash,
+        issuerFactory
       );
-      console.log(`Issuer deployed at: ${issuer.address}`);
-      const issuerWalletApprover = issuer.connect(walletApprover);
-      await issuerWalletApprover.approveWallet(await cfManagerOwner.getAddress());
+      await helpers.setInfo(issuerOwner, issuer, updatedIssuerInfoHash);
 
-      //// Deploy crowdfunding campaign (creates campaign + asset). Activate asset.
-      const categoryId = 0;
-      const investmentCap = 10000000; 
-      const minInvestment = 100;
-      const maxInvestment = 10000000;
-      const [cfManager, asset] = await helpers.createCfManager(
-        cfManagerOwner,
+      //// Create Test Asset with 1M tokens of fixed supply minted to the creators wallet
+      const assetName = "Test Asset";
+      const assetTicker = "TSTA";
+      const assetInfoHash = "asset-info-ipfs-hash";
+      const updatedAssetInfoHash = "updated-asset-info-hash";
+      const assetTokenSupply = 1000000;
+      const assetTokenSupplyWei = ethers.utils.parseEther(assetTokenSupply.toString());
+      const issuerWhitelistRequired = true;
+      asset = await helpers.createAsset(
+        issuerOwner,
         issuer,
-        categoryId,
-        investmentCap,
-        "WESPA Spaces",
-        "aWSPA",
-        minInvestment,
-        maxInvestment,
-        currentTimeWithDaysOffset(1)
+        assetTokenSupply,
+        issuerWhitelistRequired,
+        assetName,
+        assetTicker,
+        assetInfoHash,
+        assetFactory
       );
-      await issuerWalletApprover.approveWallet(asset.address);
+      await helpers.setInfo(issuerOwner, asset, updatedAssetInfoHash);
 
-      //// Activate crowdfunding manager wallet
-      const cfManagerOwnerAddress = await cfManagerOwner.getAddress();
-      await issuerWalletApprover.approveWallet(cfManagerOwnerAddress);
+      //// Create Crowdfunding Campaign for Test Asset. Approve campaign and then transfer 80% of asset tokens to be sold via campaign.
+      const campaignInitialPricePerToken = 10000;   // 1$ per token
+      const maxTokensToBeSold = 800000;             // 800k tokens to be sold at most
+      const campaignSoftCap = 400000;               // minimum $400k funds raised has to be reached for campaign to succeed
+      const campaignWhitelistRequired = true;       // only whitelisted wallets can invest
+      const campaignInfoHash = "campaign-info-ipfs-hash";
+      const updatedCampaignInfoHash = "updated-campaign-info-hash";
+      const cfManager = await helpers.createCfManager(
+        issuerOwner,
+        asset,
+        campaignInitialPricePerToken,
+        campaignSoftCap,
+        campaignWhitelistRequired,
+        campaignInfoHash,
+        cfManagerFactory
+      );
+      await issuer.approveCampaign(cfManager.address);
+      await asset.transfer(cfManager.address, ethers.utils.parseEther(maxTokensToBeSold.toString()));
+      await helpers.setInfo(issuerOwner, cfManager, updatedCampaignInfoHash);
 
-      //// Activate new investor and fund his wallet with stablecoin
+      //// Alice buys $400k USDC and goes through kyc process (wallet approved)
       const aliceAddress = await alice.getAddress();
-      const aliceInvestment = 3000000;
-      await issuerWalletApprover.approveWallet(aliceAddress);
-      await stablecoin.transfer(aliceAddress, ethers.utils.parseEther(String(aliceInvestment)));
+      const aliceInvestment = 400000;
+      const aliceInvestmentWei = ethers.utils.parseEther(aliceInvestment.toString());
+      await stablecoin.transfer(aliceAddress, aliceInvestmentWei);
+      await issuer.connect(walletApprover).approveWallet(aliceAddress);
+      
+      //// Alice invests $400k USDC in the project
+      await helpers.invest(alice, cfManager, stablecoin, aliceInvestmentWei);
 
-      //// Activate new investor and fund his wallet with stablecoin
+      //// Jane buys $20k USDC and goes through kyc process (wallet approved)
       const janeAddress = await jane.getAddress();
-      const janeInvestment = 7000000;
-      await issuerWalletApprover.approveWallet(janeAddress);
-      await stablecoin.transfer(janeAddress, ethers.utils.parseEther(String(janeInvestment)));
+      const janeInvestment = 20000;
+      const janeInvestmentWei = ethers.utils.parseEther(janeInvestment.toString());
+      await stablecoin.transfer(janeAddress, janeInvestmentWei);
+      await issuer.connect(walletApprover).approveWallet(janeAddress);
+      
+      //// Jane invests $20k USDC in the project and then cancels her investment
+      await helpers.invest(jane, cfManager, stablecoin, janeInvestmentWei);
+      await helpers.cancelInvest(jane, cfManager);
 
-      //// Activate new investor and fund his wallet with stablecoin
-      const frankAddress = await frank.getAddress();
-      await issuerWalletApprover.approveWallet(frankAddress);
+      // Asset owner finalizes the campaign as the soft cap has been reached.
+      await cfManager.finalize();
+      
+      // Alice has to claim tokens after the campaign has been closed successfully
+      await cfManager.connect(alice).claim();
 
-      //// Alice invests 30%, cancels, and then invests again
-      const aliceUSDC = stablecoin.connect(alice);
-      const aliceInvestmentWei = ethers.utils.parseEther(String(aliceInvestment));
-      await aliceUSDC.approve(cfManager.address, aliceInvestmentWei);
-      const aliceCfManager = cfManager.connect(alice);
-      await aliceCfManager.invest(aliceInvestmentWei);
+      //// Owner creates payout manager, updates info once
+      const payoutManagerInfoHash = "payout-manager-info-hash";
+      const updatedPayoutManagerInfoHash = "updated-payout-manager-info-hash";
+      const payoutManager = await helpers.createPayoutManager(
+        issuerOwner,
+        asset,
+        payoutManagerInfoHash,
+        payoutManagerFactory
+      );
+      await helpers.setInfo(issuerOwner, payoutManager, updatedPayoutManagerInfoHash);
 
-      //// Jane invests 70%, cancels, and then invests again
-      const janeUSDC = stablecoin.connect(jane);
-      const janeInvestmentWei = ethers.utils.parseEther(String(janeInvestment));
-      await janeUSDC.approve(cfManager.address, janeInvestmentWei);
-      const janeCfManager = cfManager.connect(jane);
-      await janeCfManager.invest(janeInvestmentWei);
-      expect(await stablecoin.balanceOf(janeAddress)).to.be.equal(0);
-      await janeCfManager.cancelInvestment();
-      expect(await stablecoin.balanceOf(janeAddress)).to.be.equal(janeInvestmentWei);
-      await janeUSDC.approve(cfManager.address, janeInvestmentWei);
-      await janeCfManager.invest(janeInvestmentWei);
+      //// Distribute $100k revenue to the token holders using the payout manager from the step before
+      const payoutDescription = "WindFarm Mexico Q3/2021 revenue";
+      const revenueAmount = 100000;
+      const revenueAmountWei = ethers.utils.parseEther(revenueAmount.toString());
+      const issuerAddress = await issuerOwner.getAddress();
+      await stablecoin.transfer(issuerAddress, revenueAmountWei); 
+      await helpers.createPayout(issuerOwner, payoutManager, stablecoin, revenueAmount, payoutDescription)
 
-      //// Campaign Manager finalizes the crowdfunding process
-      await cfManager.connect(cfManagerOwner).finalize();
-      expect(await asset.state()).to.be.equal(AssetState.TOKENIZED);
-      expect(await asset.creator()).to.be.equal(cfManagerOwnerAddress);
-      expect(await stablecoin.balanceOf(cfManagerOwnerAddress)).to.be.equal(ethers.utils.parseEther(String(investmentCap)));
+      //// Alice claims her revenue share by calling previously created PayoutManager contract and providing the payoutId param (0 in this case)
+      //// PayoutManager address has to be known upfront (can be found for one asset by scanning PayoutManagerCreated event for asset address)
+      const payoutId = 1;
+      const aliceBalanceBeforePayout = await stablecoin.balanceOf(aliceAddress);
+      expect(aliceBalanceBeforePayout).to.be.equal(0);
+      await helpers.claimRevenue(alice, payoutManager, payoutId)
+      const aliceBalanceAfterPayout = await stablecoin.balanceOf(aliceAddress);
+      expect(aliceBalanceAfterPayout).to.be.equal(revenueAmountWei.mul(40).div(100)); // alice claims 40% of total revenue
+    
+      //// Fetch issuer state
+      const fetchedIssuerState = await helpers.getIssuerState(issuer);
+      console.log("fetched issuer state", fetchedIssuerState);
 
-      //// Set and fetch issuer info
-      const issuerInfoHashIPFS = "QmYA2fn8cMbVWo4v95RwcwJVyQsNtnEwHerfWR8UNtEwoE";
-      await issuer.connect(issuerOwner).setInfo(issuerInfoHashIPFS);
-      expect(await issuer.info()).to.be.equal(issuerInfoHashIPFS);
+      //// Fetch asset state
+      const fetchedAssetState = await helpers.getAssetState(asset);
+      console.log("fetched asset state", fetchedAssetState);
 
-      //// Set and fetch asset info
-      const assetInfoHashIPFS = "QmYA2fn8cMbVWo4v95RwcwJVyQsNtnEwHerfWR8UNtEwoE";
-      await asset.connect(cfManagerOwner).setInfo(assetInfoHashIPFS);
-      expect(await asset.info()).to.be.equal(assetInfoHashIPFS);
+      //// Fetch crowdfunding campaign state
+      const fetchedCampaignState = await helpers.getCrowdfundingCampaignState(cfManager);
+      console.log("fetched crowdfunding campaign state", fetchedCampaignState);
 
-      //// Set and fetch auditing procedure
-      const auditingProcedureIpfsHash = "QmYA2fn8cMbVWo4v95RwcwJVyQsNtnEwHerfWR8UNtEwoE";
-      const assetId = await asset.categoryId();
-      await registry.setAuditingProcedure(assetId, auditingProcedureIpfsHash);
-      expect(await registry.auditingProcedures(assetId)).to.be.equal(auditingProcedureIpfsHash);
+      //// Fetch payout manager state
+      const fetchedPayoutManagerState = await helpers.getPayoutManagerState(payoutManager);
+      console.log("fetched payout manager state", fetchedPayoutManagerState);
 
-      //// Create Payment Manager and make the first payment
-      const firstRevenuePayout = 10000000;
-      const secondRevenuePayout = 10000000;
-      await stablecoin.transfer(cfManagerOwnerAddress, ethers.utils.parseEther(String(firstRevenuePayout + secondRevenuePayout)));
-      const payoutManager = await helpers.createPayoutManager(cfManagerOwner, registry, asset.address);
-      const cfManagerOwnerUSDC = stablecoin.connect(cfManagerOwner);
-      const firstRevenuePayoutWei = ethers.utils.parseEther(String(firstRevenuePayout));
-      await cfManagerOwnerUSDC.approve(payoutManager.address, firstRevenuePayoutWei);
-      await payoutManager.connect(cfManagerOwner).createPayout("Q3/2020 Ape-le shareholders payout timeee", firstRevenuePayoutWei);
+      //// Fetch all the Issuer instances ever deployed
+      const fetchedIssuerInstances = await helpers.fetchIssuerInstances(issuerFactory);
+      console.log("fetched issuer instances", fetchedIssuerInstances);
+      
+      //// Fetch all the Asset instances ever deployed
+      const fetchedAssetInstances = await helpers.fetchAssetInstances(assetFactory);
+      console.log("fetched asset instances", fetchedAssetInstances);
 
-      //// Alice and Jane claim their revenue shares. Check the numbers.
-      const firstPayoutSnapshotID = 1;
-      const expectedAliceFirstPayoutCut = ethers.utils.parseEther(String((aliceInvestment * firstRevenuePayout) / investmentCap));
-      const expectedJaneFirstPayoutCut = ethers.utils.parseEther(String((janeInvestment * firstRevenuePayout) / investmentCap));
-      expect(await stablecoin.balanceOf(aliceAddress)).to.be.equal(0);
-      expect(await stablecoin.balanceOf(janeAddress)).to.be.equal(0);
-      await payoutManager.release(aliceAddress, firstPayoutSnapshotID);
-      await payoutManager.release(janeAddress, firstPayoutSnapshotID);
-      expect(await stablecoin.balanceOf(aliceAddress)).to.be.equal(expectedAliceFirstPayoutCut);
-      expect(await stablecoin.balanceOf(janeAddress)).to.be.equal(expectedJaneFirstPayoutCut);
+      //// Fetch all the Asset instances for one Issuer
+      const fetchedAssetInstancesForIssuer = await helpers.fetchAssetInstancesForIssuer(assetFactory, issuer);
+      console.log("fetched asset instances for issuer", fetchedAssetInstancesForIssuer);
 
-      //// Jane transfers all of her shares to Frank (ownership structure is being changed).
-      const janeShares = await asset.balanceOf(janeAddress);
-      await asset.connect(jane).transfer(frankAddress, janeShares);
+      //// Fetch all the Crowdfunding Campaign instances ever deployed
+      const fetchedCampaignInstances = await helpers.fetchCrowdfundingInstances(cfManagerFactory);
+      console.log("fetched crowdfunding instances", fetchedCampaignInstances);
 
-      //// Make the second payment for the project shareholders. Alice and Frank claim their revenue shares. Check the numbers.
-      const secondRevenuePayoutWei = ethers.utils.parseEther(String(secondRevenuePayout));
-      await cfManagerOwnerUSDC.approve(payoutManager.address, secondRevenuePayoutWei);
-      await payoutManager.connect(cfManagerOwner).createPayout("Q4/2020 Ape-le shareholders payout timeee", secondRevenuePayoutWei);
-      const secondPayoutSnapshotID = 2;
-      const expectedAliceSecondPayoutCut = ethers.utils.parseEther(String((aliceInvestment * secondRevenuePayout) / investmentCap));
-      const expectedFankSecondPayoutCut = ethers.utils.parseEther(String((janeInvestment * secondRevenuePayout) / investmentCap));
-      await payoutManager.release(aliceAddress, secondPayoutSnapshotID);
-      await payoutManager.release(frankAddress, secondPayoutSnapshotID);
-      expect(await stablecoin.balanceOf(aliceAddress)).to.be.equal(expectedAliceFirstPayoutCut.add(expectedAliceSecondPayoutCut));
-      expect(await stablecoin.balanceOf(frankAddress)).to.be.equal(expectedFankSecondPayoutCut);
+      //// Fetch all the Crowdfunding Campaign instances for one Issuer
+      const fetchedCampaignInstancesForIssuer = await helpers.fetchCrowdfundingInstancesForIssuer(cfManagerFactory, issuer);
+      console.log("fetched campaign instances for issuer", fetchedCampaignInstancesForIssuer);
 
+      //// Fetch all the Crowdfunding Campaign instances for one Asset
+      const fetchedCampaignInstancesForAseet = await helpers.fetchCrowdfundingInstancesForAsset(cfManagerFactory, asset);
+      console.log("fetched campaign instances for asset", fetchedCampaignInstancesForAseet);
+      
+      //// Fetch all the Payout Managers ever deployed
+      const fetchedPayoutManagerInstances = await helpers.fetchPayoutManagerInstances(payoutManagerFactory);
+      console.log("fetched payout manager instances", fetchedPayoutManagerInstances);
 
-      //// Fetch all the instances from contracts - check the data
-      const issuerFactoryInstances = await (await ethers.getContractAt("IssuerFactory", await registry.issuerFactory())).getInstances();
-      expect(issuerFactoryInstances).to.have.lengthOf(1);
-      expect(issuer.address).to.be.oneOf(issuerFactoryInstances);
+      //// Fetch all the Payout Managers for one Issuer
+      const fetchedPayoutManagerInstancesForIssuer = await helpers.fetchPayoutManagerInstancesForIssuer(payoutManagerFactory, issuer);
+      console.log("fetched payout manager instances for issuer", fetchedPayoutManagerInstancesForIssuer);
 
-      const assetFactoryInstances = await (await ethers.getContractAt("AssetFactory", await registry.assetFactory())).getInstances();
-      expect(assetFactoryInstances).to.have.lengthOf(1);
-      expect(asset.address).to.be.oneOf(assetFactoryInstances);
+      //// Fetch all the Payout Managers for one Asset
+      const fetchedPayoutManagerInstancesForAsset = await helpers.fetchPayoutManagerInstancesForAsset(payoutManagerFactory, asset);
+      console.log("fetched payout manager instances for asset", fetchedPayoutManagerInstancesForAsset);
+  
+      //// Fetch Issuer instance by id
+      const fetchedIssuerById = await helpers.fetchIssuerStateById(issuerFactory, 0);
+      console.log("fetched issuer for id=0", fetchedIssuerById);
 
-      const cfManagerFactoryInstances = await (await ethers.getContractAt("CfManagerFactory", await registry.cfManagerFactory())).getInstances();
-      expect(cfManagerFactoryInstances).to.have.lengthOf(1);
-      expect(cfManager.address).to.be.oneOf(cfManagerFactoryInstances);
+      //// Fetch Asset instance by id
+      const fetchedAssetById = await helpers.fetchAssetStateById(assetFactory, 0);
+      console.log("fetched asset for id=0", fetchedAssetById);
 
-      const payoutManagerFactoryInstances = await (await ethers.getContractAt("PayoutManagerFactory", await registry.payoutManagerFactory())).getInstances();
-      expect(payoutManagerFactoryInstances).to.have.lengthOf(1);
-      expect(payoutManager.address).to.be.oneOf(payoutManagerFactoryInstances);
+      //// Fetch Crowdfunding campaign instance by id
+      const fetchedCampaignById = await helpers.fetchCampaignStateById(cfManagerFactory, 0);
+      console.log("fetched campaign for id=0", fetchedCampaignById);
 
-      const issuerAssetInstances = await issuer.getAssets();
-      expect(issuerAssetInstances).to.have.lengthOf(1);
-      expect(asset.address).to.be.oneOf(issuerAssetInstances);
+      //// Fetch Payout manager instance by id
+      const fetchedPayoutManagerById = await helpers.fetchPayoutManagerStateById(payoutManagerFactory, 0);
+      console.log("fetched payout manager for id=0", fetchedPayoutManagerById);
 
-      const issuerCfManagerInstances = await issuer.getCfManagers();
-      expect(issuerCfManagerInstances).to.have.lengthOf(1);
-      expect(cfManager.address).to.be.oneOf(issuerCfManagerInstances);
+      //// Fetch alice tx history
+      const aliceTxHistory = await helpers.fetchTxHistory(aliceAddress, issuer, cfManagerFactory, assetFactory, payoutManagerFactory);
+      console.log("Alice tx history", aliceTxHistory);
 
-      // Check contract ids
-      expect(await issuer.id()).to.be.equal(0);
-      expect(await cfManager.id()).to.be.equal(0);
-      expect(await asset.id()).to.be.equal(0);
-      expect(await payoutManager.id()).to.be.equal(0);
+      //// Fetch jane tx history
+      const janeTxHistory = await helpers.fetchTxHistory(janeAddress, issuer, cfManagerFactory, assetFactory, payoutManagerFactory);
+      console.log("Alice tx history", janeTxHistory);
+
     }
   );
 
