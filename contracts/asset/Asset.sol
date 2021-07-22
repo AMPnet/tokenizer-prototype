@@ -46,7 +46,7 @@ contract Asset is IAsset, ERC20Snapshot {
             address(0),
             initialTokenSupply,
             whitelistRequiredForTransfer,
-            IIssuer(issuer),
+            issuer,
             info,
             name,
             symbol
@@ -61,7 +61,7 @@ contract Asset is IAsset, ERC20Snapshot {
         require(
             wallet == state.owner || 
             !state.whitelistRequiredForTransfer || 
-            (state.whitelistRequiredForTransfer && state.issuer.isWalletApproved(wallet)),
+            (state.whitelistRequiredForTransfer && IIssuer(state.issuer).isWalletApproved(wallet)),
             "This functionality is not allowed. Wallet is not approved by the Issuer."
         );
         _;

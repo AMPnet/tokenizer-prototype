@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "../../asset/IAsset.sol";
+import "../../issuer/IIssuer.sol";
 import "../payout/IPayoutManager.sol";
 import "./IERC20Snapshot.sol";
 import "../../shared/Structs.sol";
@@ -43,7 +44,7 @@ contract PayoutManager is IPayoutManager {
         state = Structs.PayoutManagerState(
             id,
             owner,
-            IAsset(assetAddress),
+            assetAddress,
             info
         );
     }
@@ -60,7 +61,7 @@ contract PayoutManager is IPayoutManager {
     //  STATE CHANGE FUNCTIONS
     //------------------------
     function createPayout(string memory description, uint256 amount) external onlyOwner { 
-        uint256 snapshotId = state.asset.snapshot();
+        uint256 snapshotId = _asset().snapshot();
         _stablecoin().transferFrom(msg.sender, address(this), amount);
         uint256 payoutId = payouts.length;
         Payout storage payout = payouts.push();
@@ -89,7 +90,7 @@ contract PayoutManager is IPayoutManager {
         uint256 sharesAtSnapshot = _shares(account, snapshotId);
         require(sharesAtSnapshot > 0, "Account has no shares.");
 
-        uint256 payment = payout.amount * sharesAtSnapshot / state.asset.totalShares() - payout.released[account];
+        uint256 payment = payout.amount * sharesAtSnapshot / _asset().totalShares() - payout.released[account];
         require(payment != 0, "Account is not due payment.");
 
         payout.released[account] += payment;
@@ -99,7 +100,7 @@ contract PayoutManager is IPayoutManager {
     }
 
     function totalShares() external view override returns (uint256) {
-        return state.asset.totalShares();
+        return _asset().totalShares();
     }
 
     function totalReleased(uint256 snapshotId) external view override returns (uint256) {
@@ -126,11 +127,19 @@ contract PayoutManager is IPayoutManager {
     //  HELPERS
     //------------------------
     function _shares(address account, uint256 snapshotId) internal view returns (uint256) {
-        return IERC20Snapshot(address(state.asset)).balanceOfAt(account, snapshotId);
+        return IERC20Snapshot(state.asset).balanceOfAt(account, snapshotId);
     }
 
     function _stablecoin() private view returns (IERC20) {
-        return IERC20(state.asset.getState().issuer.getState().stablecoin);
+        return IERC20(_issuer().getState().stablecoin);
+    }
+
+    function _asset() private view returns (IAsset) {
+        return IAsset(state.asset);
+    }
+
+    function _issuer() private view returns (IIssuer) {
+        return IIssuer(_asset().getState().issuer);
     }
 
 }

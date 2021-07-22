@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "../issuer/IIssuer.sol";
-import "../asset/IAsset.sol";
-
 contract Structs {
 
     struct AssetState {
@@ -12,7 +9,7 @@ contract Structs {
         address mirroredToken;
         uint256 initialTokenSupply;
         bool whitelistRequiredForTransfer;
-        IIssuer issuer;
+        address issuer;
         string info;
         string name;
         string symbol;
@@ -29,7 +26,7 @@ contract Structs {
     struct CfManagerSoftcapState {
         uint256 id;
         address owner;
-        IAsset asset;
+        address asset;
         uint256 tokenPrice;
         uint256 softCap;
         bool whitelistRequired;
@@ -45,7 +42,7 @@ contract Structs {
     struct PayoutManagerState {
         uint256 id;
         address owner;
-        IAsset asset;
+        address asset;
         string info;
     }
 

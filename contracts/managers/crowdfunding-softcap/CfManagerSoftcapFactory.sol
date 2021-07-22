@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import "./CfManagerSoftcap.sol";
 import "./ICfManagerSoftcapFactory.sol";
+import "../../asset/IAsset.sol";
 
 contract CfManagerSoftcapFactory is ICfManagerSoftcapFactory {
 
@@ -20,7 +21,7 @@ contract CfManagerSoftcapFactory is ICfManagerSoftcapFactory {
 
     function create(
         address owner,
-        IAsset assetAddress,
+        address assetAddress,
         uint256 initialPricePerToken,
         uint256 softCap,
         bool whitelistRequired,
@@ -37,8 +38,8 @@ contract CfManagerSoftcapFactory is ICfManagerSoftcapFactory {
             info
         ));
         instances.push(cfManagerSoftcap);
-        instancesPerIssuer[address(assetAddress.getState().issuer)].push(cfManagerSoftcap);
-        instancesPerAsset[address(assetAddress)].push(cfManagerSoftcap);
+        instancesPerIssuer[IAsset(assetAddress).getState().issuer].push(cfManagerSoftcap);
+        instancesPerAsset[assetAddress].push(cfManagerSoftcap);
         emit CfManagerSoftcapCreated(owner, cfManagerSoftcap, id, address(assetAddress), block.timestamp);
         return cfManagerSoftcap;
     }

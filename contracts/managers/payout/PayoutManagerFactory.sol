@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import "./IPayoutManagerFactory.sol";
 import "./PayoutManager.sol";
 import "../../asset/IAsset.sol";
+import "../../issuer/IIssuer.sol";
 
 contract PayoutManagerFactory is IPayoutManagerFactory {
 
@@ -23,7 +24,7 @@ contract PayoutManagerFactory is IPayoutManagerFactory {
         uint256 id = instances.length;
         address payoutManager = address(new PayoutManager(id, owner, assetAddress, info));
         instances.push(payoutManager);
-        instancesPerIssuer[address(IAsset(assetAddress).getState().issuer)].push(payoutManager);
+        instancesPerIssuer[IAsset(assetAddress).getState().issuer].push(payoutManager);
         instancesPerAsset[assetAddress].push(payoutManager);
         emit PayoutManagerCreated(owner, payoutManager, id, assetAddress, block.timestamp);
         return payoutManager;
