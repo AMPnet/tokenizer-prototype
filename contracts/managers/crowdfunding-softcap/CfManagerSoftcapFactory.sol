@@ -10,7 +10,13 @@ contract CfManagerSoftcapFactory is ICfManagerSoftcapFactory {
     mapping (address => address[]) instancesPerIssuer;
     mapping (address => address[]) instancesPerAsset;
 
-    event CfManagerSoftcapCreated(address indexed creator, address cfManager, uint256 id, address asset, uint256 timestamp);
+    event CfManagerSoftcapCreated(
+        address indexed creator,
+        address cfManager,
+        uint256 id,
+        address asset,
+        uint256 timestamp
+    );
 
     function create(
         address owner,

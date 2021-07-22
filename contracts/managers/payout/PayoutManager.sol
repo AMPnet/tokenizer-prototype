@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../../asset/IAsset.sol";
 import "../payout/IPayoutManager.sol";
 import "./IERC20Snapshot.sol";
-import { PayoutManagerState, InfoEntry } from "../../shared/Structs.sol";
+import "../../shared/Structs.sol";
 
 contract PayoutManager is IPayoutManager {
 
@@ -24,8 +24,8 @@ contract PayoutManager is IPayoutManager {
     //------------------------
     //  STATE
     //------------------------
-    PayoutManagerState private state;
-    InfoEntry[] private infoHistory;
+    Structs.PayoutManagerState private state;
+    Structs.InfoEntry[] private infoHistory;
     Payout[] public payouts;
     mapping (uint256 => uint256) public snapshotToPayout;
     
@@ -40,7 +40,7 @@ contract PayoutManager is IPayoutManager {
     //  CONSTRUCTOR
     //------------------------
     constructor(uint256 id, address owner, address assetAddress, string memory info) {
-        state = PayoutManagerState(
+        state = Structs.PayoutManagerState(
             id,
             owner,
             IAsset(assetAddress),
@@ -75,7 +75,7 @@ contract PayoutManager is IPayoutManager {
     //  IPayoutManager IMPL
     //------------------------
     function setInfo(string memory info) external override onlyOwner {
-        infoHistory.push(InfoEntry(
+        infoHistory.push(Structs.InfoEntry(
             info,
             block.timestamp
         ));
@@ -114,11 +114,11 @@ contract PayoutManager is IPayoutManager {
         return payouts[snapshotToPayout[snapshotId]].released[account];
     }
 
-    function getInfoHistory() external view override returns (InfoEntry[] memory) {
+    function getInfoHistory() external view override returns (Structs.InfoEntry[] memory) {
         return infoHistory;
     }
 
-    function getState() external view override returns (PayoutManagerState memory) {
+    function getState() external view override returns (Structs.PayoutManagerState memory) {
         return state;
     }
 

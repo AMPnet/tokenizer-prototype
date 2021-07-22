@@ -5,15 +5,15 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Snapshot.sol";
 import "../asset/IAsset.sol";
 import "../issuer/IIssuer.sol";
-import { AssetState, InfoEntry } from "../shared/Structs.sol";
+import "../shared/Structs.sol";
 
 contract Asset is IAsset, ERC20Snapshot {
 
     //------------------------
     //  STATE
     //------------------------
-    InfoEntry[] private infoHistory;
-    AssetState private state;
+    Structs.InfoEntry[] private infoHistory;
+    Structs.AssetState private state;
 
     //------------------------
     //  EVENTS
@@ -36,11 +36,11 @@ contract Asset is IAsset, ERC20Snapshot {
         string memory info
     ) ERC20(name, symbol)
     {
-        infoHistory.push(InfoEntry(
+        infoHistory.push(Structs.InfoEntry(
             info,
             block.timestamp
         ));
-        state = AssetState(
+        state = Structs.AssetState(
             id,
             owner,
             address(0),
@@ -88,7 +88,7 @@ contract Asset is IAsset, ERC20Snapshot {
     }
 
     function setInfo(string memory info) external override ownerOnly {
-        infoHistory.push(InfoEntry(
+        infoHistory.push(Structs.InfoEntry(
             info,
             block.timestamp
         ));
@@ -105,11 +105,11 @@ contract Asset is IAsset, ERC20Snapshot {
         return totalSupply();
     }
 
-    function getState() external view override returns (AssetState memory) {
+    function getState() external view override returns (Structs.AssetState memory) {
         return state;
     }
 
-    function getInfoHistory() external view override returns (InfoEntry[] memory) {
+    function getInfoHistory() external view override returns (Structs.InfoEntry[] memory) {
         return infoHistory;
     }
 

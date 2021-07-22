@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../../asset/IAsset.sol";
 import "../crowdfunding-softcap/ICfManagerSoftcap.sol";
-import { CfManagerSoftcapState, InfoEntry } from "../../shared/Structs.sol";
+import "../../shared/Structs.sol";
 
 contract CfManagerSoftcap is ICfManagerSoftcap {
     using SafeERC20 for IERC20;
@@ -19,8 +19,8 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
     //------------------------
     //  STATE
     //------------------------
-    CfManagerSoftcapState private state;
-    InfoEntry[] private infoHistory;
+    Structs.CfManagerSoftcapState private state;
+    Structs.InfoEntry[] private infoHistory;
     mapping (address => uint256) claims;
 
     //------------------------
@@ -49,7 +49,7 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
             tokenPrice > 0,
             "Initial price per token must be greater than 0."
         );
-        state = CfManagerSoftcapState(
+        state = Structs.CfManagerSoftcapState(
             id,
             owner,
             asset,
@@ -119,7 +119,11 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
         uint256 floatingTokens = totalTokenBalance - state.totalClaimableTokens;
         require(floatingTokens > 0, "No more tokens available for sale.");
 
-        uint256 tokenAmount = (amount / state.tokenPrice) * PRICE_DECIMALS_PRECISION * _asset_decimals_precision() / STABLECOIN_DECIMALS_PRECISION;
+        uint256 tokenAmount = 
+            (amount / state.tokenPrice) 
+                * PRICE_DECIMALS_PRECISION 
+                * _asset_decimals_precision() 
+                / STABLECOIN_DECIMALS_PRECISION;
         uint256 tokenValue = _token_value(tokenAmount);
         require(tokenAmount > 0 && tokenValue > 0, "Investment amount too low.");
         require(floatingTokens >= tokenAmount, "Not enough tokens left for this investment amount.");
@@ -192,7 +196,7 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
     //  ICfManagerSoftcap IMPL
     //------------------------
     function setInfo(string memory info) external override onlyOwner(msg.sender) {
-        infoHistory.push(InfoEntry(
+        infoHistory.push(Structs.InfoEntry(
             info,
             block.timestamp
         ));
@@ -200,11 +204,11 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
         emit SetInfo(info, msg.sender, block.timestamp);
     }
 
-    function getInfoHistory() external view override returns (InfoEntry[] memory) {
+    function getInfoHistory() external view override returns (Structs.InfoEntry[] memory) {
         return infoHistory;
     }
 
-    function getState() external view override returns (CfManagerSoftcapState memory) {
+    function getState() external view override returns (Structs.CfManagerSoftcapState memory) {
         return state;
     }
 
@@ -228,7 +232,10 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
     }
 
     function _token_value(uint256 tokenAmount) private view returns (uint256) {
-        return tokenAmount * state.tokenPrice * STABLECOIN_DECIMALS_PRECISION / (_asset_decimals_precision() * PRICE_DECIMALS_PRECISION);
+        return tokenAmount
+                    * state.tokenPrice
+                    * STABLECOIN_DECIMALS_PRECISION
+                    / (_asset_decimals_precision() * PRICE_DECIMALS_PRECISION);
     }
 
     function _walletApproved(address wallet) private view returns (bool) {

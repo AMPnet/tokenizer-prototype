@@ -7,7 +7,13 @@ import "../../asset/IAsset.sol";
 
 contract PayoutManagerFactory is IPayoutManagerFactory {
 
-    event PayoutManagerCreated(address indexed creator, address payoutManager, uint256 id, address asset, uint256 timestamp);
+    event PayoutManagerCreated(
+        address indexed creator,
+        address payoutManager,
+        uint256 id,
+        address asset,
+        uint256 timestamp
+    );
 
     address[] public instances;
     mapping (address => address[]) instancesPerIssuer;

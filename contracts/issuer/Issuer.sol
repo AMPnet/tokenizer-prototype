@@ -2,15 +2,15 @@
 pragma solidity ^0.8.0;
 
 import "../issuer/IIssuer.sol";
-import { IssuerState, InfoEntry } from "../shared/Structs.sol";
+import "../shared/Structs.sol";
 
 contract Issuer is IIssuer {
 
     //------------------------
     //  STATE
     //------------------------
-    IssuerState private state;
-    InfoEntry[] private infoHistory;
+    Structs.IssuerState private state;
+    Structs.InfoEntry[] private infoHistory;
     mapping (address => bool) public approvedWallets;
     mapping (address => bool) private approvedCampaigns;
 
@@ -34,11 +34,11 @@ contract Issuer is IIssuer {
         address walletApprover,
         string memory info
     ) {
-        infoHistory.push(InfoEntry(
+        infoHistory.push(Structs.InfoEntry(
             info,
             block.timestamp
         ));
-        state = IssuerState(
+        state = Structs.IssuerState(
             id,
             owner,
             stablecoin,
@@ -92,7 +92,7 @@ contract Issuer is IIssuer {
     //  IIssuer IMPL
     //------------------------
     function setInfo(string memory info) external override onlyOwner {
-        infoHistory.push(InfoEntry(
+        infoHistory.push(Structs.InfoEntry(
             info,
             block.timestamp
         ));
@@ -100,13 +100,13 @@ contract Issuer is IIssuer {
         emit SetInfo(info, msg.sender, block.timestamp);
     }
 
-    function getState() external override view returns (IssuerState memory) { return state; }
+    function getState() external override view returns (Structs.IssuerState memory) { return state; }
     
     function isWalletApproved(address wallet) external view override returns (bool) {
         return approvedWallets[wallet] || approvedCampaigns[wallet];
     }
 
-    function getInfoHistory() external view override returns (InfoEntry[] memory) {
+    function getInfoHistory() external view override returns (Structs.InfoEntry[] memory) {
         return infoHistory;
     }
 
