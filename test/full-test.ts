@@ -53,8 +53,9 @@ describe("Full test", function () {
       //// Create issuer and update info
       const issuerInfoHash = "issuer-info-ipfs-hash";
       const updatedIssuerInfoHash = "updated-issuer-info-ipfs-hash";
+      const issuerOwnerAddress = await issuerOwner.getAddress();
       issuer = await helpers.createIssuer(
-        issuerOwner,
+        issuerOwnerAddress,
         stablecoin,
         await walletApprover.getAddress(),
         issuerInfoHash,
@@ -71,7 +72,7 @@ describe("Full test", function () {
       const assetTokenSupplyWei = ethers.utils.parseEther(assetTokenSupply.toString());
       const issuerWhitelistRequired = true;
       asset = await helpers.createAsset(
-        issuerOwner,
+        issuerOwnerAddress,
         issuer,
         assetTokenSupply,
         issuerWhitelistRequired,
@@ -90,7 +91,7 @@ describe("Full test", function () {
       const campaignInfoHash = "campaign-info-ipfs-hash";
       const updatedCampaignInfoHash = "updated-campaign-info-hash";
       const cfManager = await helpers.createCfManager(
-        issuerOwner,
+        issuerOwnerAddress,
         asset,
         campaignInitialPricePerToken,
         campaignSoftCap,
@@ -98,8 +99,8 @@ describe("Full test", function () {
         campaignInfoHash,
         cfManagerFactory
       );
-      await issuer.approveCampaign(cfManager.address);
-      await asset.transfer(cfManager.address, ethers.utils.parseEther(maxTokensToBeSold.toString()));
+      await issuer.connect(issuerOwner).approveCampaign(cfManager.address);
+      await asset.connect(issuerOwner).transfer(cfManager.address, ethers.utils.parseEther(maxTokensToBeSold.toString()));
       await helpers.setInfo(issuerOwner, cfManager, updatedCampaignInfoHash);
 
       //// Alice buys $400k USDC and goes through kyc process (wallet approved)
@@ -124,7 +125,7 @@ describe("Full test", function () {
       await helpers.cancelInvest(jane, cfManager);
 
       // Asset owner finalizes the campaign as the soft cap has been reached.
-      await cfManager.finalize();
+      await cfManager.connect(issuerOwner).finalize();
       
       // Alice has to claim tokens after the campaign has been closed successfully
       await cfManager.connect(alice).claim();
@@ -133,7 +134,7 @@ describe("Full test", function () {
       const payoutManagerInfoHash = "payout-manager-info-hash";
       const updatedPayoutManagerInfoHash = "updated-payout-manager-info-hash";
       const payoutManager = await helpers.createPayoutManager(
-        issuerOwner,
+        issuerOwnerAddress,
         asset,
         payoutManagerInfoHash,
         payoutManagerFactory

@@ -34,7 +34,8 @@ module.exports = {
       url: process.env.MUMBAI_RPC,
       accounts: {
         mnemonic: process.env.SEED_PHRASE
-      }
+      },
+      gasPrice: 10000000000
     }
   }
 };

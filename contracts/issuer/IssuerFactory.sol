@@ -8,7 +8,7 @@ contract IssuerFactory is IIssuerFactory {
 
     address[] public instances;
 
-    event IssuerCreated(address indexed creator, address asset, uint256 id, uint256 timestamp);
+    event IssuerCreated(address indexed creator, address issuer, uint256 id, uint256 timestamp);
 
     function create(
         address owner,
