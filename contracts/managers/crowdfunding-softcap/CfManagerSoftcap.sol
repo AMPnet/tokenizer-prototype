@@ -156,17 +156,17 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
         emit CancelInvestment(msg.sender, tokenAmount, tokenValue, block.timestamp);
     }
 
-    function claim() external finalized {
-        uint256 claimableTokens = claims[msg.sender];
+    function claim(address investor) external finalized {
+        uint256 claimableTokens = claims[investor];
         uint256 claimableTokensValue = _token_value(claimableTokens);
         require(
             claimableTokens > 0,
             "No tokens owned."
         );
         state.totalClaimsCount += 1;
-        claims[msg.sender] = 0;
-        _assetERC20().safeTransfer(msg.sender, claimableTokens);
-        emit Claim(msg.sender, claimableTokens, claimableTokensValue, block.timestamp);
+        claims[investor] = 0;
+        _assetERC20().safeTransfer(investor, claimableTokens);
+        emit Claim(investor, claimableTokens, claimableTokensValue, block.timestamp);
     }
 
     function finalize() external onlyOwner(msg.sender) notFinalized {

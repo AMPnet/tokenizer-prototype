@@ -50,5 +50,10 @@ contract Structs {
         string info;
         uint256 timestamp;
     }
-
+    
+    struct WalletRecord {
+        address wallet;
+        bool whitelisted;
+    }
+    
 }

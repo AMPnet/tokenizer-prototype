@@ -260,7 +260,8 @@ export async function cancelInvest(investor: Signer, cfManager: Contract) {
  * @param cfManager CfManager contract instance
  */
 export async function claimInvestment(investor: Signer, cfManager: Contract) {
-  await cfManager.connect(investor).claim();
+  const investorAddress = await investor.getAddress();
+  await cfManager.connect(investor).claim(investorAddress);
 }
 
 /**
@@ -635,4 +636,33 @@ export async function fetchTxHistory(
   const payoutManagerTransactions = await filters.getPayoutManagerTransactions(wallet, issuer, payoutManagerFactory);
   const transactions = assetTransactions.concat(crowdfundingTransactions).concat(payoutManagerTransactions);
   return transactions.sort((a, b) => (a.timestamp < b.timestamp) ? -1 : 1);
+}
+
+/**
+ * @param issuer Issuer contract instance
+ * @returns Array of issuer wallet records
+ * 
+ * Example response array (ethers.js)
+ * 
+ *   [
+ *     [
+ *       wallet: '0x90F79bf6EB2c4f870365E785982E1f101E93b906',
+ *       whitelisted: true
+ *     ],
+ *     [
+ *       wallet: '0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65',
+ *       whitelisted: true
+ *     ]
+ *   ]
+ */
+export async function fetchWalletRecords(issuer: Contract): Promise<Array<Object>> {
+  return issuer.getWalletRecords();
+}
+
+/**
+ * @param issuer Issuer contract instance
+ * @returns Array of issuer campaign records
+ */
+export async function fetchCampaignRecords(issuer: Contract): Promise<Array<Object>> {
+  return issuer.getCampaignRecords();
 }

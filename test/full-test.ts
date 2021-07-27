@@ -128,7 +128,7 @@ describe("Full test", function () {
       await cfManager.connect(issuerOwner).finalize();
       
       // Alice has to claim tokens after the campaign has been closed successfully
-      await cfManager.connect(alice).claim();
+      await cfManager.connect(alice).claim(aliceAddress);
 
       //// Owner creates payout manager, updates info once
       const payoutManagerInfoHash = "payout-manager-info-hash";
@@ -234,6 +234,13 @@ describe("Full test", function () {
       const janeTxHistory = await helpers.fetchTxHistory(janeAddress, issuer, cfManagerFactory, assetFactory, payoutManagerFactory);
       console.log("Alice tx history", janeTxHistory);
 
+      //// Fetch issuer approved wallets
+      const walletRecords = await helpers.fetchWalletRecords(issuer);
+      console.log("Wallet records", walletRecords);
+
+      //// Fetch issuer approved campaigns
+      const campaignRecords = await helpers.fetchCampaignRecords(issuer);
+      console.log("Campaign records", campaignRecords);
     }
   );
 

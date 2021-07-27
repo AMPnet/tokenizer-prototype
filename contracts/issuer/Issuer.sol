@@ -5,24 +5,23 @@ import "../issuer/IIssuer.sol";
 import "../shared/Structs.sol";
 
 contract Issuer is IIssuer {
-
     //------------------------
     //  STATE
     //------------------------
     Structs.IssuerState private state;
     Structs.InfoEntry[] private infoHistory;
-    mapping (address => bool) public approvedWallets;
-    mapping (address => bool) private approvedCampaigns;
+    mapping (address => uint256) public approvedWalletsMap;
+    Structs.WalletRecord[] public approvedWallets;
+    mapping (address => uint256) private approvedCampaignsMap;
+    Structs.WalletRecord[] public approvedCampaigns;
 
     //------------------------
     //  EVENTS
     //------------------------
-    event WalletApprove(address approver, address wallet, uint256 timestamp);
-    event WalletSuspend(address approver, address wallet, uint256 timestamp);
+    event WalletWhitelist(address approver, address wallet, bool whitelisted, uint256 timestamp);
+    event CampaignWhitelist(address approver, address wallet, bool whitelisted, uint256 timestamp);
     event ChangeWalletApprover(address oldWalletApprover, address newWalletApprover, uint256 timestamp);
     event SetInfo(string info, address setter, uint256 timestamp);
-    event CampaignApprove(address approver, address campaign, uint256 timestamp);
-    event CampaignSuspend(address approver, address campaign, uint256 timestamp);
 
     //------------------------
     //  CONSTRUCTOR
@@ -64,13 +63,13 @@ contract Issuer is IIssuer {
     //  STATE CHANGE FUNCTIONS
     //------------------------
     function approveWallet(address wallet) external onlyWalletApprover {
-        approvedWallets[wallet] = true;
-        emit WalletApprove(msg.sender, wallet, block.timestamp);
+        _setWalletState(wallet, true, approvedWalletsMap, approvedWallets);
+        emit WalletWhitelist(msg.sender, wallet, true, block.timestamp);
     }
 
     function suspendWallet(address wallet) external onlyWalletApprover {
-        approvedWallets[wallet] = false;
-        emit WalletSuspend(msg.sender, wallet, block.timestamp);
+        _setWalletState(wallet, false, approvedWalletsMap, approvedWallets);
+        emit WalletWhitelist(msg.sender, wallet, false, block.timestamp);
     }
 
     function changeWalletApprover(address newWalletApprover) external onlyOwner {
@@ -79,13 +78,13 @@ contract Issuer is IIssuer {
     }
 
     function approveCampaign(address campaign) external onlyOwner {
-        approvedCampaigns[campaign] = true;
-        emit CampaignApprove(msg.sender, campaign, block.timestamp);
+        _setWalletState(campaign, true, approvedCampaignsMap, approvedCampaigns);
+        emit CampaignWhitelist(msg.sender, campaign, true, block.timestamp);
     }
 
     function suspendCampaign(address campaign) external onlyOwner {
-        approvedCampaigns[campaign] = false;
-        emit CampaignSuspend(msg.sender, campaign, block.timestamp);
+        _setWalletState(campaign, false, approvedCampaignsMap, approvedCampaigns);
+        emit CampaignWhitelist(msg.sender, campaign, false, block.timestamp);
     }
 
     //------------------------
@@ -103,11 +102,62 @@ contract Issuer is IIssuer {
     function getState() external override view returns (Structs.IssuerState memory) { return state; }
     
     function isWalletApproved(address wallet) external view override returns (bool) {
-        return approvedWallets[wallet] || approvedCampaigns[wallet];
+        bool walletExists = _addressExists(wallet, approvedWalletsMap, approvedWallets);
+        bool campaignExists = _addressExists(wallet, approvedCampaignsMap, approvedCampaigns);
+        if (!walletExists && !campaignExists) { return false; }
+        if (walletExists) { return approvedWallets[approvedWalletsMap[wallet]].whitelisted; }
+        if (campaignExists) { return approvedCampaigns[approvedCampaignsMap[wallet]].whitelisted; }
+        return false;
     }
 
     function getInfoHistory() external view override returns (Structs.InfoEntry[] memory) {
         return infoHistory;
+    }
+
+    function getWalletRecords() external view override returns (Structs.WalletRecord[] memory) {
+        return approvedWallets;
+    }
+
+    function getCampaignRecords() external view override returns (Structs.WalletRecord[] memory) {
+        return approvedCampaigns;
+    }
+
+    //------------------------
+    //  Helpers
+    //------------------------
+    function _setWalletState(
+        address wallet,
+        bool whitelisted,
+        mapping (address => uint256) storage map,
+        Structs.WalletRecord[] storage array
+    ) private {
+        if (_addressExists(wallet, map, array)) {
+            array[map[wallet]].whitelisted = whitelisted;
+        } else {
+            array.push(Structs.WalletRecord(wallet, whitelisted));
+            map[wallet] = array.length - 1;
+        }
+    }
+
+    function _addressWhitelisted(
+        address wallet,
+        mapping (address => uint256) storage map,
+        Structs.WalletRecord[] storage array
+    ) private view returns (bool) {
+        if (_addressExists(wallet, map, array)) { return array[map[wallet]].whitelisted; }
+        else { return false; }
+    }
+
+    function _addressExists(
+        address wallet,
+        mapping (address => uint256) storage map,
+        Structs.WalletRecord[] storage array
+    ) private view returns (bool) {
+        uint256 index = map[wallet];
+        if (array.length == 0) { return false; }
+        if (index >= array.length) { return false; }
+        if (array[index].wallet != wallet) { return false; }
+        return true;
     }
 
 }

@@ -75,8 +75,6 @@ async function main() {
             campaignInfoIpfsHash,
             cfManagerFactory
         );
-
-    await campaign.deployed()
 }
 
 main()

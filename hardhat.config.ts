@@ -30,6 +30,13 @@ module.exports = {
         mnemonic: process.env.SEED_PHRASE
       }
     },
+    goerli: {
+      url: process.env.GOERLI_RPC,
+      accounts: {
+        mnemonic: process.env.SEED_PHRASE
+      },
+      gasPrice: 10000000000
+    },
     mumbai: {
       url: process.env.MUMBAI_RPC,
       accounts: {
