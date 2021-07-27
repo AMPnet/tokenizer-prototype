@@ -1,5 +1,8 @@
 #!/bin/bash
 
+################################################## Guide ##################################################
+# > Set 0x0000000000000000000000000000000000000000 for contract address field to skip deployment 
+
 ############################################ Network selection ############################################
 # One of the networks defined in the hardhat.config.ts. The script will be executed on the selected network.
 # > If running local node, value should be: localhost

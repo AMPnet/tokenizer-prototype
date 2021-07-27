@@ -65,7 +65,7 @@ async function main() {
     const campaignInvestorWhitelistRequired = (process.env.CAMPAIGN_INVESTOR_WHITELIST_REQUIRED == "true") || false;
     const campaignInfoIpfsHash = process.env.CAMPAIGN_IPFS || "test-campaign-ipfs-hash";
     const campaign = (process.env.CAMPAIGN) ?
-        await ethers.getContractAt("CfManagerSofctap", process.env.CAMPAIGN) :
+        await ethers.getContractAt("CfManagerSoftcap", process.env.CAMPAIGN) :
         await helpers.createCfManager(
             campaignOwner,
             asset,
