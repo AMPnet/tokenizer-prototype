@@ -11,4 +11,6 @@ interface IAsset {
     function setInfo(string memory info) external;
     function snapshot() external returns (uint256);
     function setOwner(address newOwner) external;
+    function getCampaignRecords() external view returns (Structs.WalletRecord[] memory);
+    function approveCampaign(address campaign) external;
 }

@@ -9,5 +9,7 @@ interface IIssuer {
     function isWalletApproved(address _wallet) external view returns (bool);
     function getInfoHistory() external view returns (Structs.InfoEntry[] memory);
     function getWalletRecords() external view returns (Structs.WalletRecord[] memory);
-    function getCampaignRecords() external view returns (Structs.WalletRecord[] memory);
+    function approveWallet(address wallet) external;
+    function suspendWallet(address wallet) external;
+    function changeOwnership(address newOwner) external;
 }

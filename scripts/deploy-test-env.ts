@@ -30,7 +30,7 @@ async function main() {
     const issuerOwner = process.env.ISSUER_OWNER || deployerAddress;
     const issuerWalletApprover = process.env.ISSUER_WALLET_APPROVER || issuerOwner;
     const issuerInfoIpfsHash = process.env.ISSUER_IPFS || "issuer-info-ipfs-hash";
-    const issuer = (process.env.ISSUER) ?
+    const issuer: Contract = (process.env.ISSUER) ?
         await ethers.getContractAt("Issuer", process.env.ISSUER) :
         await helpers.createIssuer(
             issuerOwner,
@@ -39,6 +39,7 @@ async function main() {
             issuerInfoIpfsHash,
             issuerFactory
         );
+    console.log("issuer deployed");
 
     const assetName = process.env.ASSET_NAME || "Test Asset";
     const assetSymbol = process.env.ASSET_SYMBOL || "$TSTA";
@@ -46,7 +47,7 @@ async function main() {
     const assetSupply = Number(process.env.ASSET_SUPPLY) || 1000000;
     const assetOwnerAddress = process.env.ASSET_OWNER || issuerOwner;
     const transferWhitelistRequired = (process.env.ASSET_TRANSFER_WHITELIST_REQUIRED == "true") || false;
-    const asset = (process.env.ASSET) ?
+    const asset: Contract = (process.env.ASSET) ?
         await ethers.getContractAt("Asset", process.env.ASSET) :
         await helpers.createAsset(
             assetOwnerAddress,
@@ -58,13 +59,14 @@ async function main() {
             assetInfoIpfsHash,
             assetFactory
         );
+    console.log("asset deployed");
 
     const campaignOwner = process.env.CAMPAIGN_OWNER || issuerOwner;
     const campaignPricePerToken = Number(process.env.CAMPAIGN_TOKEN_PRICE) || 10000; // ($1 default token price)
     const campaignSoftCap = Number(process.env.CAMPAIGN_SOFT_CAP) || 100000; // ($100k soft cap)
     const campaignInvestorWhitelistRequired = (process.env.CAMPAIGN_INVESTOR_WHITELIST_REQUIRED == "true") || false;
     const campaignInfoIpfsHash = process.env.CAMPAIGN_IPFS || "test-campaign-ipfs-hash";
-    const campaign = (process.env.CAMPAIGN) ?
+    const campaign: Contract = (process.env.CAMPAIGN) ?
         await ethers.getContractAt("CfManagerSoftcap", process.env.CAMPAIGN) :
         await helpers.createCfManager(
             campaignOwner,
@@ -75,6 +77,24 @@ async function main() {
             campaignInfoIpfsHash,
             cfManagerFactory
         );
+    console.log("campaign deployed");
+
+    const transferTx = await asset.transfer(campaign.address, ethers.utils.parseEther("500000"));
+    await ethers.provider.waitForTransaction(transferTx.hash);
+    console.log("asset tokens transferred");
+
+    const investmentAmountWei = ethers.utils.parseEther("100000");
+    const approveTx = await stablecoin.approve(campaign.address, investmentAmountWei);
+    await ethers.provider.waitForTransaction(approveTx.hash);
+    console.log("approve passed");
+
+    const investTx = await campaign.invest(investmentAmountWei);
+    await ethers.provider.waitForTransaction(investTx.hash);
+    console.log(`invest passed, hash: ${investTx.hash}`);
+
+    const cancelInvestTx = await campaign.cancelInvestment();
+    await ethers.provider.waitForTransaction(cancelInvestTx.hash);
+    console.log(`cancel invest passed, hash: ${cancelInvestTx.hash}`);
 }
 
 main()

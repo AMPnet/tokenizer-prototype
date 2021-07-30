@@ -14,6 +14,8 @@ contract Asset is IAsset, ERC20Snapshot {
     //------------------------
     Structs.InfoEntry[] private infoHistory;
     Structs.AssetState private state;
+    mapping (address => uint256) private approvedCampaignsMap;
+    Structs.WalletRecord[] public approvedCampaigns;
 
     //------------------------
     //  EVENTS
@@ -21,6 +23,8 @@ contract Asset is IAsset, ERC20Snapshot {
     event SetOwner(address oldOwner, address newOwner, uint256 timestamp);
     event SetInfo(string info, address setter, uint256 timestamp);
     event SetWhitelistRequiredForTransfer(address caller, bool whitelistRequiredForTransfer, uint256 timestamp);
+    event SetApprovedByIssuer(address caller, bool approvedByIssuer, uint256 timestamp);
+    event CampaignWhitelist(address approver, address wallet, bool whitelisted, uint256 timestamp);
 
     //------------------------
     //  CONSTRUCTOR
@@ -40,12 +44,14 @@ contract Asset is IAsset, ERC20Snapshot {
             info,
             block.timestamp
         ));
+        bool assetApprovedByIssuer = (IIssuer(issuer).getState().owner == msg.sender);
         state = Structs.AssetState(
             id,
             owner,
             address(0),
             initialTokenSupply,
             whitelistRequiredForTransfer,
+            assetApprovedByIssuer,
             issuer,
             info,
             name,
@@ -61,7 +67,10 @@ contract Asset is IAsset, ERC20Snapshot {
         require(
             wallet == state.owner || 
             !state.whitelistRequiredForTransfer || 
-            (state.whitelistRequiredForTransfer && IIssuer(state.issuer).isWalletApproved(wallet)),
+            (
+                state.whitelistRequiredForTransfer && 
+                ( IIssuer(state.issuer).isWalletApproved(wallet) || _campaignWhitelisted(wallet) )
+            ),
             "This functionality is not allowed. Wallet is not approved by the Issuer."
         );
         _;
@@ -75,6 +84,24 @@ contract Asset is IAsset, ERC20Snapshot {
         _;
     }
 
+    modifier issuerOwnerOnly() {
+        require(
+            msg.sender == IIssuer(state.issuer).getState().owner,
+            "Only issuer owner can make this action." 
+        );
+        _;
+    }
+
+    function approveCampaign(address campaign) external ownerOnly {
+        _setCampaignState(campaign, true);
+        emit CampaignWhitelist(msg.sender, campaign, true, block.timestamp);
+    }
+
+    function suspendCampaign(address campaign) external ownerOnly {
+        _setCampaignState(campaign, false);
+        emit CampaignWhitelist(msg.sender, campaign, false, block.timestamp);
+    }
+
     //------------------------
     //  IAsset IMPL
     //------------------------
@@ -84,6 +111,9 @@ contract Asset is IAsset, ERC20Snapshot {
         ownerOnly
     {
         state.owner = newOwner;
+        if (IIssuer(state.issuer).getState().owner == state.owner) {
+            state.assetApprovedByIssuer = true;
+        }
         emit SetOwner(msg.sender, newOwner, block.timestamp);
     }
 
@@ -115,6 +145,10 @@ contract Asset is IAsset, ERC20Snapshot {
 
     function getDecimals() external view override returns (uint256) {
         return uint256(decimals());
+    }
+
+    function getCampaignRecords() external view override returns (Structs.WalletRecord[] memory) {
+        return approvedCampaigns;
     }
 
     //------------------------
@@ -175,6 +209,35 @@ contract Asset is IAsset, ERC20Snapshot {
     //------------------------
     function snapshot() external override returns (uint256) {
         return _snapshot();
+    }
+
+    //------------------------
+    //  Helpers
+    //------------------------
+    function _setCampaignState(address wallet, bool whitelisted) private {
+        if (_campaignExists(wallet)) {
+            approvedCampaigns[approvedCampaignsMap[wallet]].whitelisted = whitelisted;
+        } else {
+            approvedCampaigns.push(Structs.WalletRecord(wallet, whitelisted));
+            approvedCampaignsMap[wallet] = approvedCampaigns.length - 1;
+        }
+    }
+
+    function _campaignWhitelisted(address wallet) private view returns (bool) {
+        if (_campaignExists(wallet)) { 
+            return approvedCampaigns[approvedCampaignsMap[wallet]].whitelisted;
+        }
+        else {
+            return false;
+        }
+    }
+
+    function _campaignExists(address wallet) private view returns (bool) {
+        uint256 index = approvedCampaignsMap[wallet];
+        if (approvedCampaigns.length == 0) { return false; }
+        if (index >= approvedCampaigns.length) { return false; }
+        if (approvedCampaigns[index].wallet != wallet) { return false; }
+        return true;
     }
 
 }

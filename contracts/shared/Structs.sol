@@ -9,6 +9,7 @@ contract Structs {
         address mirroredToken;
         uint256 initialTokenSupply;
         bool whitelistRequiredForTransfer;
+        bool assetApprovedByIssuer;
         address issuer;
         string info;
         string name;
