@@ -45,6 +45,15 @@ describe("Full test", function () {
     assetFactory = factories[1];
     cfManagerFactory = factories[2];
     payoutManagerFactory = factories[3];
+
+    const walletApproverAddress = await walletApprover.getAddress();
+    const services = await helpers.deployServices(
+      deployer,
+      walletApproverAddress,
+      "0.001"
+    );
+    walletApproverService = services[0];
+    deployerService = services[1];
   });
 
   it(
