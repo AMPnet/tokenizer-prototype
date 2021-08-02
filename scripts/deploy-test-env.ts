@@ -27,15 +27,19 @@ async function main() {
         await ethers.getContractAt("CfManagerSoftcapFactory", process.env.CF_MANAGER_FACTORY) :
         await helpers.deployCfManagerFactory(deployer);
 
+    const walletApprover: Contract = (process.env.WALLET_APPROVER) ?
+        await ethers.getContractAt("WalletApproverService", process.env.WALLET_APPROVER) :
+        await helpers.deployWalletApproverService(deployer, process.env.WALLET_APPROVER_MASTER_OWNER, "0.001");
+
     const issuerOwner = process.env.ISSUER_OWNER || deployerAddress;
-    const issuerWalletApprover = process.env.ISSUER_WALLET_APPROVER || issuerOwner;
     const issuerInfoIpfsHash = process.env.ISSUER_IPFS || "issuer-info-ipfs-hash";
+
     const issuer: Contract = (process.env.ISSUER) ?
         await ethers.getContractAt("Issuer", process.env.ISSUER) :
         await helpers.createIssuer(
             issuerOwner,
             stablecoin,
-            issuerWalletApprover,
+            walletApprover.address,
             issuerInfoIpfsHash,
             issuerFactory
         );
@@ -82,19 +86,6 @@ async function main() {
     const transferTx = await asset.transfer(campaign.address, ethers.utils.parseEther("500000"));
     await ethers.provider.waitForTransaction(transferTx.hash);
     console.log("asset tokens transferred");
-
-    const investmentAmountWei = ethers.utils.parseEther("100000");
-    const approveTx = await stablecoin.approve(campaign.address, investmentAmountWei);
-    await ethers.provider.waitForTransaction(approveTx.hash);
-    console.log("approve passed");
-
-    const investTx = await campaign.invest(investmentAmountWei);
-    await ethers.provider.waitForTransaction(investTx.hash);
-    console.log(`invest passed, hash: ${investTx.hash}`);
-
-    const cancelInvestTx = await campaign.cancelInvestment();
-    await ethers.provider.waitForTransaction(cancelInvestTx.hash);
-    console.log(`cancel invest passed, hash: ${cancelInvestTx.hash}`);
 }
 
 main()

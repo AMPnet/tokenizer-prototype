@@ -33,6 +33,7 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
     event Finalize(address owner, uint256 totalFundsRaised, uint256 totalTokensSold, uint256 timestamp);
     event CancelCampaign(address owner, uint256 tokensReturned, uint256 timestamp);
     event SetInfo(string info, address setter, uint256 timestamp);
+    event ChangeOwnership(address caller, address newOwner, uint256 timestamp);
 
     //------------------------
     //  CONSTRUCTOR
@@ -67,9 +68,9 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
     //------------------------
     //  MODIFIERS
     //------------------------
-    modifier onlyOwner(address wallet) {
+    modifier onlyOwner() {
         require(
-            wallet == state.owner,
+            msg.sender == state.owner,
             "Only owner can call this function."
         );
         _;
@@ -169,7 +170,7 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
         emit Claim(investor, claimableTokens, claimableTokensValue, block.timestamp);
     }
 
-    function finalize() external onlyOwner(msg.sender) notFinalized {
+    function finalize() external onlyOwner notFinalized {
         IERC20 stablecoin = _stablecoin(); 
         IERC20 asset = _assetERC20();
         require(
@@ -184,7 +185,7 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
         emit Finalize(msg.sender, fundsRaised, state.totalClaimableTokens, block.timestamp);
     }
 
-    function cancelCampaign() external onlyOwner(msg.sender) notFinalized {
+    function cancelCampaign() external onlyOwner notFinalized {
         state.cancelled = true;
         uint256 tokenBalance = _assetERC20().balanceOf(address(this));
         if(tokenBalance > 0) {
@@ -196,7 +197,7 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
     //------------------------
     //  ICfManagerSoftcap IMPL
     //------------------------
-    function setInfo(string memory info) external override onlyOwner(msg.sender) {
+    function setInfo(string memory info) external override onlyOwner {
         infoHistory.push(Structs.InfoEntry(
             info,
             block.timestamp
@@ -211,6 +212,11 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
 
     function getState() external view override returns (Structs.CfManagerSoftcapState memory) {
         return state;
+    }
+
+    function changeOwnership(address newOwner) external override onlyOwner {
+        state.owner = newOwner;
+        emit ChangeOwnership(msg.sender, newOwner, block.timestamp);
     }
 
     //------------------------

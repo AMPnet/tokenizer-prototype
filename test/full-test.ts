@@ -11,6 +11,10 @@ describe("Full test", function () {
   let cfManagerFactory: Contract;
   let payoutManagerFactory: Contract;
 
+  //////// SERVICES ////////
+  let walletApproverService: Contract;
+  let deployerService: Contract;
+
   //////// SIGNERS ////////
   let deployer: Signer;
   let issuerOwner: Signer;
@@ -23,6 +27,7 @@ describe("Full test", function () {
   let stablecoin: Contract;
   let issuer: Contract;
   let asset: Contract;
+  let cfManager: Contract;
 
   beforeEach(async function () {
     const accounts: Signer[] = await ethers.getSigners();
@@ -49,66 +54,53 @@ describe("Full test", function () {
           3)successfully fund the project
     `,
     async function () {
-
-      //// Create issuer and update info
+      //// Set the config for Issuer, Asset and Crowdfunding Campaign 
       const issuerInfoHash = "issuer-info-ipfs-hash";
-      const updatedIssuerInfoHash = "updated-issuer-info-ipfs-hash";
       const issuerOwnerAddress = await issuerOwner.getAddress();
-      issuer = await helpers.createIssuer(
-        issuerOwnerAddress,
-        stablecoin,
-        await walletApprover.getAddress(),
-        issuerInfoHash,
-        issuerFactory
-      );
-      await helpers.setInfo(issuerOwner, issuer, updatedIssuerInfoHash);
-
-      //// Create Test Asset with 1M tokens of fixed supply minted to the creators wallet
       const assetName = "Test Asset";
       const assetTicker = "TSTA";
       const assetInfoHash = "asset-info-ipfs-hash";
-      const updatedAssetInfoHash = "updated-asset-info-hash";
       const assetTokenSupply = 1000000;
-      const assetTokenSupplyWei = ethers.utils.parseEther(assetTokenSupply.toString());
       const issuerWhitelistRequired = true;
-      asset = await helpers.createAsset(
-        issuerOwnerAddress,
-        issuer,
-        assetTokenSupply,
-        issuerWhitelistRequired,
-        assetName,
-        assetTicker,
-        assetInfoHash,
-        assetFactory
-      );
-      await helpers.setInfo(issuerOwner, asset, updatedAssetInfoHash);
-
-      //// Create Crowdfunding Campaign for Test Asset. Approve campaign and then transfer 80% of asset tokens to be sold via campaign.
       const campaignInitialPricePerToken = 10000;   // 1$ per token
       const maxTokensToBeSold = 800000;             // 800k tokens to be sold at most
       const campaignSoftCap = 400000;               // minimum $400k funds raised has to be reached for campaign to succeed
       const campaignWhitelistRequired = true;       // only whitelisted wallets can invest
       const campaignInfoHash = "campaign-info-ipfs-hash";
-      const updatedCampaignInfoHash = "updated-campaign-info-hash";
-      const cfManager = await helpers.createCfManager(
+
+      //// Deploy the contracts with the provided config
+      const contracts = await helpers.createIssuerAssetCampaign(
         issuerOwnerAddress,
-        asset,
+        stablecoin.address,
+        walletApproverService.address,
+        issuerInfoHash,
+        issuerOwnerAddress,
+        assetTokenSupply,
+        issuerWhitelistRequired,
+        assetName,
+        assetTicker,
+        assetInfoHash,
+        issuerOwnerAddress,
         campaignInitialPricePerToken,
         campaignSoftCap,
+        maxTokensToBeSold,
         campaignWhitelistRequired,
         campaignInfoHash,
-        cfManagerFactory
+        issuerFactory,
+        assetFactory,
+        cfManagerFactory,
+        deployerService
       );
-      await issuer.connect(issuerOwner).approveCampaign(cfManager.address);
-      await asset.connect(issuerOwner).transfer(cfManager.address, ethers.utils.parseEther(maxTokensToBeSold.toString()));
-      await helpers.setInfo(issuerOwner, cfManager, updatedCampaignInfoHash);
+      issuer = contracts[0];
+      asset = contracts[1];
+      cfManager = contracts[2];
 
       //// Alice buys $400k USDC and goes through kyc process (wallet approved)
       const aliceAddress = await alice.getAddress();
       const aliceInvestment = 400000;
       const aliceInvestmentWei = ethers.utils.parseEther(aliceInvestment.toString());
       await stablecoin.transfer(aliceAddress, aliceInvestmentWei);
-      await issuer.connect(walletApprover).approveWallet(aliceAddress);
+      await walletApproverService.connect(walletApprover).approveWallet(issuer.address, aliceAddress);
       
       //// Alice invests $400k USDC in the project
       await helpers.invest(alice, cfManager, stablecoin, aliceInvestmentWei);
@@ -118,7 +110,7 @@ describe("Full test", function () {
       const janeInvestment = 20000;
       const janeInvestmentWei = ethers.utils.parseEther(janeInvestment.toString());
       await stablecoin.transfer(janeAddress, janeInvestmentWei);
-      await issuer.connect(walletApprover).approveWallet(janeAddress);
+      await walletApproverService.connect(walletApprover).approveWallet(issuer.address, janeAddress);
       
       //// Jane invests $20k USDC in the project and then cancels her investment
       await helpers.invest(jane, cfManager, stablecoin, janeInvestmentWei);
@@ -239,7 +231,7 @@ describe("Full test", function () {
       console.log("Wallet records", walletRecords);
 
       //// Fetch issuer approved campaigns
-      const campaignRecords = await helpers.fetchCampaignRecords(issuer);
+      const campaignRecords = await helpers.fetchCampaignRecords(asset);
       console.log("Campaign records", campaignRecords);
     }
   );

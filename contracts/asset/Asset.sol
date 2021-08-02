@@ -20,11 +20,12 @@ contract Asset is IAsset, ERC20Snapshot {
     //------------------------
     //  EVENTS
     //------------------------
-    event SetOwner(address oldOwner, address newOwner, uint256 timestamp);
+    event ChangeOwnership(address caller, address newOwner, uint256 timestamp);
     event SetInfo(string info, address setter, uint256 timestamp);
     event SetWhitelistRequiredForTransfer(address caller, bool whitelistRequiredForTransfer, uint256 timestamp);
     event SetApprovedByIssuer(address caller, bool approvedByIssuer, uint256 timestamp);
     event CampaignWhitelist(address approver, address wallet, bool whitelisted, uint256 timestamp);
+    event SetIssuerStatus(address approver, bool status, uint256 timestamp);
 
     //------------------------
     //  CONSTRUCTOR
@@ -76,7 +77,7 @@ contract Asset is IAsset, ERC20Snapshot {
         _;
     }
 
-    modifier ownerOnly() {
+    modifier onlyOwner() {
         require(
             msg.sender == state.owner,
             "Only asset creator can make this action."
@@ -92,32 +93,29 @@ contract Asset is IAsset, ERC20Snapshot {
         _;
     }
 
-    function approveCampaign(address campaign) external ownerOnly {
+    //------------------------
+    //  IAsset IMPL
+    //------------------------
+    function approveCampaign(address campaign) external override onlyOwner {
         _setCampaignState(campaign, true);
         emit CampaignWhitelist(msg.sender, campaign, true, block.timestamp);
     }
 
-    function suspendCampaign(address campaign) external ownerOnly {
+    function suspendCampaign(address campaign) external override onlyOwner {
         _setCampaignState(campaign, false);
         emit CampaignWhitelist(msg.sender, campaign, false, block.timestamp);
     }
 
-    //------------------------
-    //  IAsset IMPL
-    //------------------------
-    function setOwner(address newOwner)
+    function changeOwnership(address newOwner)
         external
         override
-        ownerOnly
+        onlyOwner
     {
         state.owner = newOwner;
-        if (IIssuer(state.issuer).getState().owner == state.owner) {
-            state.assetApprovedByIssuer = true;
-        }
-        emit SetOwner(msg.sender, newOwner, block.timestamp);
+        emit ChangeOwnership(msg.sender, newOwner, block.timestamp);
     }
 
-    function setInfo(string memory info) external override ownerOnly {
+    function setInfo(string memory info) external override onlyOwner {
         infoHistory.push(Structs.InfoEntry(
             info,
             block.timestamp
@@ -126,7 +124,7 @@ contract Asset is IAsset, ERC20Snapshot {
         emit SetInfo(info, msg.sender, block.timestamp);
     }
 
-    function setWhitelistRequiredForTransfer(bool whitelistRequiredForTransfer) external ownerOnly {
+    function setWhitelistRequiredForTransfer(bool whitelistRequiredForTransfer) external onlyOwner {
         state.whitelistRequiredForTransfer = whitelistRequiredForTransfer;
         emit SetWhitelistRequiredForTransfer(msg.sender, whitelistRequiredForTransfer, block.timestamp);
     }
@@ -149,6 +147,11 @@ contract Asset is IAsset, ERC20Snapshot {
 
     function getCampaignRecords() external view override returns (Structs.WalletRecord[] memory) {
         return approvedCampaigns;
+    }
+
+    function setIssuerStatus(bool status) external override issuerOwnerOnly {
+        state.assetApprovedByIssuer = status;
+        emit SetIssuerStatus(msg.sender, status, block.timestamp);
     }
 
     //------------------------

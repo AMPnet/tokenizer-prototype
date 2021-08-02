@@ -10,7 +10,9 @@ interface IAsset {
     function getInfoHistory() external view returns (Structs.InfoEntry[] memory);
     function setInfo(string memory info) external;
     function snapshot() external returns (uint256);
-    function setOwner(address newOwner) external;
+    function changeOwnership(address newOwner) external;
     function getCampaignRecords() external view returns (Structs.WalletRecord[] memory);
     function approveCampaign(address campaign) external;
+    function suspendCampaign(address campaign) external;
+    function setIssuerStatus(bool status) external;
 }

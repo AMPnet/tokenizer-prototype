@@ -4,7 +4,7 @@
 # One of the networks defined in the hardhat.config.ts. The script will be executed on the selected network.
 # > If running local node, value should be: localhost
 # > If need to use hardhat in-memory chain kept alive only while the process is running, value should be: hardhat
-export NETWORK=mumbai
+export NETWORK=hardhat
 
 ############################################## Faucet params ##############################################
 # > stablecoin is an address of the stablecoin deployed and owned by the accounts[0]

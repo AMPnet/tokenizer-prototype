@@ -21,6 +21,8 @@ contract WalletApproverService {
     event SuspendWallet(address indexed caller, address wallet, uint256 timestamp);
     event WalletFunded(address indexed caller, address wallet, uint256 reward, uint256 timestamp);
     event UpdateRewardAmount(address indexed caller, uint256 oldAmount, uint256 newAmount, uint256 timestamp);
+    event Received(address indexed sender, uint256 amount, uint256 timestamp);
+    event Released(address indexed receiver, uint256 amount, uint256 timestamp);
 
     //------------------------
     //  CONSTRUCTOR
@@ -111,6 +113,19 @@ contract WalletApproverService {
     ) public isAllowedToApproveForIssuer(issuer) {
         issuer.suspendWallet(wallet);
         emit SuspendWallet(msg.sender, wallet, block.timestamp);
+    }
+
+    //------------------------
+    //  NATIVE TOKEN OPS
+    //------------------------
+    receive() external payable {
+        emit Received(msg.sender, msg.value, block.timestamp);
+    }
+
+    function release() external isMasterOwner {
+        uint256 amount = address(this).balance;
+        payable(msg.sender).transfer(amount);
+        emit Released(msg.sender, amount, block.timestamp);
     }
 
 }

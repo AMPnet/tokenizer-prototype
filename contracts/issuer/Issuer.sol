@@ -61,12 +61,12 @@ contract Issuer is IIssuer {
     //------------------------
     //  STATE CHANGE FUNCTIONS
     //------------------------
-    function changeWalletApprover(address newWalletApprover) external onlyOwner {
+    function changeWalletApprover(address newWalletApprover) external override onlyOwner {
         state.walletApprover = newWalletApprover;
         emit ChangeWalletApprover(state.walletApprover, newWalletApprover, block.timestamp);
     }
 
-    function changeOwnership(address newOwner) external onlyOwner {
+    function changeOwnership(address newOwner) external override onlyOwner {
         address oldOwner = state.owner;
         state.owner = newOwner;
         _setWalletState(oldOwner, false);
