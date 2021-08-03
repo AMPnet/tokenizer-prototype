@@ -167,6 +167,78 @@ export async function createIssuerAssetCampaign(
   return [issuer, asset, campaign];
 }
 
+export async function createAssetCampaign(
+  issuer: Contract,
+  assetOwner: String,
+  assetInitialTokenSupply: Number,
+  assetWhitelistRequired: boolean,
+  assetName: String,
+  assetSymbol: String,
+  assetInfo: String,
+  cfManagerOwner: String,
+  cfManagerPricePerToken: Number,
+  cfManagerSoftcap: Number,
+  cfManagerTokensToSellAmount: Number,
+  cfManagerWhitelistRequired: boolean,
+  cfManagerInfo: String,
+  assetFactory: Contract,
+  cfManagerFactory: Contract,
+  deployerService: Contract
+): Promise<Array<Contract>> {
+  const assetInitialTokenSupplyWei = ethers.utils.parseEther(assetInitialTokenSupply.toString());
+  const cfManagerSoftcapWei = ethers.utils.parseEther(cfManagerSoftcap.toString());
+  const cfManagerTokensToSellAmountWei = ethers.utils.parseEther(cfManagerTokensToSellAmount.toString());
+  const deployTx = await deployerService.deployAssetCampaign(
+    [
+      assetFactory.address,
+      cfManagerFactory.address,
+      issuer.address,
+      assetOwner,
+      assetInitialTokenSupplyWei,
+      assetWhitelistRequired,
+      assetName,
+      assetSymbol,
+      assetInfo,
+      cfManagerOwner,
+      cfManagerPricePerToken,
+      cfManagerSoftcapWei,
+      cfManagerTokensToSellAmountWei,
+      cfManagerWhitelistRequired,
+      cfManagerInfo
+    ]
+  );
+  const receipt = await ethers.provider.waitForTransaction(deployTx.hash);
+
+  let assetAddress: string;
+  let cfManagerAddress: string;
+  for (const log of receipt.logs) {
+    try {
+      const parsedLog = assetFactory.interface.parseLog(log);
+      if (parsedLog.name == "AssetCreated") {
+        const ownerAddress = parsedLog.args.creator;
+        const id = parsedLog.args.id;
+        assetAddress = parsedLog.args.asset;
+        console.log(`\nAsset deployed\n\tAt address: ${assetAddress}\n\tOwner: ${ownerAddress}\n\tID: ${id}`);
+      }
+    } catch (_) {}
+
+    try {
+      const parsedLog = cfManagerFactory.interface.parseLog(log);
+      if (parsedLog.name == "CfManagerSoftcapCreated") {
+        const ownerAddress = parsedLog.args.creator;
+        const assetAddress = parsedLog.args.asset;
+        const id = parsedLog.args.id;
+        cfManagerAddress = parsedLog.args.cfManager;
+        console.log(`\nCrowdfunding Campaign deployed\n\tAt address: ${cfManagerAddress}\n\tOwner: ${ownerAddress}\n\tAsset: ${assetAddress}\n\tID: ${id}`);
+      }
+    } catch (_) {}
+  }
+  const asset = await ethers.getContractAt("Asset", assetAddress);
+  const campaign = await ethers.getContractAt("CfManagerSoftcap", cfManagerAddress);
+
+  return [asset, campaign];
+}
+
 /**
  * Creates the issuer instance.
  * Issuer has to be created before any of the assets or crowdfunding campaigns was created.

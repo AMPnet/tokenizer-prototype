@@ -11,6 +11,9 @@ import "../managers/crowdfunding-softcap/ICfManagerSoftcapFactory.sol";
 
 contract DeployerService {
 
+    event DeployIssuerAssetCampaign(address caller, address issuer, address asset, address campaign, uint256 timestamp);
+    event DeployAssetCampaign(address caller, address asset, address campaign, uint256 timestamp);
+
     struct DeployIssuerAssetCampaignRequest {
         IIssuerFactory issuerFactory;
         IAssetFactory assetFactory;
@@ -33,6 +36,24 @@ contract DeployerService {
         string cfManagerInfo;
     }
 
+    struct DeployAssetCampaignRequest {
+        IAssetFactory assetFactory;
+        ICfManagerSoftcapFactory cfManagerSoftcapFactory;
+        address issuer;
+        address assetOwner;
+        uint256 assetInitialTokenSupply;
+        bool assetWhitelistRequired;
+        string assetName;
+        string assetSymbol;
+        string assetInfo;
+        address cfManagerOwner;
+        uint256 cfManagerPricePerToken;
+        uint256 cfManagerSoftcap;
+        uint256 cfManagerTokensToSellAmount;
+        bool cfManagerWhitelistRequired;
+        string cfManagerInfo;
+    }
+ 
     function deployIssuerAssetCampaign(DeployIssuerAssetCampaignRequest memory request) external {
         // Deploy contracts
         IIssuer issuer = IIssuer(request.issuerFactory.create(
@@ -59,12 +80,10 @@ contract DeployerService {
             request.cfManagerInfo
         ));
 
-        // Approve owners and campaign
+        // Whitelist owners
         issuer.approveWallet(request.issuerOwner);
         issuer.approveWallet(request.assetOwner);
         issuer.approveWallet(request.cfManagerOwner);
-        asset.approveCampaign(address(campaign));
-        asset.setIssuerStatus(true);
         
         // Transfer tokens to sell to the campaign, transfer the rest to the asset owner's wallet
         uint256 tokensToSell = request.cfManagerTokensToSellAmount;
@@ -78,14 +97,42 @@ contract DeployerService {
         issuer.changeOwnership(request.issuerOwner);
         asset.changeOwnership(request.assetOwner);
         campaign.changeOwnership(request.cfManagerOwner);
+
+        emit DeployIssuerAssetCampaign(msg.sender, address(issuer), address(asset), address(campaign), block.timestamp);
     }
 
-    function deployAssetCampaign() external {
-        // TODO: Implement
-    }
+    function deployAssetCampaign(DeployAssetCampaignRequest memory request) external {
+        // Deploy contracts
+        IAsset asset = IAsset(request.assetFactory.create(
+            address(this),
+            request.issuer,
+            request.assetInitialTokenSupply,
+            request.assetWhitelistRequired,
+            request.assetName,
+            request.assetSymbol,
+            request.assetInfo
+        ));
+        ICfManagerSoftcap campaign = ICfManagerSoftcap(request.cfManagerSoftcapFactory.create(
+            address(this),
+            address(asset),
+            request.cfManagerPricePerToken,
+            request.cfManagerSoftcap,
+            request.cfManagerWhitelistRequired,
+            request.cfManagerInfo
+        ));
 
-    function deployCampaign() external {
-        // TODO: Implement
+        // Transfer tokens to sell to the campaign, transfer the rest to the asset owner's wallet
+        uint256 tokensToSell = request.cfManagerTokensToSellAmount;
+        uint256 tokensToKeep = asset.totalShares() - tokensToSell;
+        IERC20 assetERC20 = IERC20(address(asset));
+        assetERC20.transfer(address(campaign), tokensToSell);
+        assetERC20.transfer(request.assetOwner, tokensToKeep);
+
+        // Transfer ownerships from address(this) to the actual owner wallets
+        asset.changeOwnership(request.assetOwner);
+        campaign.changeOwnership(request.cfManagerOwner);
+
+        emit DeployAssetCampaign(msg.sender, address(asset), address(campaign), block.timestamp);
     }
 
 }

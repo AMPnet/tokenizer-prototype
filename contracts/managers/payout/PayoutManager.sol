@@ -25,8 +25,8 @@ contract PayoutManager is IPayoutManager {
     //------------------------
     //  STATE
     //------------------------
-    Structs.PayoutManagerState private state;
-    Structs.InfoEntry[] private infoHistory;
+    Structs.PayoutManagerState public state;
+    Structs.InfoEntry[] public infoHistory;
     Payout[] public payouts;
     mapping (uint256 => uint256) public snapshotToPayout;
     

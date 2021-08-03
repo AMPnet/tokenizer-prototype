@@ -78,11 +78,15 @@ describe("Full test", function () {
       const campaignInfoHash = "campaign-info-ipfs-hash";
 
       //// Deploy the contracts with the provided config
-      const contracts = await helpers.createIssuerAssetCampaign(
+      issuer = await helpers.createIssuer(
         issuerOwnerAddress,
-        stablecoin.address,
+        stablecoin,
         walletApproverService.address,
         issuerInfoHash,
+        issuerFactory
+      );
+      const contracts = await helpers.createAssetCampaign(
+        issuer,
         issuerOwnerAddress,
         assetTokenSupply,
         issuerWhitelistRequired,
@@ -95,14 +99,35 @@ describe("Full test", function () {
         maxTokensToBeSold,
         campaignWhitelistRequired,
         campaignInfoHash,
-        issuerFactory,
         assetFactory,
         cfManagerFactory,
         deployerService
       );
-      issuer = contracts[0];
-      asset = contracts[1];
-      cfManager = contracts[2];
+      // const contracts = await helpers.createIssuerAssetCampaign(
+      //   issuerOwnerAddress,
+      //   stablecoin.address,
+      //   walletApproverService.address,
+      //   issuerInfoHash,
+      //   issuerOwnerAddress,
+      //   assetTokenSupply,
+      //   issuerWhitelistRequired,
+      //   assetName,
+      //   assetTicker,
+      //   assetInfoHash,
+      //   issuerOwnerAddress,
+      //   campaignInitialPricePerToken,
+      //   campaignSoftCap,
+      //   maxTokensToBeSold,
+      //   campaignWhitelistRequired,
+      //   campaignInfoHash,
+      //   issuerFactory,
+      //   assetFactory,
+      //   cfManagerFactory,
+      //   deployerService
+      // );
+      // issuer = contracts[0];
+      asset = contracts[0];
+      cfManager = contracts[1];
 
       //// Alice buys $400k USDC and goes through kyc process (wallet approved)
       const aliceAddress = await alice.getAddress();

@@ -5,20 +5,21 @@ import "../issuer/IIssuer.sol";
 import "../shared/Structs.sol";
 
 contract Issuer is IIssuer {
+
     //------------------------
     //  STATE
     //------------------------
     Structs.IssuerState private state;
     Structs.InfoEntry[] private infoHistory;
+    Structs.WalletRecord[] private approvedWallets;
     mapping (address => uint256) public approvedWalletsMap;
-    Structs.WalletRecord[] public approvedWallets;
 
     //------------------------
     //  EVENTS
     //------------------------
     event WalletWhitelist(address approver, address wallet, bool whitelisted, uint256 timestamp);
     event ChangeOwnership(address caller, address newOwner, uint256 timestamp);
-    event ChangeWalletApprover(address oldWalletApprover, address newWalletApprover, uint256 timestamp);
+    event ChangeWalletApprover(address caller, address oldWalletApprover, address newWalletApprover, uint256 timestamp);
     event SetInfo(string info, address setter, uint256 timestamp);
 
     //------------------------
@@ -37,6 +38,7 @@ contract Issuer is IIssuer {
         ));
         state = Structs.IssuerState(
             id,
+            address(this),
             owner,
             stablecoin,
             walletApprover,
@@ -48,46 +50,26 @@ contract Issuer is IIssuer {
     //------------------------
     //  MODIFIERS
     //------------------------
-    modifier onlyOwner {
-        require(msg.sender == state.owner);
+    modifier ownerOnly {
+        require(
+            msg.sender == state.owner,
+            "Issuer: Only owner can make this action."
+        );
         _;
     }
 
-    modifier onlyWalletApprover {
-        require(msg.sender == state.walletApprover);
+    modifier walletApproverOnly {
+        require(
+            msg.sender == state.walletApprover,
+            "Issuer: Only wallet approver can make this action."
+        );
         _;
     }
-
-    //------------------------
-    //  STATE CHANGE FUNCTIONS
-    //------------------------
-    function changeWalletApprover(address newWalletApprover) external override onlyOwner {
-        state.walletApprover = newWalletApprover;
-        emit ChangeWalletApprover(state.walletApprover, newWalletApprover, block.timestamp);
-    }
-
-    function changeOwnership(address newOwner) external override onlyOwner {
-        address oldOwner = state.owner;
-        state.owner = newOwner;
-        _setWalletState(oldOwner, false);
-        _setWalletState(newOwner, true);
-        emit ChangeOwnership(msg.sender, newOwner, block.timestamp);
-    }
-
+    
     //------------------------
     //  IIssuer IMPL
     //------------------------
-    function approveWallet(address wallet) external override onlyWalletApprover {
-        _setWalletState(wallet, true);
-        emit WalletWhitelist(msg.sender, wallet, true, block.timestamp);
-    }
-
-    function suspendWallet(address wallet) external override onlyWalletApprover {
-        _setWalletState(wallet, false);
-        emit WalletWhitelist(msg.sender, wallet, false, block.timestamp);
-    }
-
-    function setInfo(string memory info) external override onlyOwner {
+    function setInfo(string memory info) external override ownerOnly {
         infoHistory.push(Structs.InfoEntry(
             info,
             block.timestamp
@@ -96,14 +78,41 @@ contract Issuer is IIssuer {
         emit SetInfo(info, msg.sender, block.timestamp);
     }
 
+    function approveWallet(address wallet) external override walletApproverOnly {
+        _setWalletState(wallet, true);
+        emit WalletWhitelist(msg.sender, wallet, true, block.timestamp);
+    }
+
+    function suspendWallet(address wallet) external override walletApproverOnly {
+        _setWalletState(wallet, false);
+        emit WalletWhitelist(msg.sender, wallet, false, block.timestamp);
+    }
+
+    function changeOwnership(address newOwner) external override ownerOnly {
+        address oldOwner = state.owner;
+        state.owner = newOwner;
+        _setWalletState(oldOwner, false);
+        _setWalletState(newOwner, true);
+        emit ChangeOwnership(msg.sender, newOwner, block.timestamp);
+    }
+
+    function changeWalletApprover(address newWalletApprover) external override {
+        require(
+            msg.sender == state.owner ||
+            msg.sender == state.walletApprover,
+            "Issuer: not allowed to call this function."
+        );
+        state.walletApprover = newWalletApprover;
+        emit ChangeWalletApprover(msg.sender, state.walletApprover, newWalletApprover, block.timestamp);
+    }
+
     function getState() external override view returns (Structs.IssuerState memory) { return state; }
     
     function isWalletApproved(address wallet) external view override returns (bool) {
         bool walletExists = _addressExists(wallet);
         if (!walletExists) {
             return false;
-        }
-        else {
+        } else {
             return approvedWallets[approvedWalletsMap[wallet]].whitelisted;
         }
     }
