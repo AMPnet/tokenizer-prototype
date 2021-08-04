@@ -27,9 +27,13 @@ async function main() {
         await ethers.getContractAt("CfManagerSoftcapFactory", process.env.CF_MANAGER_FACTORY) :
         await helpers.deployCfManagerFactory(deployer);
 
-    const walletApprover: Contract = (process.env.WALLET_APPROVER) ?
+    const walletApproverService: Contract = (process.env.WALLET_APPROVER) ?
         await ethers.getContractAt("WalletApproverService", process.env.WALLET_APPROVER) :
         await helpers.deployWalletApproverService(deployer, process.env.WALLET_APPROVER_MASTER_OWNER, "0.001");
+
+    const deployerService: Contract = (process.env.DEPLOYER) ?
+        await ethers.getContractAt("DeployerService", process.env.DEPLOYER) :
+        await helpers.deployDeployerService(deployer);
 
     const issuerOwner = process.env.ISSUER_OWNER || deployerAddress;
     const issuerInfoIpfsHash = process.env.ISSUER_IPFS || "issuer-info-ipfs-hash";
@@ -39,7 +43,7 @@ async function main() {
         await helpers.createIssuer(
             issuerOwner,
             stablecoin,
-            walletApprover.address,
+            walletApproverService.address,
             issuerInfoIpfsHash,
             issuerFactory
         );
