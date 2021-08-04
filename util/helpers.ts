@@ -89,6 +89,8 @@ export async function createIssuerAssetCampaign(
   cfManagerOwner: String,
   cfManagerPricePerToken: Number,
   cfManagerSoftcap: Number,
+  cfManagerMinInvestment: Number,
+  cfManagerMaxInvestment: Number,
   cfManagerTokensToSellAmount: Number,
   cfManagerWhitelistRequired: boolean,
   cfManagerInfo: String,
@@ -100,6 +102,8 @@ export async function createIssuerAssetCampaign(
   const assetInitialTokenSupplyWei = ethers.utils.parseEther(assetInitialTokenSupply.toString());
   const cfManagerSoftcapWei = ethers.utils.parseEther(cfManagerSoftcap.toString());
   const cfManagerTokensToSellAmountWei = ethers.utils.parseEther(cfManagerTokensToSellAmount.toString());
+  const cfManagerMinInvestmentWei = ethers.utils.parseEther(cfManagerMinInvestment.toString());
+  const cfManagerMaxInvestmentWei = ethers.utils.parseEther(cfManagerMaxInvestment.toString());
   const deployTx = await deployerService.deployIssuerAssetCampaign(
     [
       issuerFactory.address,
@@ -118,6 +122,8 @@ export async function createIssuerAssetCampaign(
       cfManagerOwner,
       cfManagerPricePerToken,
       cfManagerSoftcapWei,
+      cfManagerMinInvestmentWei,
+      cfManagerMaxInvestmentWei,
       cfManagerTokensToSellAmountWei,
       cfManagerWhitelistRequired,
       cfManagerInfo
@@ -178,6 +184,8 @@ export async function createAssetCampaign(
   cfManagerOwner: String,
   cfManagerPricePerToken: Number,
   cfManagerSoftcap: Number,
+  cfManagerMinInvestment: Number,
+  cfManagerMaxInvestment: Number,
   cfManagerTokensToSellAmount: Number,
   cfManagerWhitelistRequired: boolean,
   cfManagerInfo: String,
@@ -187,6 +195,8 @@ export async function createAssetCampaign(
 ): Promise<Array<Contract>> {
   const assetInitialTokenSupplyWei = ethers.utils.parseEther(assetInitialTokenSupply.toString());
   const cfManagerSoftcapWei = ethers.utils.parseEther(cfManagerSoftcap.toString());
+  const cfManagerMinInvestmentWei = ethers.utils.parseEther(cfManagerMinInvestment.toString());
+  const cfManagerMaxInvestmentWei = ethers.utils.parseEther(cfManagerMaxInvestment.toString());
   const cfManagerTokensToSellAmountWei = ethers.utils.parseEther(cfManagerTokensToSellAmount.toString());
   const deployTx = await deployerService.deployAssetCampaign(
     [
@@ -202,6 +212,8 @@ export async function createAssetCampaign(
       cfManagerOwner,
       cfManagerPricePerToken,
       cfManagerSoftcapWei,
+      cfManagerMinInvestmentWei,
+      cfManagerMaxInvestmentWei,
       cfManagerTokensToSellAmountWei,
       cfManagerWhitelistRequired,
       cfManagerInfo
@@ -353,6 +365,8 @@ export async function createCfManager(
   asset: Contract,
   pricePerToken: Number,
   softCap: Number,
+  minInvestment: Number,
+  maxInvestment: Number,
   whitelistRequired: boolean,
   info: String,
   cfManagerFactory: Contract
@@ -362,6 +376,8 @@ export async function createCfManager(
     asset.address,
     pricePerToken,
     ethers.utils.parseEther(softCap.toString()),
+    ethers.utils.parseEther(minInvestment.toString()),
+    ethers.utils.parseEther(maxInvestment.toString()),
     whitelistRequired,
     info
   );
@@ -424,10 +440,10 @@ export async function createPayoutManager(
  * @param stablecoin Stablecoin contract instance to be used for payment
  * @param amount Amount of the stablecoin to be invested
  */
-export async function invest(investor: Signer, cfManager: Contract, stablecoin: Contract, amount: BigNumber) {
-  const investmentWei = ethers.utils.parseEther(amount.toString());
-  await stablecoin.connect(investor).approve(cfManager.address, investmentWei);
-  await cfManager.connect(investor).invest(amount);
+export async function invest(investor: Signer, cfManager: Contract, stablecoin: Contract, amount: Number) {
+  const amountWei = ethers.utils.parseEther(amount.toString());
+  await stablecoin.connect(investor).approve(cfManager.address, amountWei);
+  await cfManager.connect(investor).invest(amountWei);
 }
 
 /**

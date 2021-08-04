@@ -31,6 +31,8 @@ contract DeployerService {
         address cfManagerOwner;
         uint256 cfManagerPricePerToken;
         uint256 cfManagerSoftcap;
+        uint256 cfManagerSoftcapMinInvestment;
+        uint256 cfManagerSoftcapMaxInvestment;
         uint256 cfManagerTokensToSellAmount;
         bool cfManagerWhitelistRequired;
         string cfManagerInfo;
@@ -49,6 +51,8 @@ contract DeployerService {
         address cfManagerOwner;
         uint256 cfManagerPricePerToken;
         uint256 cfManagerSoftcap;
+        uint256 cfManagerSoftcapMinInvestment;
+        uint256 cfManagerSoftcapMaxInvestment;
         uint256 cfManagerTokensToSellAmount;
         bool cfManagerWhitelistRequired;
         string cfManagerInfo;
@@ -76,6 +80,8 @@ contract DeployerService {
             address(asset),
             request.cfManagerPricePerToken,
             request.cfManagerSoftcap,
+            request.cfManagerSoftcapMinInvestment,
+            request.cfManagerSoftcapMaxInvestment,
             request.cfManagerWhitelistRequired,
             request.cfManagerInfo
         ));
@@ -117,6 +123,8 @@ contract DeployerService {
             address(asset),
             request.cfManagerPricePerToken,
             request.cfManagerSoftcap,
+            request.cfManagerSoftcapMinInvestment,
+            request.cfManagerSoftcapMaxInvestment,
             request.cfManagerWhitelistRequired,
             request.cfManagerInfo
         ));

@@ -43,6 +43,8 @@ contract PayoutManager is IPayoutManager {
     constructor(uint256 id, address owner, address assetAddress, string memory info) {
         state = Structs.PayoutManagerState(
             id,
+            address(this),
+            msg.sender,
             owner,
             assetAddress,
             info

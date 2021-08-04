@@ -7,5 +7,7 @@ interface ICfManagerSoftcap {
     function setInfo(string memory info) external;
     function getInfoHistory() external view returns (Structs.InfoEntry[] memory);
     function getState() external view returns (Structs.CfManagerSoftcapState memory);
+    function claims(address investor) external view returns (uint256);
+    function investments(address investor) external view returns (uint256);
     function changeOwnership(address newOwner) external;
 }

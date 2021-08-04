@@ -74,6 +74,8 @@ describe("Full test", function () {
       const campaignInitialPricePerToken = 10000;   // 1$ per token
       const maxTokensToBeSold = 800000;             // 800k tokens to be sold at most
       const campaignSoftCap = 400000;               // minimum $400k funds raised has to be reached for campaign to succeed
+      const campaignMinInvestment = 10000           // $10k min investment per user
+      const campaignMaxInvestment = 400000          // $400k max investment per user
       const campaignWhitelistRequired = true;       // only whitelisted wallets can invest
       const campaignInfoHash = "campaign-info-ipfs-hash";
 
@@ -96,6 +98,8 @@ describe("Full test", function () {
         issuerOwnerAddress,
         campaignInitialPricePerToken,
         campaignSoftCap,
+        campaignMinInvestment,
+        campaignMaxInvestment,
         maxTokensToBeSold,
         campaignWhitelistRequired,
         campaignInfoHash,
@@ -137,7 +141,7 @@ describe("Full test", function () {
       await walletApproverService.connect(walletApprover).approveWallet(issuer.address, aliceAddress);
       
       //// Alice invests $400k USDC in the project
-      await helpers.invest(alice, cfManager, stablecoin, aliceInvestmentWei);
+      await helpers.invest(alice, cfManager, stablecoin, aliceInvestment);
 
       //// Jane buys $20k USDC and goes through kyc process (wallet approved)
       const janeAddress = await jane.getAddress();
@@ -147,7 +151,7 @@ describe("Full test", function () {
       await walletApproverService.connect(walletApprover).approveWallet(issuer.address, janeAddress);
       
       //// Jane invests $20k USDC in the project and then cancels her investment
-      await helpers.invest(jane, cfManager, stablecoin, janeInvestmentWei);
+      await helpers.invest(jane, cfManager, stablecoin, janeInvestment);
       await helpers.cancelInvest(jane, cfManager);
 
       // Asset owner finalizes the campaign as the soft cap has been reached.

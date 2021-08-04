@@ -17,7 +17,7 @@ contract Issuer is IIssuer {
     //------------------------
     //  EVENTS
     //------------------------
-    event WalletWhitelist(address approver, address wallet, bool whitelisted, uint256 timestamp);
+    event WalletWhitelist(address indexed approver, address wallet, bool whitelisted, uint256 timestamp);
     event ChangeOwnership(address caller, address newOwner, uint256 timestamp);
     event ChangeWalletApprover(address caller, address oldWalletApprover, address newWalletApprover, uint256 timestamp);
     event SetInfo(string info, address setter, uint256 timestamp);
@@ -39,6 +39,7 @@ contract Issuer is IIssuer {
         state = Structs.IssuerState(
             id,
             address(this),
+            msg.sender,
             owner,
             stablecoin,
             walletApprover,

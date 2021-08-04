@@ -7,6 +7,8 @@ interface ICfManagerSoftcapFactory {
         address assetAddress,
         uint256 initialPricePerToken,
         uint256 softCap,
+        uint256 minInvestment,
+        uint256 maxInvestment,
         bool whitelistRequired,
         string memory info
     ) external returns (address);

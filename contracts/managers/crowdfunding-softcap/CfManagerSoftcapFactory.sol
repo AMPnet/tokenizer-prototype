@@ -24,6 +24,8 @@ contract CfManagerSoftcapFactory is ICfManagerSoftcapFactory {
         address assetAddress,
         uint256 initialPricePerToken,
         uint256 softCap,
+        uint256 minInvestment,
+        uint256 maxInvestment,
         bool whitelistRequired,
         string memory info
     ) external override returns (address) {
@@ -34,6 +36,8 @@ contract CfManagerSoftcapFactory is ICfManagerSoftcapFactory {
             assetAddress,
             initialPricePerToken,
             softCap,
+            minInvestment,
+            maxInvestment,
             whitelistRequired,
             info
         ));

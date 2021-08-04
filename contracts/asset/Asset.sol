@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Snapshot.sol";
 import "../asset/IAsset.sol";
 import "../issuer/IIssuer.sol";
 import "../managers/crowdfunding-softcap/ICfManagerSoftcap.sol";
+import "../tokens/IMirroredToken.sol";
 import "../shared/Structs.sol";
 
 contract Asset is IAsset, ERC20Snapshot {
@@ -20,6 +21,7 @@ contract Asset is IAsset, ERC20Snapshot {
     Structs.WalletRecord[] private approvedCampaigns;
     Structs.TokenSaleInfo[] private sellHistory;
     mapping (address => uint256) public approvedCampaignsMap;
+    mapping (address => Structs.TokenSaleInfo) public successfulTokenSalesMap;
     mapping (address => mapping (address => uint256)) public liquidationClaimsMap;
 
     //------------------------
@@ -34,8 +36,9 @@ contract Asset is IAsset, ERC20Snapshot {
     event FinalizeSale(address campaign, uint256 tokenAmount, uint256 tokenValue, uint256 timestamp);
     event Liquidated(address liquidator, uint256 fundsReceived, uint256 preLiquidationSnapshotId, uint256 timestamp);
     event SetMirroredToken(address caller, address mirroredToken, uint256 timestamp);
-    event ConvertFromMirrored(address caller, address mirroredToken, uint256 amount, uint256 timestamp);
-    
+    event ConvertFromMirrored(address indexed caller, address mirroredToken, uint256 amount, uint256 timestamp);
+    event ClaimLiquidationShare(address investor, address campaign, uint256 amount, uint256 timestamp);
+
     //------------------------
     //  CONSTRUCTOR
     //------------------------
@@ -59,6 +62,7 @@ contract Asset is IAsset, ERC20Snapshot {
         state = Structs.AssetState(
             id,
             contractAddress,
+            msg.sender,
             owner,
             address(0),
             initialTokenSupply,
@@ -69,7 +73,8 @@ contract Asset is IAsset, ERC20Snapshot {
             name,
             symbol,
             0, 0,
-            false
+            false,
+            0, 0, 0
         );
         _mint(owner, initialTokenSupply);
     }
@@ -161,7 +166,7 @@ contract Asset is IAsset, ERC20Snapshot {
     function convertFromMirrored() external override notLiquidated {
         require(
             state.mirroredToken != address(0),
-            "Asset: can't claim mirrored token; Mirrored token was never initialized."
+            "Asset: can't convert from mirrored token; Mirrored token was never initialized."
         );
         IERC20 mirroredToken = IERC20(state.mirroredToken);
         uint256 amount = mirroredToken.allowance(msg.sender, address(this));
@@ -175,12 +180,16 @@ contract Asset is IAsset, ERC20Snapshot {
     }
 
     function finalizeSale(uint256 tokenAmount, uint256 tokenValue) external override notLiquidated {
-        require(_campaignWhitelisted(msg.sender), "Asset: Campaign not approved.");
+        address campaign = msg.sender;
+        require(_campaignWhitelisted(campaign), "Asset: Campaign not approved.");
+        
         state.totalAmountRaised += tokenValue;
         state.totalTokensSold += tokenAmount;
-        sellHistory.push(Structs.TokenSaleInfo(
-            msg.sender, tokenAmount, tokenValue, block.timestamp
-        ));
+        Structs.TokenSaleInfo memory tokenSaleInfo = Structs.TokenSaleInfo(
+            campaign, tokenAmount, tokenValue, block.timestamp
+        );
+        sellHistory.push(tokenSaleInfo);
+        successfulTokenSalesMap[campaign] = tokenSaleInfo;
         emit FinalizeSale(
             msg.sender,
             tokenAmount,
@@ -190,19 +199,50 @@ contract Asset is IAsset, ERC20Snapshot {
     }
 
     function liquidate() external override notLiquidated ownerOnly {
-        IERC20 stablecoin = IERC20(IIssuer(state.issuer).getState().stablecoin);
+        // Liquidate mirrored asset first (only if mirrored asset exists and some of the supply is actually mirrored)
+        if (state.mirroredToken != address(0) && balanceOf(state.mirroredToken) > 0) {
+            IMirroredToken mirroredToken = IMirroredToken(state.mirroredToken);
+            uint256 mirroredLiquidationFunds = mirroredToken.lastKnownTokenValue();
+            _stablecoin().safeTransferFrom(msg.sender, state.mirroredToken, mirroredLiquidationFunds);
+            mirroredToken.liquidate();
+        }
+        // Liquidate the original asset (this)
         uint256 liquidationFunds = state.totalAmountRaised;
-        stablecoin.safeTransferFrom(msg.sender, address(this), liquidationFunds);
-        state.liquidated = true;
+        _stablecoin().safeTransferFrom(msg.sender, address(this), liquidationFunds);
         uint256 snapshotId = _snapshot();
-        // TODO: - liquidate the mirrored asset too
+        state.liquidated = true;
+        state.liquidationTimestamp = block.timestamp;
+        state.liquidationSnapshotId = snapshotId;
         emit Liquidated(msg.sender, liquidationFunds, snapshotId, block.timestamp);
+    }
+
+    function claimLiquidationShare(address campaign, address investor) external override {
+        require(
+            state.liquidated, "Asset: not liquidated"
+        );
+        Structs.TokenSaleInfo memory tokenSaleInfo = successfulTokenSalesMap[campaign];
+        require(
+            tokenSaleInfo.cfManager != address(0),
+            "Asset: invalid campaign address provided for claim liquidation share."
+        );
+        require(
+            liquidationClaimsMap[campaign][investor] == 0,
+            "Asset: investor has already claimed for given campaign."
+        );
+        uint256 investmentAmount = ICfManagerSoftcap(campaign).investments(investor);
+        _stablecoin().transfer(investor, investmentAmount);
+        liquidationClaimsMap[campaign][investor] = investmentAmount;
+        state.liquidationFundsClaimed += investmentAmount;
+        emit ClaimLiquidationShare(investor, campaign, investmentAmount, block.timestamp);
     }
 
     function snapshot() external override notLiquidated returns (uint256) {
         return _snapshot();
     }
 
+    //------------------------
+    //  IAsset IMPL - Read
+    //------------------------
     function totalShares() external view override returns (uint256) {
         return totalSupply();
     }
@@ -293,6 +333,10 @@ contract Asset is IAsset, ERC20Snapshot {
     //------------------------
     //  Helpers
     //------------------------
+    function _stablecoin() private view returns (IERC20) {
+        return IERC20(IIssuer(state.issuer).getState().stablecoin);
+    }
+
     function _setCampaignState(address wallet, bool whitelisted) private {
         if (_campaignExists(wallet)) {
             approvedCampaigns[approvedCampaignsMap[wallet]].whitelisted = whitelisted;
