@@ -68,6 +68,8 @@ async function main() {
     const campaignOwner = process.env.CAMPAIGN_OWNER || issuerOwner;
     const campaignPricePerToken = Number(process.env.CAMPAIGN_TOKEN_PRICE) || 10000; // ($1 default token price)
     const campaignSoftCap = Number(process.env.CAMPAIGN_SOFT_CAP) || 100000; // ($100k soft cap)
+    const campaignMinInvestment = Number(process.env.CAMPAIGN_MIN_INVESTMENT) || 1; // ($1 min investment)
+    const campaignMaxInvestment = Number(process.env.CAMPAIGN_MAX_INVESTMENT) || 100000; // ($100k max investment)
     const campaignInvestorWhitelistRequired = (process.env.CAMPAIGN_INVESTOR_WHITELIST_REQUIRED == "true") || false;
     const campaignInfoIpfsHash = process.env.CAMPAIGN_IPFS || "test-campaign-ipfs-hash";
     const campaign: Contract = (process.env.CAMPAIGN) ?
@@ -77,6 +79,8 @@ async function main() {
             asset,
             campaignPricePerToken,
             campaignSoftCap,
+            campaignMinInvestment,
+            campaignMaxInvestment,
             campaignInvestorWhitelistRequired,
             campaignInfoIpfsHash,
             cfManagerFactory

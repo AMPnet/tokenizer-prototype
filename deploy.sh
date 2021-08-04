@@ -7,16 +7,16 @@
 # One of the networks defined in the hardhat.config.ts. The script will be executed on the selected network.
 # > If running local node, value should be: localhost
 # > If need to use hardhat in-memory chain kept alive only while the process is running, value should be: hardhat
-export NETWORK=hardhat
+export NETWORK=mumbai
 
 ########################################## Predeployed contracts ##########################################
 # Factory and stablecoin addresses. These should be deployed upfront on prod version.
 # > If omitted, new instance will be deployed for each of the missing fields.
-export STABLECOIN=
+export STABLECOIN=0x18D71D80087084df631f95EF29C8a11904DC47F3
 export ISSUER_FACTORY=
 export ASSET_FACTORY=
 export CF_MANAGER_FACTORY=
-export WALLET_APPROVER=
+export WALLET_APPROVER=0x23B00A11F6DBbD3a850a0AE72668109133779575
 export WALLET_APPROVER_MASTER_OWNER=                        # provide this param if WALLET_APPROVER field empty
 export DEPLOYER=
 
@@ -45,6 +45,8 @@ export CAMPAIGN=
 export CAMPAIGN_OWNER=                                      # defaults to $ISSUER_OWNER
 export CAMPAIGN_TOKEN_PRICE=                                # defaults to $1
 export CAMPAIGN_SOFT_CAP=                                   # defaults to $100k
+export CAMPAIGN_MIN_INVESTMENT=                             # defaults to $1
+export CAMPAIGN_MAX_INVESTMENT=                             # defaults to $100k
 export CAMPAIGN_INVESTOR_WHITELIST_REQUIRED=                # defaults to false
 export CAMPAIGN_IPFS=                                       # defaults to "test-campaign-ipfs-hash"
 
