@@ -8,6 +8,7 @@ contract Structs {
         uint256 tokenAmount;
         uint256 tokenValue;
         uint256 timestamp;
+        bool initialized;
     }
 
     struct AssetState {
@@ -83,6 +84,13 @@ contract Structs {
         uint256 totalClaimsCount;
         uint256 ignoredAmount;
         address[] ignoredWallets;
+    }
+
+    struct PayoutSimple {
+        string description;
+        uint256 amount;
+        uint256 totalReleased;
+        uint256 totalClaimsCount;
     }
 
     struct InfoEntry {

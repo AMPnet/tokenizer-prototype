@@ -20,9 +20,12 @@ contract Asset is IAsset, ERC20Snapshot {
     Structs.InfoEntry[] private infoHistory;
     Structs.WalletRecord[] private approvedCampaigns;
     Structs.TokenSaleInfo[] private sellHistory;
+    Structs.PayoutSimple[] private payouts;
     mapping (address => uint256) public approvedCampaignsMap;
     mapping (address => Structs.TokenSaleInfo) public successfulTokenSalesMap;
     mapping (address => mapping (address => uint256)) public liquidationClaimsMap;
+    mapping (address => uint256) public revenueShareOwnerships;
+    mapping (uint256 => mapping (address => uint256)) public revenueShareClaims;
 
     //------------------------
     //  EVENTS
@@ -38,6 +41,8 @@ contract Asset is IAsset, ERC20Snapshot {
     event SetMirroredToken(address caller, address mirroredToken, uint256 timestamp);
     event ConvertFromMirrored(address indexed caller, address mirroredToken, uint256 amount, uint256 timestamp);
     event ClaimLiquidationShare(address indexed investor, address campaign, uint256 amount, uint256 timestamp);
+    event RegisterRevenueShareOwnership(address indexed investor, address campaign, uint256 amou, uint256 timestamp);
+    event CreatePayout(address indexed creator, uint256 payoutId, uint256 amount, uint256 timestamp);
 
     //------------------------
     //  CONSTRUCTOR
@@ -193,7 +198,7 @@ contract Asset is IAsset, ERC20Snapshot {
         state.totalAmountRaised += tokenValue;
         state.totalTokensSold += tokenAmount;
         Structs.TokenSaleInfo memory tokenSaleInfo = Structs.TokenSaleInfo(
-            campaign, tokenAmount, tokenValue, block.timestamp
+            campaign, tokenAmount, tokenValue, block.timestamp, true
         );
         sellHistory.push(tokenSaleInfo);
         successfulTokenSalesMap[campaign] = tokenSaleInfo;
@@ -243,6 +248,36 @@ contract Asset is IAsset, ERC20Snapshot {
         emit ClaimLiquidationShare(investor, campaign, investmentAmount, block.timestamp);
     }
 
+    function registerRevenueShareOwnership(address investor) external override notLiquidated {
+        address campaign = msg.sender;
+        require(successfulTokenSalesMap[campaign].initialized, "Asset: campaign not closed");
+        uint256 amount = ICfManagerSoftcap(campaign).claims(investor);
+        revenueShareOwnerships[investor] += amount;
+        emit RegisterRevenueShareOwnership(investor, campaign, amount, block.timestamp);
+    }
+
+    function createPayout(string memory description, uint256 amount) external notLiquidated {
+        require(amount > 0, "Asset: invalid payout amount provided");
+        _stablecoin().transferFrom(msg.sender, address(this), amount);
+        Structs.PayoutSimple storage payout = payouts.push();
+        payout.amount = amount;
+        payout.description = description;
+        emit CreatePayout(msg.sender, payouts.length - 1, amount, block.timestamp);
+    }
+
+    function claimRevenueShare(address investor, uint256 payoutId) external {
+        require(payoutId < payouts.length, "Asset: payout id does not exist");
+        uint256 claimedForTokenAmount = revenueShareClaims[payoutId][investor];
+        require(balanceOf(investor) > claimedForTokenAmount, "Asset: account is not due payment");
+        uint256 remainingToClaimForTokenAmount = balanceOf(investor) - claimedForTokenAmount;
+        Structs.PayoutSimple storage payout = payouts[payoutId];
+        uint256 payment = payout.amount * remainingToClaimForTokenAmount / state.totalTokensSold;
+        _stablecoin().safeTransfer(investor, payment);
+        payout.totalReleased += payment;
+        payout.totalClaimsCount += 1;
+        revenueShareClaims[payoutId][investor] += remainingToClaimForTokenAmount;
+    }
+
     function snapshot() external override notLiquidated returns (uint256) {
         return _snapshot();
     }
@@ -273,7 +308,7 @@ contract Asset is IAsset, ERC20Snapshot {
     function getSellHistory() external view override returns (Structs.TokenSaleInfo[] memory) {
         return sellHistory;
     }
-
+    
     //------------------------
     //  ERC20 OVERRIDES
     //------------------------

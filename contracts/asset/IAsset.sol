@@ -18,6 +18,7 @@ interface IAsset {
     function finalizeSale(uint256 tokenAmount, uint256 tokenValue) external;
     function liquidate() external;
     function claimLiquidationShare(address campaign, address investor) external;
+    function registerRevenueShareOwnership(address investor) external;
     function snapshot() external returns (uint256);
 
     // Read
