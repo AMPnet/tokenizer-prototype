@@ -113,7 +113,7 @@ contract DeployerService {
             address(this),
             request.issuer,
             request.assetInitialTokenSupply,
-            request.assetWhitelistRequired,
+            false,
             request.assetName,
             request.assetSymbol,
             request.assetInfo
@@ -137,6 +137,7 @@ contract DeployerService {
         assetERC20.transfer(request.assetOwner, tokensToKeep);
 
         // Transfer ownerships from address(this) to the actual owner wallets
+        asset.setWhitelistRequiredForTransfer(request.assetWhitelistRequired);
         asset.changeOwnership(request.assetOwner);
         campaign.changeOwnership(request.cfManagerOwner);
 

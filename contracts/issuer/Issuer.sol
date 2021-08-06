@@ -148,7 +148,6 @@ contract Issuer is IIssuer {
 
     function _addressExists(address wallet) private view returns (bool) {
         uint256 index = approvedWalletsMap[wallet];
-        if (approvedWallets.length == 0) { return false; }
         if (index >= approvedWallets.length) { return false; }
         if (approvedWallets[index].wallet != wallet) { return false; }
         return true;

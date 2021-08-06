@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../../asset/IAsset.sol";
 import "../../issuer/IIssuer.sol";
+import "../../tokens/IToken.sol";
 import "../crowdfunding-softcap/ICfManagerSoftcap.sol";
 import "../../shared/Structs.sol";
 
@@ -15,7 +16,6 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
     //  CONSTANTS
     //------------------------
     uint256 constant PRICE_DECIMALS_PRECISION = 10 ** 4;
-    uint256 constant STABLECOIN_DECIMALS_PRECISION = 10 ** 18;
 
     //------------------------
     //  STATE
@@ -136,10 +136,11 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
             (amount / state.tokenPrice) 
                 * PRICE_DECIMALS_PRECISION 
                 * _asset_decimals_precision() 
-                / STABLECOIN_DECIMALS_PRECISION;
+                / _stablecoin_decimals_precision();
         uint256 tokenValue = _token_value(tokenAmount);
         require(tokenAmount > 0 && tokenValue > 0, "CfManagerSoftcap: Investment amount too low.");
         require(floatingTokens >= tokenAmount, "CfManagerSoftcap: Not enough tokens left for this investment amount.");
+        _stablecoin().safeTransferFrom(msg.sender, address(this), tokenValue);
         
         uint256 totalInvestmentValue = _token_value(tokenAmount + claims[msg.sender]);
         require(
@@ -159,7 +160,6 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
         state.totalClaimableTokens += tokenAmount;
         state.totalTokensSold += tokenAmount;
         state.totalFundsRaised += tokenValue;
-        _stablecoin().safeTransferFrom(msg.sender, address(this), tokenValue);
         emit Invest(msg.sender, tokenAmount, tokenValue, block.timestamp);
     }
 
@@ -268,13 +268,17 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
     }
 
     function _asset_decimals_precision() private view returns (uint256) {
-        return 10 ** IAsset(address(state.asset)).getDecimals();
+        return 10 ** IAsset(state.asset).getDecimals();
+    }
+
+    function _stablecoin_decimals_precision() private view returns (uint256) {
+        return 10 ** IToken(_issuer().getState().stablecoin).decimals();
     }
 
     function _token_value(uint256 tokenAmount) private view returns (uint256) {
         return tokenAmount
                     * state.tokenPrice
-                    * STABLECOIN_DECIMALS_PRECISION
+                    * _stablecoin_decimals_precision()
                     / (_asset_decimals_precision() * PRICE_DECIMALS_PRECISION);
     }
 

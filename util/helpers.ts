@@ -523,7 +523,7 @@ export async function cancelCampaign(owner: Signer, cfManager: Contract) {
 export async function createPayout(owner: Signer, payoutManager: Contract, stablecoin: Contract, amount: Number, payoutDescription: String) {
   const amountWei = ethers.utils.parseEther(amount.toString());
   await stablecoin.connect(owner).approve(payoutManager.address, amountWei);
-  await payoutManager.connect(owner).createPayout(payoutDescription, amountWei);
+  await payoutManager.connect(owner).createPayout(payoutDescription, amountWei, []);
 }
 
 /**
