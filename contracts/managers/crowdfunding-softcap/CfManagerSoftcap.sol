@@ -31,7 +31,13 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
     event Invest(address indexed investor, uint256 tokenAmount, uint256 tokenValue, uint256 timestamp);
     event Claim(address indexed investor, uint256 tokenAmount, uint256 tokenValue, uint256 timestamp);
     event CancelInvestment(address indexed investor, uint256 tokenAmount, uint256 tokenValue, uint256 timestamp);
-    event Finalize(address indexed owner, uint256 totalFundsRaised, uint256 totalTokensSold, uint256 timestamp);
+    event Finalize(
+        address indexed owner,
+        uint256 fundsRaised,
+        uint256 tokensSold,
+        uint256 tokensRefund,
+        uint256 timestamp
+    );
     event CancelCampaign(address indexed owner, uint256 tokensReturned, uint256 timestamp);
     event SetInfo(string info, address setter, uint256 timestamp);
     event ChangeOwnership(address caller, address newOwner, uint256 timestamp);
@@ -50,10 +56,10 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
         bool whitelistRequired,
         string memory info
     ) {
-        require(
-            tokenPrice > 0,
-            "CfManagerSoftcap: Initial price per token must be greater than 0."
-        );
+        require(owner != address(0), "CfManagerSoftcap: Invalid owner address");
+        require(asset != address(0), "CfManagerSoftcap: Invalid asset address");
+        require(tokenPrice > 0, "CfManagerSoftcap: Initial price per token must be greater than 0.");
+        require(maxInvestment >= minInvestment, "CfManagerSoftcap: Max has to be bigger than min investment");
         address issuer = address(IAsset(asset).getState().issuer);
         state = Structs.CfManagerSoftcapState(
             id,
@@ -69,7 +75,7 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
             whitelistRequired,
             false,
             false,
-            0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0,
             info
         );
     }
@@ -109,14 +115,6 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
         _;
     }
 
-    modifier notCancelled() {
-        require(
-            !state.cancelled,
-            "CfManagerSoftcap: The campaign is cancelled"
-        );
-        _;
-    }
-
     modifier isWhitelisted() {
         require(
             !state.whitelistRequired || (state.whitelistRequired && _walletApproved(msg.sender)),
@@ -131,11 +129,7 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
     function invest(uint256 amount) external active notFinalized isWhitelisted {
         require(amount > 0, "Investment amount has to be greater than 0.");
 
-        IERC20 assetToken = _assetERC20();
-        IERC20 stablecoin = _stablecoin();
-
-        uint256 totalTokenBalance = assetToken.balanceOf(address(this));
-        uint256 floatingTokens = totalTokenBalance - state.totalClaimableTokens;
+        uint256 floatingTokens = _assetERC20().balanceOf(address(this)) - state.totalClaimableTokens;
         require(floatingTokens > 0, "CfManagerSoftcap: No more tokens available for sale.");
 
         uint256 tokenAmount = 
@@ -163,60 +157,62 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
         claims[msg.sender] += tokenAmount;
         investments[msg.sender] += tokenValue;
         state.totalClaimableTokens += tokenAmount;
+        state.totalTokensSold += tokenAmount;
         state.totalFundsRaised += tokenValue;
-        
-        stablecoin.safeTransferFrom(msg.sender, address(this), tokenValue);
+        _stablecoin().safeTransferFrom(msg.sender, address(this), tokenValue);
         emit Invest(msg.sender, tokenAmount, tokenValue, block.timestamp);
     }
 
     function cancelInvestment() external notFinalized {
-        IERC20 stablecoin = _stablecoin();
         uint256 tokenAmount = claims[msg.sender];
-        uint256 tokenValue = _token_value(tokenAmount);
+        uint256 tokenValue = investments[msg.sender];
         require(
-            tokenAmount > 0,
+            tokenAmount > 0 && tokenValue > 0,
             "CfManagerSoftcap: No tokens owned."
         );
-        claims[msg.sender] = 0;
-        state.totalClaimableTokens -= tokenAmount;
         state.totalInvestorsCount -= 1;
+        claims[msg.sender] = 0;
+        investments[msg.sender] = 0;
+        state.totalClaimableTokens -= tokenAmount;
+        state.totalTokensSold -= tokenAmount;
         state.totalFundsRaised -= tokenValue;
-        stablecoin.safeTransfer(msg.sender, tokenValue);
+        _stablecoin().safeTransfer(msg.sender, tokenValue);
         emit CancelInvestment(msg.sender, tokenAmount, tokenValue, block.timestamp);
     }
 
     function claim(address investor) external finalized {
         uint256 claimableTokens = claims[investor];
-        uint256 claimableTokensValue = _token_value(claimableTokens);
+        uint256 claimableTokensValue = investments[investor];
         require(
-            claimableTokens > 0,
+            claimableTokens > 0 && claimableTokensValue > 0,
             "CfManagerSoftcap: No tokens owned."
         );
         state.totalClaimsCount += 1;
+        state.totalClaimableTokens -= claimableTokens;
         claims[investor] = 0;
         _assetERC20().safeTransfer(investor, claimableTokens);
         emit Claim(investor, claimableTokens, claimableTokensValue, block.timestamp);
     }
 
-    function finalize() external ownerOnly notFinalized notCancelled {
+    function finalize() external ownerOnly active notFinalized {
         IERC20 stablecoin = _stablecoin();
-        IERC20 assetERC20 = _assetERC20();
-        IAsset asset = _asset();
         require(
             stablecoin.balanceOf(address(this)) >= state.softCap,
             "CfManagerSoftcap: Can only finalize campaign if the minimum funding goal has been reached."
         );
-        state.finalized = true;
+        state.finalized = true;  
+        IERC20 assetERC20 = _assetERC20();
         uint256 fundsRaised = stablecoin.balanceOf(address(this));
-        uint256 tokensSold = state.totalClaimableTokens;
-        uint256 tokenRefund = assetERC20.balanceOf(address(this)) - tokensSold;
-        stablecoin.safeTransfer(msg.sender, fundsRaised);
-        assetERC20.safeTransfer(msg.sender, tokenRefund);
+        uint256 tokensSold = state.totalTokensSold;
+        uint256 tokensRefund = assetERC20.balanceOf(address(this)) - tokensSold;
+        IAsset asset = _asset();
         asset.finalizeSale(tokensSold, fundsRaised);
-        emit Finalize(msg.sender, fundsRaised, state.totalClaimableTokens, block.timestamp);
+        stablecoin.safeTransfer(msg.sender, fundsRaised);
+        assetERC20.safeTransfer(msg.sender, tokensRefund);
+        emit Finalize(msg.sender, fundsRaised, tokensSold, tokensRefund, block.timestamp);
     }
 
-    function cancelCampaign() external ownerOnly notFinalized notCancelled {
+    function cancelCampaign() external ownerOnly active notFinalized {
         state.cancelled = true;
         uint256 tokenBalance = _assetERC20().balanceOf(address(this));
         if(tokenBalance > 0) {
@@ -242,7 +238,9 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
     }
 
     function getState() external view override returns (Structs.CfManagerSoftcapState memory) {
-        return state;
+        Structs.CfManagerSoftcapState memory stateWithBalance = state; 
+        stateWithBalance.totalTokensBalance = _assetERC20().balanceOf(address(this));
+        return stateWithBalance;
     }
 
     function changeOwnership(address newOwner) external override ownerOnly {

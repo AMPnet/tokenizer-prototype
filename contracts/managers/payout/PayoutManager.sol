@@ -11,29 +11,22 @@ import "./IERC20Snapshot.sol";
 import "../../shared/Structs.sol";
 
 contract PayoutManager is IPayoutManager {
-
     using SafeERC20 for IERC20;
-
-    struct Payout {
-        uint256 snapshotId;
-        string description;
-        uint256 amount;
-        uint256 totalReleased;
-        mapping (address => uint256) released;
-    }
 
     //------------------------
     //  STATE
     //------------------------
-    Structs.PayoutManagerState public state;
-    Structs.InfoEntry[] public infoHistory;
-    Payout[] public payouts;
+    Structs.PayoutManagerState private state;
+    Structs.InfoEntry[] private infoHistory;
+    Structs.Payout[] private payouts;
+    mapping (uint256 => mapping(address => bool)) public ignoredWalletsMapPerPayout;
+    mapping (uint256 => mapping(address => uint256)) public releaseMapPerPayout;
     mapping (uint256 => uint256) public snapshotToPayout;
     
     //------------------------
     //  EVENTS
     //------------------------
-    event CreatePayout(address creator, uint256 payoutId, uint256 amount, uint256 timestamp);
+    event CreatePayout(address indexed creator, uint256 payoutId, uint256 amount, uint256 timestamp);
     event Release(address indexed investor, address asset, uint256 payoutId, uint256 amount, uint256 timestamp);
     event SetInfo(string info, address setter, uint256 timestamp);
 
@@ -41,12 +34,15 @@ contract PayoutManager is IPayoutManager {
     //  CONSTRUCTOR
     //------------------------
     constructor(uint256 id, address owner, address assetAddress, string memory info) {
+        require(owner != address(0), "PayoutManager: invalid owner");
+        require(assetAddress != address(0), "PayoutManager: invalid asset address");
         state = Structs.PayoutManagerState(
             id,
             address(this),
             msg.sender,
             owner,
             assetAddress,
+            0, 0,
             info
         );
     }
@@ -62,15 +58,23 @@ contract PayoutManager is IPayoutManager {
     //------------------------
     //  STATE CHANGE FUNCTIONS
     //------------------------
-    function createPayout(string memory description, uint256 amount) external onlyOwner { 
-        uint256 snapshotId = _asset().snapshot();
+    function createPayout(string memory description, uint256 amount, address[] memory ignored) external onlyOwner {
+        require(amount > 0, "PayoutManager: invalid payout amount provided");
         _stablecoin().transferFrom(msg.sender, address(this), amount);
+        uint256 snapshotId = _asset().snapshot();
         uint256 payoutId = payouts.length;
-        Payout storage payout = payouts.push();
+        Structs.Payout storage payout = payouts.push();
         payout.snapshotId = snapshotId;
         payout.description = description;
         payout.amount = amount;
+        payout.ignoredWallets = ignored;
+        payout.ignoredWallets.push(state.asset);
+        payout.ignoredWallets.push(_asset().getState().mirroredToken);
+        uint256 ignoredTokensAmount = _process_ignored_addresses(payoutId, ignored);
+        payout.ignoredAmount = ignoredTokensAmount;
         snapshotToPayout[snapshotId] = payouts.length - 1; 
+        state.totalPayoutsCreated += 1;
+        state.totalPayoutsAmount += amount;
         emit CreatePayout(msg.sender, payoutId, amount, block.timestamp);
     }
 
@@ -88,14 +92,15 @@ contract PayoutManager is IPayoutManager {
 
     function release(address account, uint256 snapshotId) external override {
         uint256 payoutId = snapshotToPayout[snapshotId];
-        Payout storage payout = payouts[payoutId];
+        require(!ignoredWalletsMapPerPayout[payoutId][account], "PayoutManager: Account has no shares.");
+        require(releaseMapPerPayout[payoutId][account] == 0, "PayoutManager: Account has already released funds");
+        Structs.Payout storage payout = payouts[payoutId];
         uint256 sharesAtSnapshot = _shares(account, snapshotId);
         require(sharesAtSnapshot > 0, "Account has no shares.");
-
-        uint256 payment = payout.amount * sharesAtSnapshot / _asset().totalShares() - payout.released[account];
+        uint256 nonIgnorableShares = _asset().totalShares() - payout.ignoredAmount;
+        uint256 payment = payout.amount * sharesAtSnapshot / nonIgnorableShares;
         require(payment != 0, "Account is not due payment.");
-
-        payout.released[account] += payment;
+        releaseMapPerPayout[payoutId][account] = payment;
         payout.totalReleased += payment;
         _stablecoin().safeTransfer(account, payment);
         emit Release(account, address(state.asset), payoutId, payment, block.timestamp);
@@ -114,7 +119,7 @@ contract PayoutManager is IPayoutManager {
     }
 
     function released(address account, uint256 snapshotId) external view override returns (uint256) {
-        return payouts[snapshotToPayout[snapshotId]].released[account];
+        return releaseMapPerPayout[snapshotToPayout[snapshotId]][account];
     }
 
     function getInfoHistory() external view override returns (Structs.InfoEntry[] memory) {
@@ -125,9 +130,23 @@ contract PayoutManager is IPayoutManager {
         return state;
     }
 
+    function getPayouts() external view override returns (Structs.Payout[] memory) {
+        return payouts;
+    }
+
     //------------------------
     //  HELPERS
     //------------------------
+    function _process_ignored_addresses(uint256 payoutId, address[] memory accounts) private returns (uint256) {
+        uint256 sum;
+        IERC20 asset = IERC20(state.asset);
+        for (uint i = 0; i < accounts.length; i++) {
+            sum += asset.balanceOf(accounts[i]);
+            ignoredWalletsMapPerPayout[payoutId][accounts[i]] = true;
+        }
+        return sum;
+    }
+
     function _shares(address account, uint256 snapshotId) internal view returns (uint256) {
         return IERC20Snapshot(state.asset).balanceOfAt(account, snapshotId);
     }

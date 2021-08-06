@@ -12,4 +12,5 @@ interface IPayoutManager {
     function getInfoHistory() external view returns (Structs.InfoEntry[] memory);
     function setInfo(string memory info) external;
     function getState() external view returns (Structs.PayoutManagerState memory);
+    function getPayouts() external view returns (Structs.Payout[] memory);
 }

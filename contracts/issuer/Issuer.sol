@@ -32,6 +32,9 @@ contract Issuer is IIssuer {
         address walletApprover,
         string memory info
     ) {
+        require(owner != address(0), "Issuer: invalid owner address");
+        require(stablecoin != address(0), "Issuer: invalid stablecoin address");
+        require(walletApprover != address(0), "Issuer: invalid wallet approver address");
         infoHistory.push(Structs.InfoEntry(
             info,
             block.timestamp
@@ -45,7 +48,6 @@ contract Issuer is IIssuer {
             walletApprover,
             info
         );
-        _setWalletState(owner, true);
     }
 
     //------------------------
@@ -90,10 +92,7 @@ contract Issuer is IIssuer {
     }
 
     function changeOwnership(address newOwner) external override ownerOnly {
-        address oldOwner = state.owner;
         state.owner = newOwner;
-        _setWalletState(oldOwner, false);
-        _setWalletState(newOwner, true);
         emit ChangeOwnership(msg.sender, newOwner, block.timestamp);
     }
 

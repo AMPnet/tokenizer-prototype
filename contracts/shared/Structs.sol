@@ -59,6 +59,8 @@ contract Structs {
         uint256 totalInvestorsCount;
         uint256 totalClaimsCount;
         uint256 totalFundsRaised;
+        uint256 totalTokensSold;
+        uint256 totalTokensBalance;
         string info;
     }
 
@@ -68,7 +70,19 @@ contract Structs {
         address createdBy;
         address owner;
         address asset;
+        uint256 totalPayoutsCreated;
+        uint256 totalPayoutsAmount;
         string info;
+    }
+
+    struct Payout {
+        uint256 snapshotId;
+        string description;
+        uint256 amount;
+        uint256 totalReleased;
+        uint256 totalClaimsCount;
+        uint256 ignoredAmount;
+        address[] ignoredWallets;
     }
 
     struct InfoEntry {
@@ -80,5 +94,5 @@ contract Structs {
         address wallet;
         bool whitelisted;
     }
-    
+
 }

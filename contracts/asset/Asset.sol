@@ -34,10 +34,10 @@ contract Asset is IAsset, ERC20Snapshot {
     event CampaignWhitelist(address approver, address wallet, bool whitelisted, uint256 timestamp);
     event SetIssuerStatus(address approver, bool status, uint256 timestamp);
     event FinalizeSale(address campaign, uint256 tokenAmount, uint256 tokenValue, uint256 timestamp);
-    event Liquidated(address liquidator, uint256 fundsReceived, uint256 preLiquidationSnapshotId, uint256 timestamp);
+    event Liquidated(address liquidator, uint256 liquidationFunds, uint256 liquidationSnapshotId, uint256 timestamp);
     event SetMirroredToken(address caller, address mirroredToken, uint256 timestamp);
     event ConvertFromMirrored(address indexed caller, address mirroredToken, uint256 amount, uint256 timestamp);
-    event ClaimLiquidationShare(address investor, address campaign, uint256 amount, uint256 timestamp);
+    event ClaimLiquidationShare(address indexed investor, address campaign, uint256 amount, uint256 timestamp);
 
     //------------------------
     //  CONSTRUCTOR
@@ -53,11 +53,14 @@ contract Asset is IAsset, ERC20Snapshot {
         string memory info
     ) ERC20(name, symbol)
     {
+        require(owner != address(0), "Asset: Invalid owner provided");
+        require(issuer != address(0), "Asset: Invalid issuer provided");
+        require(initialTokenSupply > 0, "Asset: Initial token supply can't be 0");
         infoHistory.push(Structs.InfoEntry(
             info,
             block.timestamp
         ));
-        bool assetApprovedByIssuer = (IIssuer(issuer).getState().owner == msg.sender);
+        bool assetApprovedByIssuer = (IIssuer(issuer).getState().owner == owner);
         address contractAddress = address(this);
         state = Structs.AssetState(
             id,
@@ -90,7 +93,7 @@ contract Asset is IAsset, ERC20Snapshot {
                 state.whitelistRequiredForTransfer && 
                 ( IIssuer(state.issuer).isWalletApproved(wallet) || _campaignWhitelisted(wallet) )
             ),
-            "Asset: This functionality is not allowed. Wallet is not approved by the Issuer."
+            "Asset: This functionality is not allowed. Wallet is not whitelisted."
         );
         _;
     }
@@ -123,9 +126,6 @@ contract Asset is IAsset, ERC20Snapshot {
 
     function changeOwnership(address newOwner) external override ownerOnly {
         state.owner = newOwner;
-        if (newOwner == (IIssuer(state.issuer).getState().owner)) {
-            state.assetApprovedByIssuer = true;
-        }
         emit ChangeOwnership(msg.sender, newOwner, block.timestamp);
     }
 
@@ -182,7 +182,14 @@ contract Asset is IAsset, ERC20Snapshot {
     function finalizeSale(uint256 tokenAmount, uint256 tokenValue) external override notLiquidated {
         address campaign = msg.sender;
         require(_campaignWhitelisted(campaign), "Asset: Campaign not approved.");
-        
+        require(
+            tokenAmount > 0 && balanceOf(campaign) >= tokenAmount,
+            "Asset: Campaign has signalled the sale finalization but campaign tokens are not present"
+        );
+        require(
+            tokenValue > 0 && _stablecoin().balanceOf(campaign) >= tokenValue,
+            "Asset: Campaign has signalled the sale finalization but raised funds are not present"
+        );
         state.totalAmountRaised += tokenValue;
         state.totalTokensSold += tokenAmount;
         Structs.TokenSaleInfo memory tokenSaleInfo = Structs.TokenSaleInfo(
@@ -208,7 +215,9 @@ contract Asset is IAsset, ERC20Snapshot {
         }
         // Liquidate the original asset (this)
         uint256 liquidationFunds = state.totalAmountRaised;
-        _stablecoin().safeTransferFrom(msg.sender, address(this), liquidationFunds);
+        if (liquidationFunds > 0) {
+            _stablecoin().safeTransferFrom(msg.sender, address(this), liquidationFunds);
+        }
         uint256 snapshotId = _snapshot();
         state.liquidated = true;
         state.liquidationTimestamp = block.timestamp;
@@ -217,9 +226,7 @@ contract Asset is IAsset, ERC20Snapshot {
     }
 
     function claimLiquidationShare(address campaign, address investor) external override {
-        require(
-            state.liquidated, "Asset: not liquidated"
-        );
+        require(state.liquidated, "Asset: not liquidated");
         Structs.TokenSaleInfo memory tokenSaleInfo = successfulTokenSalesMap[campaign];
         require(
             tokenSaleInfo.cfManager != address(0),
