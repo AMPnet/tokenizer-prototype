@@ -35,13 +35,19 @@ async function main() {
         await ethers.getContractAt("DeployerService", process.env.DEPLOYER) :
         await helpers.deployDeployerService(deployer);
 
+    const queryService: Contract = (process.env.QUERY_SERVICE) ?
+        await ethers.getContractAt("QueryService", process.env.QUERY_SERVICE) :
+        await helpers.deployQueryService(deployer);
+
     const issuerOwner = process.env.ISSUER_OWNER || deployerAddress;
     const issuerInfoIpfsHash = process.env.ISSUER_IPFS || "issuer-info-ipfs-hash";
+    const issuerAnsName = process.env.ISSUER_ANS_NAME || "test-issuer";
 
     const issuer: Contract = (process.env.ISSUER) ?
         await ethers.getContractAt("Issuer", process.env.ISSUER) :
         await helpers.createIssuer(
             issuerOwner,
+            issuerAnsName,
             stablecoin,
             walletApproverService.address,
             issuerInfoIpfsHash,
@@ -50,6 +56,7 @@ async function main() {
     console.log("issuer deployed");
 
     const assetName = process.env.ASSET_NAME || "Test Asset";
+    const assetAnsName = process.env.ASSET_ANS_NAME || "test-asset";
     const assetSymbol = process.env.ASSET_SYMBOL || "$TSTA";
     const assetInfoIpfsHash = process.env.ASSET_IPFS || "asset-info-ipfs-hash";
     const assetSupply = Number(process.env.ASSET_SUPPLY) || 1000000;
@@ -60,6 +67,7 @@ async function main() {
         await helpers.createAsset(
             assetOwnerAddress,
             issuer,
+            assetAnsName,
             assetSupply,
             transferWhitelistRequired,
             assetName,
@@ -70,6 +78,7 @@ async function main() {
     console.log("asset deployed");
 
     const campaignOwner = process.env.CAMPAIGN_OWNER || issuerOwner;
+    const campaignAnsName = process.env.CAMPAIGN_ANS_NAME || "test-campaign";
     const campaignPricePerToken = Number(process.env.CAMPAIGN_TOKEN_PRICE) || 10000; // ($1 default token price)
     const campaignSoftCap = Number(process.env.CAMPAIGN_SOFT_CAP) || 100000; // ($100k soft cap)
     const campaignMinInvestment = Number(process.env.CAMPAIGN_MIN_INVESTMENT) || 1; // ($1 min investment)
@@ -80,6 +89,7 @@ async function main() {
         await ethers.getContractAt("CfManagerSoftcap", process.env.CAMPAIGN) :
         await helpers.createCfManager(
             campaignOwner,
+            campaignAnsName,
             asset,
             campaignPricePerToken,
             campaignSoftCap,

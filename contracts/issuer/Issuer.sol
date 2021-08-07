@@ -28,6 +28,7 @@ contract Issuer is IIssuer {
     constructor(
         uint256 id,
         address owner,
+        string memory ansName,
         address stablecoin,
         address walletApprover,
         string memory info
@@ -42,6 +43,7 @@ contract Issuer is IIssuer {
         state = Structs.IssuerState(
             id,
             address(this),
+            ansName,
             msg.sender,
             owner,
             stablecoin,

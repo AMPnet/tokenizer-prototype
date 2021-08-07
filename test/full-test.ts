@@ -14,6 +14,7 @@ describe("Full test", function () {
   //////// SERVICES ////////
   let walletApproverService: Contract;
   let deployerService: Contract;
+  let queryService: Contract;
 
   //////// SIGNERS ////////
   let deployer: Signer;
@@ -21,7 +22,7 @@ describe("Full test", function () {
   let alice: Signer;
   let jane: Signer;
   let frank: Signer;
-  let walletApprover: Signer
+  let walletApprover: Signer;
 
   //////// CONTRACTS ////////
   let stablecoin: Contract;
@@ -54,6 +55,7 @@ describe("Full test", function () {
     );
     walletApproverService = services[0];
     deployerService = services[1];
+    queryService = services[2];
   });
 
   it(
@@ -63,10 +65,12 @@ describe("Full test", function () {
           3)successfully fund the project
     `,
     async function () {
-      //// Set the config for Issuer, Asset and Crowdfunding Campaign 
+      //// Set the config for Issuer, Asset and Crowdfunding Campaign
+      const issuerAnsName = "test-issuer";
       const issuerInfoHash = "issuer-info-ipfs-hash";
       const issuerOwnerAddress = await issuerOwner.getAddress();
       const assetName = "Test Asset";
+      const assetAnsName = "test-asset";
       const assetTicker = "TSTA";
       const assetInfoHash = "asset-info-ipfs-hash";
       const assetTokenSupply = 1000000;
@@ -77,11 +81,13 @@ describe("Full test", function () {
       const campaignMinInvestment = 10000           // $10k min investment per user
       const campaignMaxInvestment = 400000          // $400k max investment per user
       const campaignWhitelistRequired = true;       // only whitelisted wallets can invest
+      const campaignAnsName = "test-campaign";
       const campaignInfoHash = "campaign-info-ipfs-hash";
 
       //// Deploy the contracts with the provided config
       issuer = await helpers.createIssuer(
         issuerOwnerAddress,
+        issuerAnsName,
         stablecoin,
         walletApproverService.address,
         issuerInfoHash,
@@ -90,12 +96,14 @@ describe("Full test", function () {
       const contracts = await helpers.createAssetCampaign(
         issuer,
         issuerOwnerAddress,
+        assetAnsName,
         assetTokenSupply,
         issuerWhitelistRequired,
         assetName,
         assetTicker,
         assetInfoHash,
         issuerOwnerAddress,
+        campaignAnsName,
         campaignInitialPricePerToken,
         campaignSoftCap,
         campaignMinInvestment,
@@ -161,10 +169,12 @@ describe("Full test", function () {
       await cfManager.connect(alice).claim(aliceAddress);
 
       //// Owner creates payout manager, updates info once
+      const payoutManagerAnsName = "payout-manager";
       const payoutManagerInfoHash = "payout-manager-info-hash";
       const updatedPayoutManagerInfoHash = "updated-payout-manager-info-hash";
       const payoutManager = await helpers.createPayoutManager(
         issuerOwnerAddress,
+        payoutManagerAnsName,
         asset,
         payoutManagerInfoHash,
         payoutManagerFactory
@@ -271,6 +281,15 @@ describe("Full test", function () {
       //// Fetch issuer approved campaigns
       const campaignRecords = await helpers.fetchCampaignRecords(asset);
       console.log("Campaign records", campaignRecords);
+
+      //// Fetch campaigns for issuer
+      const campaignStates = await helpers.queryCampaignsForIssuer(queryService, cfManagerFactory, issuer);
+      console.log("Campaign states", campaignStates);
+
+      //// Fetch campaigns for issuer and investor
+      const campaignStatesForInvestor = await helpers.queryCampaignsForIssuerInvestor(queryService, cfManagerFactory, issuer, aliceAddress);
+      console.log("Campaign states for investor", campaignStatesForInvestor);
+    
     }
   );
 

@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import "../asset/IAssetFactory.sol";
 import "../asset/Asset.sol";
+import "../shared/Structs.sol";
 
 contract AssetFactory is IAssetFactory {
     
@@ -10,10 +11,12 @@ contract AssetFactory is IAssetFactory {
 
     address[] public instances;
     mapping (address => address[]) instancesPerIssuer;
+    mapping (address => mapping (string => address)) public override namespace;
 
     function create(
         address creator,
         address issuer,
+        string memory ansName,
         uint256 initialTokenSupply,
         bool whitelistRequiredForTransfer,
         string memory name,
@@ -21,11 +24,15 @@ contract AssetFactory is IAssetFactory {
         string memory info
     ) public override returns (address)
     {
+        require(namespace[issuer][ansName] == address(0), "AssetFactory: asset with this name already exists");
         uint256 id = instances.length;
+        uint256 ansId = instancesPerIssuer[issuer].length;
         address asset = address(new Asset(
             id,
             creator,
             issuer,
+            ansName,
+            ansId,
             initialTokenSupply,
             whitelistRequiredForTransfer,
             name,
@@ -34,6 +41,7 @@ contract AssetFactory is IAssetFactory {
         ));
         instances.push(asset);
         instancesPerIssuer[issuer].push(asset);
+        namespace[issuer][ansName] = asset;
         emit AssetCreated(creator, asset, id, block.timestamp);
         return asset;
     }

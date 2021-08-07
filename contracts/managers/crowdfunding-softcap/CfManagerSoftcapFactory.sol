@@ -10,6 +10,7 @@ contract CfManagerSoftcapFactory is ICfManagerSoftcapFactory {
     address[] public instances;
     mapping (address => address[]) instancesPerIssuer;
     mapping (address => address[]) instancesPerAsset;
+    mapping (address => mapping(string => address)) public override namespace;
 
     event CfManagerSoftcapCreated(
         address indexed creator,
@@ -21,6 +22,7 @@ contract CfManagerSoftcapFactory is ICfManagerSoftcapFactory {
 
     function create(
         address owner,
+        string memory ansName,
         address assetAddress,
         uint256 initialPricePerToken,
         uint256 softCap,
@@ -29,10 +31,18 @@ contract CfManagerSoftcapFactory is ICfManagerSoftcapFactory {
         bool whitelistRequired,
         string memory info
     ) external override returns (address) {
+        address issuer = IAsset(assetAddress).getState().issuer;
+        require(
+            namespace[issuer][ansName] == address(0),
+            "CfManagerSoftcapFactory: issuer with this name already exists"
+        );
         uint256 id = instances.length;
+        uint256 ansId = instancesPerIssuer[issuer].length;
         address cfManagerSoftcap = address(new CfManagerSoftcap(
             id,
             owner,
+            ansName,
+            ansId,
             assetAddress,
             initialPricePerToken,
             softCap,
@@ -42,8 +52,9 @@ contract CfManagerSoftcapFactory is ICfManagerSoftcapFactory {
             info
         ));
         instances.push(cfManagerSoftcap);
-        instancesPerIssuer[IAsset(assetAddress).getState().issuer].push(cfManagerSoftcap);
+        instancesPerIssuer[issuer].push(cfManagerSoftcap);
         instancesPerAsset[assetAddress].push(cfManagerSoftcap);
+        namespace[issuer][ansName] = cfManagerSoftcap;
         emit CfManagerSoftcapCreated(owner, cfManagerSoftcap, id, address(assetAddress), block.timestamp);
         return cfManagerSoftcap;
     }

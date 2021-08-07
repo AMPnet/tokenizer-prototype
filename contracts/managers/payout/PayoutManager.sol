@@ -33,12 +33,21 @@ contract PayoutManager is IPayoutManager {
     //------------------------
     //  CONSTRUCTOR
     //------------------------
-    constructor(uint256 id, address owner, address assetAddress, string memory info) {
+    constructor(
+        uint256 id,
+        address owner,
+        string memory ansName,
+        uint256 ansId,
+        address assetAddress,
+        string memory info
+    ) {
         require(owner != address(0), "PayoutManager: invalid owner");
         require(assetAddress != address(0), "PayoutManager: invalid asset address");
         state = Structs.PayoutManagerState(
             id,
             address(this),
+            ansName,
+            ansId,
             msg.sender,
             owner,
             assetAddress,

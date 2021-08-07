@@ -6,6 +6,7 @@ interface IAssetFactory {
     function create(
         address creator,
         address issuer,
+        string memory ansName,
         uint256 initialTokenSupply,
         bool whitelistRequiredForTransfer,
         string memory name,
@@ -17,4 +18,6 @@ interface IAssetFactory {
     
     function getInstancesForIssuer(address issuer) external view returns (address[] memory);
 
+    function namespace(address issuer, string memory ansName) external view returns (address);
+    
 }

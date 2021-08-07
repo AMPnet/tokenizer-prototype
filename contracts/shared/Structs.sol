@@ -13,6 +13,8 @@ contract Structs {
     struct AssetState {
         uint256 id;
         address contractAddress;
+        string ansName;
+        uint256 ansId;
         address createdBy;
         address owner;
         address mirroredToken;
@@ -34,6 +36,7 @@ contract Structs {
     struct IssuerState {
         uint256 id;
         address contractAddress;
+        string ansName;
         address createdBy;
         address owner;
         address stablecoin;
@@ -44,6 +47,8 @@ contract Structs {
     struct CfManagerSoftcapState {
         uint256 id;
         address contractAddress;
+        string ansName;
+        uint256 ansId;
         address createdBy;
         address owner;
         address asset;
@@ -67,6 +72,8 @@ contract Structs {
     struct PayoutManagerState {
         uint256 id;
         address contractAddress;
+        string ansName;
+        uint256 ansId;
         address createdBy;
         address owner;
         address asset;

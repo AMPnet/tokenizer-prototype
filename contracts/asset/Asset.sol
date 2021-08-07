@@ -46,6 +46,8 @@ contract Asset is IAsset, ERC20Snapshot {
         uint256 id,
         address owner,
         address issuer,
+        string memory ansName,
+        uint256 ansId,
         uint256 initialTokenSupply,
         bool whitelistRequiredForTransfer,
         string memory name,
@@ -65,6 +67,8 @@ contract Asset is IAsset, ERC20Snapshot {
         state = Structs.AssetState(
             id,
             contractAddress,
+            ansName,
+            ansId,
             msg.sender,
             owner,
             address(0),

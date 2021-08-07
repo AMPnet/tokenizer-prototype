@@ -24,6 +24,7 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
     Structs.InfoEntry[] private infoHistory;
     mapping (address => uint256) public override claims;
     mapping (address => uint256) public override investments;
+    mapping (address => uint256) public override tokenAmounts;
 
     //------------------------
     //  EVENTS
@@ -48,6 +49,8 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
     constructor(
         uint256 id,
         address owner,
+        string memory ansName,
+        uint256 ansId,
         address asset,
         uint256 tokenPrice,
         uint256 softCap,
@@ -64,6 +67,8 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
         state = Structs.CfManagerSoftcapState(
             id,
             address(this),
+            ansName,
+            ansId,
             msg.sender,
             owner,
             asset,
@@ -157,6 +162,7 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
         }
         claims[msg.sender] += tokenAmount;
         investments[msg.sender] += tokenValue;
+        tokenAmounts[msg.sender] += tokenAmount;
         state.totalClaimableTokens += tokenAmount;
         state.totalTokensSold += tokenAmount;
         state.totalFundsRaised += tokenValue;
@@ -173,6 +179,7 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
         state.totalInvestorsCount -= 1;
         claims[msg.sender] = 0;
         investments[msg.sender] = 0;
+        tokenAmounts[msg.sender] = 0;
         state.totalClaimableTokens -= tokenAmount;
         state.totalTokensSold -= tokenAmount;
         state.totalFundsRaised -= tokenValue;

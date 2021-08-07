@@ -22,7 +22,8 @@ export async function deployFactories(deployer: Signer): Promise<Contract[]> {
 export async function deployServices(deployer: Signer, masterWalletApprover: string, rewardPerApprove: string): Promise<Contract[]> {
   return [
     await deployWalletApproverService(deployer, masterWalletApprover, rewardPerApprove),
-    await deployDeployerService(deployer)
+    await deployDeployerService(deployer),
+    await deployQueryService(deployer)
   ];
 }
 
@@ -45,6 +46,13 @@ export async function deployDeployerService(deployer: Signer): Promise<Contract>
   const deployerService = await DeployerService.deploy();
   console.log(`\nDeployer service deployed\n\tAt address: ${deployerService.address}`);
   return deployerService;
+}
+
+export async function deployQueryService(deployer: Signer): Promise<Contract> {
+  const QueryService = await ethers.getContractFactory("QueryService", deployer);
+  const queryService = await QueryService.deploy();
+  console.log(`\nQuery service deployed\n\tAt address: ${queryService.address}`);
+  return queryService;
 }
 
 export async function deployIssuerFactory(deployer: Signer): Promise<Contract> {
@@ -77,16 +85,19 @@ export async function deployPayoutManagerFactory(deployer: Signer): Promise<Cont
 
 export async function createIssuerAssetCampaign(
   issuerOwner: String,
+  issuerAnsName: String,
   issuerStablecoin: String,
   issuerWalletApprover: String,
   issuerInfo: String,
   assetOwner: String,
+  assetAnsName: String,
   assetInitialTokenSupply: Number,
   assetWhitelistRequired: boolean,
   assetName: String,
   assetSymbol: String,
   assetInfo: String,
   cfManagerOwner: String,
+  cfManagerAnsName: String,
   cfManagerPricePerToken: Number,
   cfManagerSoftcap: Number,
   cfManagerMinInvestment: Number,
@@ -110,16 +121,19 @@ export async function createIssuerAssetCampaign(
       assetFactory.address,
       cfManagerFactory.address,
       issuerOwner,
+      issuerAnsName,
       issuerStablecoin,
       issuerWalletApprover,
       issuerInfo,
       assetOwner,
+      assetAnsName,
       assetInitialTokenSupplyWei,
       assetWhitelistRequired,
       assetName,
       assetSymbol,
       assetInfo,
       cfManagerOwner,
+      cfManagerAnsName,
       cfManagerPricePerToken,
       cfManagerSoftcapWei,
       cfManagerMinInvestmentWei,
@@ -176,12 +190,14 @@ export async function createIssuerAssetCampaign(
 export async function createAssetCampaign(
   issuer: Contract,
   assetOwner: String,
+  assetAnsName: String,
   assetInitialTokenSupply: Number,
   assetWhitelistRequired: boolean,
   assetName: String,
   assetSymbol: String,
   assetInfo: String,
   cfManagerOwner: String,
+  cfManagerAnsName: String,
   cfManagerPricePerToken: Number,
   cfManagerSoftcap: Number,
   cfManagerMinInvestment: Number,
@@ -204,12 +220,14 @@ export async function createAssetCampaign(
       cfManagerFactory.address,
       issuer.address,
       assetOwner,
+      assetAnsName,
       assetInitialTokenSupplyWei,
       assetWhitelistRequired,
       assetName,
       assetSymbol,
       assetInfo,
       cfManagerOwner,
+      cfManagerAnsName,
       cfManagerPricePerToken,
       cfManagerSoftcapWei,
       cfManagerMinInvestmentWei,
@@ -269,6 +287,7 @@ export async function createAssetCampaign(
  */
 export async function createIssuer(
   owner: String,
+  ansName: String,
   stablecoin: Contract,
   walletApproverAddress: String,
   info: String,
@@ -276,6 +295,7 @@ export async function createIssuer(
 ): Promise<Contract> {
   const issuerTx = await issuerFactory.create(
     owner,
+    ansName,
     stablecoin.address,
     walletApproverAddress,
     info
@@ -313,6 +333,7 @@ export async function createIssuer(
 export async function createAsset(
   owner: String,
   issuer: Contract,
+  ansName: String,
   initialTokenSupply: Number,
   whitelistRequiredForTransfer: boolean,
   name: String,
@@ -323,6 +344,7 @@ export async function createAsset(
   const createAssetTx = await assetFactory.create(
     owner,
     issuer.address,
+    ansName,
     ethers.utils.parseEther(initialTokenSupply.toString()),
     whitelistRequiredForTransfer,
     name,
@@ -362,6 +384,7 @@ export async function createAsset(
  */
 export async function createCfManager(
   owner: String,
+  ansName: String,
   asset: Contract,
   pricePerToken: Number,
   softCap: Number,
@@ -373,6 +396,7 @@ export async function createCfManager(
 ): Promise<Contract> {
   const cfManagerTx = await cfManagerFactory.create(
     owner,
+    ansName,
     asset.address,
     pricePerToken,
     ethers.utils.parseEther(softCap.toString()),
@@ -407,11 +431,12 @@ export async function createCfManager(
  */
 export async function createPayoutManager(
   owner: String,
+  ansName: String,
   asset: Contract,
   info: String,
   payoutManagerFactory: Contract
  ): Promise<Contract> {
-  const payoutManagerTx = await payoutManagerFactory.create(owner, asset.address, info);
+  const payoutManagerTx = await payoutManagerFactory.create(owner, ansName, asset.address, info);
   const receipt = await ethers.provider.waitForTransaction(payoutManagerTx.hash);
   for (const log of receipt.logs) {
     const parsedLog = payoutManagerFactory.interface.parseLog(log);
@@ -873,4 +898,27 @@ export async function fetchWalletRecords(issuer: Contract): Promise<Array<Object
  */
 export async function fetchCampaignRecords(asset: Contract): Promise<Array<Object>> {
   return asset.getCampaignRecords();
+}
+
+/**
+ * @param queryService QueryService contract instance
+ * @param cfManagerFactory CfManagerFactory contract instance
+ * @param issuer Issuer contract instance
+ * @returns Array of campaign states for given issuer
+ */
+export async function queryCampaignsForIssuer(
+  queryService: Contract,
+  cfManagerFactory: Contract,
+  issuer: Contract
+): Promise<Array<Object>> {
+  return queryService.getCampaignsForIssuer(issuer.address, cfManagerFactory.address);
+}
+
+export async function queryCampaignsForIssuerInvestor(
+  queryService: Contract,
+  cfManagerFactory: Contract,
+  issuer: Contract,
+  investor: String
+): Promise<Array<Object>> {
+  return queryService.getCampaignsForIssuerInvestor(issuer.address, investor, cfManagerFactory.address);
 }

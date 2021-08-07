@@ -19,16 +19,19 @@ contract DeployerService {
         IAssetFactory assetFactory;
         ICfManagerSoftcapFactory cfManagerSoftcapFactory;
         address issuerOwner;
+        string issuerAnsName;
         address issuerStablecoin;
         address issuerWalletApprover;
         string issuerInfo;
         address assetOwner;
+        string assetAnsName;
         uint256 assetInitialTokenSupply;
         bool assetWhitelistRequired;
         string assetName;
         string assetSymbol;
         string assetInfo;
         address cfManagerOwner;
+        string cfManagerAnsName;
         uint256 cfManagerPricePerToken;
         uint256 cfManagerSoftcap;
         uint256 cfManagerSoftcapMinInvestment;
@@ -43,12 +46,14 @@ contract DeployerService {
         ICfManagerSoftcapFactory cfManagerSoftcapFactory;
         address issuer;
         address assetOwner;
+        string assetAnsName;
         uint256 assetInitialTokenSupply;
         bool assetWhitelistRequired;
         string assetName;
         string assetSymbol;
         string assetInfo;
         address cfManagerOwner;
+        string cfManagerAnsName;
         uint256 cfManagerPricePerToken;
         uint256 cfManagerSoftcap;
         uint256 cfManagerSoftcapMinInvestment;
@@ -62,6 +67,7 @@ contract DeployerService {
         // Deploy contracts
         IIssuer issuer = IIssuer(request.issuerFactory.create(
             address(this),
+            request.issuerAnsName,
             request.issuerStablecoin,
             address(this),
             request.issuerInfo
@@ -69,6 +75,7 @@ contract DeployerService {
         IAsset asset = IAsset(request.assetFactory.create(
             address(this),
             address(issuer),
+            request.assetAnsName,
             request.assetInitialTokenSupply,
             request.assetWhitelistRequired,
             request.assetName,
@@ -77,6 +84,7 @@ contract DeployerService {
         ));
         ICfManagerSoftcap campaign = ICfManagerSoftcap(request.cfManagerSoftcapFactory.create(
             address(this),
+            request.cfManagerAnsName,
             address(asset),
             request.cfManagerPricePerToken,
             request.cfManagerSoftcap,
@@ -112,6 +120,7 @@ contract DeployerService {
         IAsset asset = IAsset(request.assetFactory.create(
             address(this),
             request.issuer,
+            request.assetAnsName,
             request.assetInitialTokenSupply,
             false,
             request.assetName,
@@ -120,6 +129,7 @@ contract DeployerService {
         ));
         ICfManagerSoftcap campaign = ICfManagerSoftcap(request.cfManagerSoftcapFactory.create(
             address(this),
+            request.cfManagerAnsName,
             address(asset),
             request.cfManagerPricePerToken,
             request.cfManagerSoftcap,

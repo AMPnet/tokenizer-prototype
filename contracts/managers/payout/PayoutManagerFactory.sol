@@ -19,13 +19,26 @@ contract PayoutManagerFactory is IPayoutManagerFactory {
     address[] public instances;
     mapping (address => address[]) instancesPerIssuer;
     mapping (address => address[]) instancesPerAsset;
+    mapping (address => mapping (string => address)) public override namespace;
 
-    function create(address owner, address assetAddress, string memory info) public override returns (address) {
+    function create(
+        address owner,
+        string memory ansName,
+        address assetAddress,
+        string memory info
+    ) public override returns (address) {
+        address issuer = IAsset(assetAddress).getState().issuer;
+        require(
+            namespace[issuer][ansName] == address(0),
+            "PayoutManagerFactory: issuer with this name already exists"
+        );
         uint256 id = instances.length;
-        address payoutManager = address(new PayoutManager(id, owner, assetAddress, info));
+        uint256 ansId = instancesPerIssuer[issuer].length;
+        address payoutManager = address(new PayoutManager(id, owner, ansName, ansId, assetAddress, info));
         instances.push(payoutManager);
-        instancesPerIssuer[IAsset(assetAddress).getState().issuer].push(payoutManager);
+        instancesPerIssuer[issuer].push(payoutManager);
         instancesPerAsset[assetAddress].push(payoutManager);
+        namespace[issuer][ansName] = payoutManager;
         emit PayoutManagerCreated(owner, payoutManager, id, assetAddress, block.timestamp);
         return payoutManager;
     }
