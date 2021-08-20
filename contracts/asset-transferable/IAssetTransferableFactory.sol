@@ -1,18 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-interface IAssetFactory {
-    
+interface IAssetTransferableFactory {
+
     function create(
         address creator,
         address issuer,
         string memory ansName,
         uint256 initialTokenSupply,
-        bool isTransferable,
-        bool whitelistRequiredForTransfer,
+        bool whitelistRequiredForRevenueClaim,
+        bool whitelistRequiredForLiquidationClaim,
         string memory name,
         string memory symbol,
-        string memory info
+        string memory info,
+        address childChainManager
     ) external returns (address);
     
     function getInstances() external view returns (address[] memory);

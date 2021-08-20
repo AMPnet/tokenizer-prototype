@@ -36,6 +36,7 @@ contract Issuer is IIssuer {
         require(owner != address(0), "Issuer: invalid owner address");
         require(stablecoin != address(0), "Issuer: invalid stablecoin address");
         require(walletApprover != address(0), "Issuer: invalid wallet approver address");
+        
         infoHistory.push(Structs.InfoEntry(
             info,
             block.timestamp
@@ -111,8 +112,9 @@ contract Issuer is IIssuer {
     function getState() external override view returns (Structs.IssuerState memory) { return state; }
     
     function isWalletApproved(address wallet) external view override returns (bool) {
-        bool walletExists = _addressExists(wallet);
-        if (!walletExists) {
+        if (wallet == state.owner) {
+            return true;
+        } else if (!_addressExists(wallet)) {
             return false;
         } else {
             return approvedWallets[approvedWalletsMap[wallet]].whitelisted;

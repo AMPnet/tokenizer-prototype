@@ -10,6 +10,14 @@ contract Structs {
         uint256 timestamp;
     }
 
+    struct TokenPriceRecord {
+        uint256 price;
+        uint256 updatedAtTimestamp;
+        uint256 validUntilTimestamp;
+        uint256 capturedSupply;
+        address provider;
+    }
+
     struct AssetState {
         uint256 id;
         address contractAddress;
@@ -17,9 +25,9 @@ contract Structs {
         uint256 ansId;
         address createdBy;
         address owner;
-        address mirroredToken;
         uint256 initialTokenSupply;
-        bool whitelistRequiredForTransfer;
+        bool whitelistRequiredForRevenueClaim;
+        bool whitelistRequiredForLiquidationClaim;
         bool assetApprovedByIssuer;
         address issuer;
         string info;
@@ -27,9 +35,36 @@ contract Structs {
         string symbol;
         uint256 totalAmountRaised;
         uint256 totalTokensSold;
+        uint256 highestTokenSellPrice;
+        uint256 totalTokensLocked;
+        uint256 totalTokensLockedAndLiquidated;
         bool liquidated;
+        uint256 liquidationFundsTotal;
         uint256 liquidationTimestamp;
-        uint256 liquidationSnapshotId;
+        uint256 liquidationFundsClaimed;
+    }
+
+    struct AssetTransferableState {
+        uint256 id;
+        address contractAddress;
+        string ansName;
+        uint256 ansId;
+        address createdBy;
+        address owner;
+        uint256 initialTokenSupply;
+        bool whitelistRequiredForRevenueClaim;
+        bool whitelistRequiredForLiquidationClaim;
+        bool assetApprovedByIssuer;
+        address issuer;
+        string info;
+        string name;
+        string symbol;
+        uint256 totalAmountRaised;
+        uint256 totalTokensSold;
+        uint256 highestTokenSellPrice;
+        bool liquidated;
+        uint256 liquidationFundsTotal;
+        uint256 liquidationTimestamp;
         uint256 liquidationFundsClaimed;
     }
 

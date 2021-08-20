@@ -1,17 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Snapshot.sol";
-import "./IAsset.sol";
+import { SafeERC20, ChildMintableERC20, IERC20} from "../tokens/matic/ChildMintableERC20.sol";
+import "./IAssetTransferable.sol";
 import "../issuer/IIssuer.sol";
 import "../managers/crowdfunding-softcap/ICfManagerSoftcap.sol";
 import "../tokens/apx-protocol/IMirroredToken.sol";
 import "../tokens/IToken.sol";
 import "../shared/Structs.sol";
 
-contract Asset is IAsset, ERC20Snapshot {
+contract AssetTransferable is IAssetTransferable, ChildMintableERC20 {
     using SafeERC20 for IERC20;
 
     //------------------------
@@ -22,37 +20,28 @@ contract Asset is IAsset, ERC20Snapshot {
     //----------------------
     //  STATE
     //------------------------
-    Structs.AssetState private state;
+    Structs.AssetTransferableState private state;
     Structs.InfoEntry[] private infoHistory;
     Structs.WalletRecord[] private approvedCampaigns;
     Structs.TokenSaleInfo[] private sellHistory;
+    Structs.TokenPriceRecord public tokenPriceRecord;
     mapping (address => uint256) public approvedCampaignsMap;
     mapping (address => Structs.TokenSaleInfo) public successfulTokenSalesMap;
     mapping (address => uint256) public liquidationClaimsMap;
-    mapping (address => uint256) public locked;
 
     //------------------------
     //  EVENTS
     //------------------------
     event ChangeOwnership(address caller, address newOwner, uint256 timestamp);
     event SetInfo(string info, address setter, uint256 timestamp);
+    event SetWhitelistRequiredForTransfer(address caller, bool whitelistRequiredForTransfer, uint256 timestamp);
     event SetWhitelistRequiredForRevenueClaim(address caller, bool whitelistRequired, uint256 timestamp);
-    event SetWhitelistRequiredForLiquidationClaim(address caller, bool whitelistRequired, uint256 timestamp);
     event SetApprovedByIssuer(address caller, bool approvedByIssuer, uint256 timestamp);
     event CampaignWhitelist(address approver, address wallet, bool whitelisted, uint256 timestamp);
     event SetIssuerStatus(address approver, bool status, uint256 timestamp);
     event FinalizeSale(address campaign, uint256 tokenAmount, uint256 tokenValue, uint256 timestamp);
-    event Liquidated(address liquidator, uint256 liquidationFunds, uint256 liquidatedTokensAmount, uint256 timestamp);
-    event LiquidateMirrored(
-        address liquidator,
-        uint256 liquidationFunds,
-        uint256 liquidatedTokensAmount,
-        address mirroredToken,
-        uint256 timestamp
-    );
-    event ClaimLiquidationShare(address indexed investor,uint256 amount, uint256 timestamp);
-    event LockTokens(address indexed wallet, address mirroredToken, uint256 amount, uint256 timestamp);
-    event UnlockTokens(address indexed wallet, address mirroredToken, uint256 amount, uint256 timestamp);
+    event Liquidated(address liquidator, uint256 liquidationFunds, uint256 timestamp);
+    event ClaimLiquidationShare(address indexed investor, uint256 amount,  uint256 timestamp);
 
     //------------------------
     //  CONSTRUCTOR
@@ -68,19 +57,21 @@ contract Asset is IAsset, ERC20Snapshot {
         bool whitelistRequiredForLiquidationClaim,
         string memory name,
         string memory symbol,
-        string memory info
-    ) ERC20(name, symbol)
+        string memory info,
+        address childChainManager
+    ) ChildMintableERC20(name, symbol, childChainManager)
     {
         require(owner != address(0), "Asset: Invalid owner provided");
         require(issuer != address(0), "Asset: Invalid issuer provided");
         require(initialTokenSupply > 0, "Asset: Initial token supply can't be 0");
+        require(childChainManager != address(0), "MirroredToken: invalid child chain manager address");
         infoHistory.push(Structs.InfoEntry(
             info,
             block.timestamp
         ));
         bool assetApprovedByIssuer = (IIssuer(issuer).getState().owner == owner);
         address contractAddress = address(this);
-        state = Structs.AssetState(
+        state = Structs.AssetTransferableState(
             id,
             contractAddress,
             ansName,
@@ -95,7 +86,7 @@ contract Asset is IAsset, ERC20Snapshot {
             info,
             name,
             symbol,
-            0, 0, 0, 0, 0,
+            0, 0, 0,
             false,
             0, 0, 0
         );
@@ -105,16 +96,6 @@ contract Asset is IAsset, ERC20Snapshot {
     //------------------------
     //  MODIFIERS
     //------------------------
-    modifier walletApproved(address wallet) {
-        require(
-            wallet == state.owner || 
-            IIssuer(state.issuer).isWalletApproved(wallet) ||
-            _campaignWhitelisted(wallet),
-            "Asset: This functionality is not allowed. Wallet is not whitelisted."
-        );
-        _;
-    }
-
     modifier ownerOnly() {
         require(
             msg.sender == state.owner,
@@ -128,36 +109,9 @@ contract Asset is IAsset, ERC20Snapshot {
         _;
     }
 
-    modifier transferAllowed(address from, address to) {
-        IIssuer issuer = _issuer();
-        require(
-            ((from == address(this) || _campaignWhitelisted(from)) && issuer.isWalletApproved(to)) ||
-            ((to == address(this) || _campaignWhitelisted(to)) && issuer.isWalletApproved(from)),
-            "Asset: Not transferable. Only token mirroring is allowed."
-        );
-        _;
-    }
-
     //------------------------
     //  IAsset IMPL - Write
     //------------------------
-    function lockTokens(address mirroredToken, uint256 amount) external override notLiquidated {
-        require(allowance(msg.sender, address(this)) >= amount, "Asset: Missing allowance for token lock");
-        transferFrom(msg.sender, address(this), amount);
-        IMirroredToken(mirroredToken).mintMirrored(msg.sender, amount);
-        state.totalTokensLocked += amount;
-        locked[mirroredToken] += amount;
-        emit LockTokens(msg.sender, mirroredToken, amount, block.timestamp);
-    }
-
-    function unlockTokens(address wallet, uint256 amount) external override notLiquidated {
-        require(locked[msg.sender] >= amount, "Asset: insufficent amount of locked tokens");
-        transfer(wallet, amount);
-        state.totalTokensLocked -= amount;
-        locked[msg.sender] -= amount;
-        emit UnlockTokens(wallet, msg.sender, amount, block.timestamp);
-    }
-
     function approveCampaign(address campaign) external override ownerOnly notLiquidated {
         _setCampaignState(campaign, true);
         emit CampaignWhitelist(msg.sender, campaign, true, block.timestamp);
@@ -189,7 +143,7 @@ contract Asset is IAsset, ERC20Snapshot {
 
     function setWhitelistRequiredForLiquidationClaim(bool whitelistRequired) external override ownerOnly {
         state.whitelistRequiredForLiquidationClaim = whitelistRequired;
-        emit SetWhitelistRequiredForLiquidationClaim(msg.sender, whitelistRequired, block.timestamp);
+        emit SetWhitelistRequiredForTransfer(msg.sender, whitelistRequired, block.timestamp);
     }
 
     function setIssuerStatus(bool status) external override {
@@ -233,45 +187,15 @@ contract Asset is IAsset, ERC20Snapshot {
         );
     }
 
-    function liquidate(address[] memory mirroredTokens) external override notLiquidated ownerOnly {
-        // Liquidate mirrored tokens first (if any provided)
-        for (uint i = 0; i < mirroredTokens.length; i++) { liquidateMirrored(mirroredTokens[i]); }
-        require(
-            state.totalTokensLocked == state.totalTokensLockedAndLiquidated,
-            "Asset: Can't liquidate original token. Liquidate mirrored tokens!"
-        );
-        // If mirrored liquidated, proceed with liquidating the original asset (this)
-        uint256 activeSupply = totalSupply() - state.totalTokensLocked;
-        uint256 liquidationFunds = _tokenValue(activeSupply, state.highestTokenSellPrice);
-        if (liquidationFunds > 0) {
-            _stablecoin().safeTransferFrom(msg.sender, address(this), liquidationFunds);
-        }
+    function liquidate() external override notLiquidated ownerOnly {
+        uint256 liquidationFunds = _tokenValue(state.totalTokensSold, tokenPriceRecord.price);
+        require(liquidationFunds > 0, "AssetTransferable: Liquidation funds are zero.");
+        require(tokenPriceRecord.validUntilTimestamp <= block.timestamp, "AssetTransferable: Price expired.");
+        _stablecoin().safeTransferFrom(msg.sender, address(this), liquidationFunds);
         state.liquidated = true;
-        state.liquidationFundsTotal = liquidationFunds;
         state.liquidationTimestamp = block.timestamp;
-        emit Liquidated(msg.sender, liquidationFunds, activeSupply, block.timestamp);
-    }
-
-    function liquidateMirrored(address mirroredTokenAddress) public override notLiquidated ownerOnly {
-        require(mirroredTokenAddress != address(0), "Asset: Invalid mirrored token address");
-        require(locked[mirroredTokenAddress] > 0, "Asset: No tokens mirrored on the provided token address");
-        IMirroredToken mirroredToken = IMirroredToken(mirroredTokenAddress);
-        uint256 liquidationFunds = mirroredToken.lastKnownTokenValue();
-        _stablecoin().safeTransferFrom(msg.sender, mirroredTokenAddress, mirroredToken.lastKnownTokenValue());
-        uint256 liquidatedTokensAmount = mirroredToken.liquidate();
-        require(
-            liquidatedTokensAmount == locked[mirroredTokenAddress],
-            "Asset: Liquidated tokens supply does not match the locked tokens supply."
-        );
-        state.totalTokensLockedAndLiquidated += liquidatedTokensAmount;
-        locked[mirroredTokenAddress] = 0;
-        emit LiquidateMirrored(
-            msg.sender,
-            liquidationFunds,
-            liquidatedTokensAmount,
-            mirroredTokenAddress,
-            block.timestamp
-        );
+        state.liquidationFundsTotal = liquidationFunds;
+        emit Liquidated(msg.sender, liquidationFunds, block.timestamp);
     }
 
     function claimLiquidationShare(address investor) external override {
@@ -307,7 +231,7 @@ contract Asset is IAsset, ERC20Snapshot {
         return uint256(decimals());
     }
 
-    function getState() external view override returns (Structs.AssetState memory) {
+    function getState() external view override returns (Structs.AssetTransferableState memory) {
         return state;
     }
 
@@ -331,37 +255,19 @@ contract Asset is IAsset, ERC20Snapshot {
         return super.balanceOf(account);
     }
 
-    function transfer(address recipient, uint256 amount)
-        public
-        override
-        transferAllowed(msg.sender, recipient)
-        returns (bool)
-    {
-        return super.transfer(recipient, amount);
-    }
-
-    function transferFrom(address sender, address recipient, uint256 amount)
-        public
-        override
-        transferAllowed(sender, recipient)
-        returns (bool)
-    {
-        return super.transferFrom(sender, recipient, amount);
-    }
-
     //------------------------
     //  Helpers
     //------------------------
-    function _issuer() private view returns (IIssuer) {
-        return IIssuer(state.issuer);
-    }
-
     function _stablecoin() private view returns (IERC20) {
         return IERC20(_stablecoin_address());
     }
 
     function _stablecoin_address() private view returns (address) {
         return _issuer().getState().stablecoin;
+    }
+
+    function _issuer() private view returns (IIssuer) {
+        return IIssuer(state.issuer);
     }
 
     function _setCampaignState(address wallet, bool whitelisted) private {

@@ -13,11 +13,6 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
     using SafeERC20 for IERC20;
 
     //------------------------
-    //  CONSTANTS
-    //------------------------
-    uint256 constant PRICE_DECIMALS_PRECISION = 10 ** 4;
-
-    //------------------------
     //  STATE
     //------------------------
     Structs.CfManagerSoftcapState private state;
@@ -61,8 +56,13 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
     ) {
         require(owner != address(0), "CfManagerSoftcap: Invalid owner address");
         require(asset != address(0), "CfManagerSoftcap: Invalid asset address");
+        require(
+            _token_value(IAsset(asset).totalShares()) >= softCap,
+            "CfManagerSoftcap: "
+        );
         require(tokenPrice > 0, "CfManagerSoftcap: Initial price per token must be greater than 0.");
-        require(maxInvestment >= minInvestment, "CfManagerSoftcap: Max has to be bigger than min investment");
+        require(maxInvestment >= minInvestment, "CfManagerSoftcap: Max has to be bigger than min investment.");
+        require(maxInvestment > 0, "CfManagerSoftcap: Max investment has to be bigger than 0.");
         address issuer = address(IAsset(asset).getState().issuer);
         state = Structs.CfManagerSoftcapState(
             id,
@@ -139,7 +139,7 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
 
         uint256 tokenAmount = 
             (amount / state.tokenPrice) 
-                * PRICE_DECIMALS_PRECISION 
+                * _asset_price_precision()
                 * _asset_decimals_precision() 
                 / _stablecoin_decimals_precision();
         uint256 tokenValue = _token_value(tokenAmount);
@@ -213,7 +213,7 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
         uint256 tokensSold = state.totalTokensSold;
         uint256 tokensRefund = assetERC20.balanceOf(address(this)) - tokensSold;
         IAsset asset = _asset();
-        asset.finalizeSale(tokensSold, fundsRaised);
+        asset.finalizeSale();
         stablecoin.safeTransfer(msg.sender, fundsRaised);
         assetERC20.safeTransfer(msg.sender, tokensRefund);
         emit Finalize(msg.sender, fundsRaised, tokensSold, tokensRefund, block.timestamp);
@@ -275,7 +275,11 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
     }
 
     function _asset_decimals_precision() private view returns (uint256) {
-        return 10 ** IAsset(state.asset).getDecimals();
+        return 10 ** _asset().getDecimals();
+    }
+
+    function _asset_price_precision() private view returns (uint256) {
+        return 10 ** _asset().priceDecimalsPrecision();
     }
 
     function _stablecoin_decimals_precision() private view returns (uint256) {
@@ -286,7 +290,7 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
         return tokenAmount
                     * state.tokenPrice
                     * _stablecoin_decimals_precision()
-                    / (_asset_decimals_precision() * PRICE_DECIMALS_PRECISION);
+                    / (_asset_decimals_precision() * _asset_price_precision());
     }
 
     function _walletApproved(address wallet) private view returns (bool) {

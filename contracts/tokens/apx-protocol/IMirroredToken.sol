@@ -5,14 +5,14 @@ interface IMirroredToken {
 
     // Write
 
-    function convertFromOriginal() external;
+    function mintMirrored(address wallet, uint256 amount) external;
+    function burnMirrored(uint256 amount) external;
     function updateTokenPrice(uint256 price, uint256 expiry) external;
-    function liquidate() external;
+    function liquidate() external returns (uint256);
     function claimLiquidationShare(address investor) external;
     
     // Read
 
     function lastKnownTokenValue() external view returns(uint256);
-    function circulatingSupply() external view returns(uint256);
 
 }

@@ -26,7 +26,8 @@ contract DeployerService {
         address assetOwner;
         string assetAnsName;
         uint256 assetInitialTokenSupply;
-        bool assetWhitelistRequired;
+        bool assetIsTransferable;
+        bool assetWhitelistRequiredForTransfer;
         string assetName;
         string assetSymbol;
         string assetInfo;
@@ -48,7 +49,8 @@ contract DeployerService {
         address assetOwner;
         string assetAnsName;
         uint256 assetInitialTokenSupply;
-        bool assetWhitelistRequired;
+        bool assetIsTransferable;
+        bool assetWhitelistRequiredForTransfer;
         string assetName;
         string assetSymbol;
         string assetInfo;
@@ -77,7 +79,8 @@ contract DeployerService {
             address(issuer),
             request.assetAnsName,
             request.assetInitialTokenSupply,
-            request.assetWhitelistRequired,
+            request.assetIsTransferable,
+            request.assetWhitelistRequiredForTransfer,
             request.assetName,
             request.assetSymbol,
             request.assetInfo
@@ -122,6 +125,7 @@ contract DeployerService {
             request.issuer,
             request.assetAnsName,
             request.assetInitialTokenSupply,
+            true,
             false,
             request.assetName,
             request.assetSymbol,
@@ -147,7 +151,8 @@ contract DeployerService {
         assetERC20.transfer(request.assetOwner, tokensToKeep);
 
         // Transfer ownerships from address(this) to the actual owner wallets
-        asset.setWhitelistRequiredForTransfer(request.assetWhitelistRequired);
+        // asset.setIsTransferable(request.assetIsTransferable);
+        // asset.setWhitelistRequiredForTransfer(request.assetWhitelistRequiredForTransfer);
         asset.changeOwnership(request.assetOwner);
         campaign.changeOwnership(request.cfManagerOwner);
 

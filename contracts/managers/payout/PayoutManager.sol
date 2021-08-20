@@ -78,7 +78,7 @@ contract PayoutManager is IPayoutManager {
         payout.amount = amount;
         payout.ignoredWallets = ignored;
         payout.ignoredWallets.push(state.asset);
-        payout.ignoredWallets.push(_asset().getState().mirroredToken);
+        // payout.ignoredWallets.push(_asset().getState().mirroredToken);
         uint256 ignoredTokensAmount = _process_ignored_addresses(payoutId, ignored);
         payout.ignoredAmount = ignoredTokensAmount;
         snapshotToPayout[snapshotId] = payouts.length - 1; 

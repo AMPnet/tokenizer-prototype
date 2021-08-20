@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "../asset/IAssetFactory.sol";
-import "../asset/Asset.sol";
+import "./IAssetTransferableFactory.sol";
+import "./AssetTransferable.sol";
 import "../shared/Structs.sol";
 
-contract AssetFactory is IAssetFactory {
+contract AssetTransferableFactory is IAssetTransferableFactory {
     
-    event AssetCreated(address indexed creator, address asset, uint256 id, uint256 timestamp);
+    event AssetTransferableCreated(address indexed creator, address asset, uint256 id, uint256 timestamp);
 
     address[] public instances;
     mapping (address => address[]) instancesPerIssuer;
@@ -18,33 +18,38 @@ contract AssetFactory is IAssetFactory {
         address issuer,
         string memory ansName,
         uint256 initialTokenSupply,
-        bool isTransferable,
-        bool whitelistRequiredForTransfer,
+        bool whitelistRequiredForRevenueClaim,
+        bool whitelistRequiredForLiquidationClaim,
         string memory name,
         string memory symbol,
-        string memory info
+        string memory info,
+        address childChainManager
     ) public override returns (address)
     {
-        require(namespace[issuer][ansName] == address(0), "AssetFactory: asset with this name already exists");
+        require(
+            namespace[issuer][ansName] == address(0),
+            "AssetTransferableFactory: asset with this name already exists"
+        );
         uint256 id = instances.length;
         uint256 ansId = instancesPerIssuer[issuer].length;
-        address asset = address(new Asset(
+        address asset = address(new AssetTransferable(
             id,
             creator,
             issuer,
             ansName,
             ansId,
             initialTokenSupply,
-            isTransferable,
-            whitelistRequiredForTransfer,
+            whitelistRequiredForRevenueClaim,
+            whitelistRequiredForLiquidationClaim,
             name,
             symbol,
-            info
+            info,
+            childChainManager
         ));
         instances.push(asset);
         instancesPerIssuer[issuer].push(asset);
         namespace[issuer][ansName] = asset;
-        emit AssetCreated(creator, asset, id, block.timestamp);
+        emit AssetTransferableCreated(creator, asset, id, block.timestamp);
         return asset;
     }
 

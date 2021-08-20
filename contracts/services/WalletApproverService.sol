@@ -46,7 +46,7 @@ contract WalletApproverService {
 
     modifier isAllowedToApproveForIssuer(IIssuer issuer) {
         require(
-            allowedApprovers[msg.sender],
+            msg.sender == masterOwner || allowedApprovers[msg.sender],
             "WalletApproverService: approver not in allowed approvers;"
         );
         require(
