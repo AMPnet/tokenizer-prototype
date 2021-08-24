@@ -18,6 +18,7 @@ interface IAssetTransferable {
     function liquidate() external;
     function claimLiquidationShare(address investor) external;
     function snapshot() external returns (uint256);
+    function migrateApxRegistry(address newRegistry) external;
 
     // Read
 

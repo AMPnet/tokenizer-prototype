@@ -40,6 +40,7 @@ contract DeployerService {
         uint256 cfManagerTokensToSellAmount;
         bool cfManagerWhitelistRequired;
         string cfManagerInfo;
+        address apxRegistry;
     }
 
     struct DeployAssetCampaignRequest {
@@ -63,6 +64,7 @@ contract DeployerService {
         uint256 cfManagerTokensToSellAmount;
         bool cfManagerWhitelistRequired;
         string cfManagerInfo;
+        address apxRegistry;
     }
  
     function deployIssuerAssetCampaign(DeployIssuerAssetCampaignRequest memory request) external {
@@ -77,6 +79,7 @@ contract DeployerService {
         IAsset asset = IAsset(request.assetFactory.create(
             address(this),
             address(issuer),
+            request.apxRegistry,
             request.assetAnsName,
             request.assetInitialTokenSupply,
             request.assetIsTransferable,
@@ -123,6 +126,7 @@ contract DeployerService {
         IAsset asset = IAsset(request.assetFactory.create(
             address(this),
             request.issuer,
+            request.apxRegistry,
             request.assetAnsName,
             request.assetInitialTokenSupply,
             true,

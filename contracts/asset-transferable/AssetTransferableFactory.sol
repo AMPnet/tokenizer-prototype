@@ -13,43 +13,36 @@ contract AssetTransferableFactory is IAssetTransferableFactory {
     mapping (address => address[]) instancesPerIssuer;
     mapping (address => mapping (string => address)) public override namespace;
 
-    function create(
-        address creator,
-        address issuer,
-        string memory ansName,
-        uint256 initialTokenSupply,
-        bool whitelistRequiredForRevenueClaim,
-        bool whitelistRequiredForLiquidationClaim,
-        string memory name,
-        string memory symbol,
-        string memory info,
-        address childChainManager
-    ) public override returns (address)
-    {
+    function create(Structs.AssetTransferableFactoryParams memory params) public override returns (address) {
         require(
-            namespace[issuer][ansName] == address(0),
+            namespace[params.issuer][params.ansName] == address(0),
             "AssetTransferableFactory: asset with this name already exists"
         );
         uint256 id = instances.length;
-        uint256 ansId = instancesPerIssuer[issuer].length;
-        address asset = address(new AssetTransferable(
-            id,
-            creator,
-            issuer,
-            ansName,
-            ansId,
-            initialTokenSupply,
-            whitelistRequiredForRevenueClaim,
-            whitelistRequiredForLiquidationClaim,
-            name,
-            symbol,
-            info,
-            childChainManager
+        uint256 ansId = instancesPerIssuer[params.issuer].length;
+        address asset = 
+            address(
+                new AssetTransferable(
+                    Structs.AssetTransferableConstructorParams(
+                        id,
+                        params.creator,
+                        params.issuer,
+                        params.apxRegistry,
+                        params.ansName,
+                        ansId,
+                        params.initialTokenSupply,
+                        params.whitelistRequiredForRevenueClaim,
+                        params.whitelistRequiredForLiquidationClaim,
+                        params.name,
+                        params.symbol,
+                        params.info,
+                        params.childChainManager
+                    )
         ));
         instances.push(asset);
-        instancesPerIssuer[issuer].push(asset);
-        namespace[issuer][ansName] = asset;
-        emit AssetTransferableCreated(creator, asset, id, block.timestamp);
+        instancesPerIssuer[params.issuer].push(asset);
+        namespace[params.issuer][params.ansName] = asset;
+        emit AssetTransferableCreated(params.creator, asset, id, block.timestamp);
         return asset;
     }
 

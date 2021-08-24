@@ -21,6 +21,7 @@ interface IAsset {
     function liquidateMirrored(address mirroredToken) external;
     function claimLiquidationShare(address investor) external;
     function snapshot() external returns (uint256);
+    function migrateApxRegistry(address newRegistry) external;
 
     // Read
 

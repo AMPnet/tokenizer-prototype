@@ -2,6 +2,7 @@ import { task } from "hardhat/config";
 import "@nomiclabs/hardhat-waffle";
 import "@nomiclabs/hardhat-solhint";
 import "hardhat-gas-reporter";
+import "hardhat-contract-sizer";
 import * as dotenv from 'dotenv';
 dotenv.config();
 
@@ -26,7 +27,8 @@ module.exports = {
     version: "0.8.0",
     settings: {
       optimizer: {
-        enabled: true
+        enabled: true,
+        runs: 1000
       }
     }
   },

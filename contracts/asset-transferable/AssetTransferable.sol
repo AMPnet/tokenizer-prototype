@@ -1,15 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { SafeERC20, ChildMintableERC20, IERC20} from "../tokens/matic/ChildMintableERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Snapshot.sol";
+import "../tokens/matic/IChildToken.sol";
 import "./IAssetTransferable.sol";
 import "../issuer/IIssuer.sol";
 import "../managers/crowdfunding-softcap/ICfManagerSoftcap.sol";
-import "../tokens/apx-protocol/IMirroredToken.sol";
 import "../tokens/IToken.sol";
+import "../apx-protocol/IApxAssetsRegistry.sol";
 import "../shared/Structs.sol";
 
-contract AssetTransferable is IAssetTransferable, ChildMintableERC20 {
+contract AssetTransferable is IAssetTransferable, IChildToken, ERC20Snapshot {
     using SafeERC20 for IERC20;
 
     //------------------------
@@ -24,7 +27,6 @@ contract AssetTransferable is IAssetTransferable, ChildMintableERC20 {
     Structs.InfoEntry[] private infoHistory;
     Structs.WalletRecord[] private approvedCampaigns;
     Structs.TokenSaleInfo[] private sellHistory;
-    Structs.TokenPriceRecord public tokenPriceRecord;
     mapping (address => uint256) public approvedCampaignsMap;
     mapping (address => Structs.TokenSaleInfo) public successfulTokenSalesMap;
     mapping (address => uint256) public liquidationClaimsMap;
@@ -47,50 +49,40 @@ contract AssetTransferable is IAssetTransferable, ChildMintableERC20 {
     //  CONSTRUCTOR
     //------------------------
     constructor(
-        uint256 id,
-        address owner,
-        address issuer,
-        string memory ansName,
-        uint256 ansId,
-        uint256 initialTokenSupply,
-        bool whitelistRequiredForRevenueClaim,
-        bool whitelistRequiredForLiquidationClaim,
-        string memory name,
-        string memory symbol,
-        string memory info,
-        address childChainManager
-    ) ChildMintableERC20(name, symbol, childChainManager)
-    {
-        require(owner != address(0), "Asset: Invalid owner provided");
-        require(issuer != address(0), "Asset: Invalid issuer provided");
-        require(initialTokenSupply > 0, "Asset: Initial token supply can't be 0");
-        require(childChainManager != address(0), "MirroredToken: invalid child chain manager address");
+        Structs.AssetTransferableConstructorParams memory params
+    ) ERC20(params.name, params.symbol) {
+        require(params.owner != address(0), "Asset: Invalid owner provided");
+        require(params.issuer != address(0), "Asset: Invalid issuer provided");
+        require(params.initialTokenSupply > 0, "Asset: Initial token supply can't be 0");
+        require(params.childChainManager != address(0), "MirroredToken: invalid child chain manager address");
         infoHistory.push(Structs.InfoEntry(
-            info,
+            params.info,
             block.timestamp
         ));
-        bool assetApprovedByIssuer = (IIssuer(issuer).getState().owner == owner);
+        bool assetApprovedByIssuer = (IIssuer(params.issuer).getState().owner == params.owner);
         address contractAddress = address(this);
         state = Structs.AssetTransferableState(
-            id,
+            params.id,
             contractAddress,
-            ansName,
-            ansId,
+            params.ansName,
+            params.ansId,
             msg.sender,
-            owner,
-            initialTokenSupply,
-            whitelistRequiredForRevenueClaim,
-            whitelistRequiredForLiquidationClaim,
+            params.owner,
+            params.initialTokenSupply,
+            params.whitelistRequiredForRevenueClaim,
+            params.whitelistRequiredForLiquidationClaim,
             assetApprovedByIssuer,
-            issuer,
-            info,
-            name,
-            symbol,
+            params.issuer,
+            params.apxRegistry,
+            params.info,
+            params.name,
+            params.symbol,
             0, 0, 0,
             false,
-            0, 0, 0
+            0, 0, 0,
+            params.childChainManager
         );
-        _mint(owner, initialTokenSupply);
+        _mint(params.owner, params.initialTokenSupply);
     }
 
     //------------------------
@@ -188,9 +180,18 @@ contract AssetTransferable is IAssetTransferable, ChildMintableERC20 {
     }
 
     function liquidate() external override notLiquidated ownerOnly {
-        uint256 liquidationFunds = _tokenValue(state.totalTokensSold, tokenPriceRecord.price);
+        IApxAssetsRegistry apxRegistry = IApxAssetsRegistry(state.apxRegistry);
+        Structs.AssetRecord memory assetRecord = apxRegistry.getMirrored(address(this));
+        require(assetRecord.exists, "AssetTransferable: Not registered in Apx Registry");
+        require(assetRecord.state, "AssetTransferable: Asset blocked in Apx Registry");
+        require(assetRecord.mirroredToken == address(this), "AssetTransferable: Invalid mirrored asset record");
+        require(assetRecord.priceValidUntil <= block.timestamp, "AssetTransferable: Price expired");
+        (uint256 liquidationPrice, uint256 precision) = 
+            (state.highestTokenSellPrice > assetRecord.price) ?
+                (state.highestTokenSellPrice, priceDecimalsPrecision) : 
+                (assetRecord.price, assetRecord.pricePrecision);
+        uint256 liquidationFunds = _tokenValue(totalSupply(), liquidationPrice, precision);
         require(liquidationFunds > 0, "AssetTransferable: Liquidation funds are zero.");
-        require(tokenPriceRecord.validUntilTimestamp <= block.timestamp, "AssetTransferable: Price expired.");
         _stablecoin().safeTransferFrom(msg.sender, address(this), liquidationFunds);
         state.liquidated = true;
         state.liquidationTimestamp = block.timestamp;
@@ -220,6 +221,11 @@ contract AssetTransferable is IAssetTransferable, ChildMintableERC20 {
         return _snapshot();
     }
 
+    function migrateApxRegistry(address newRegistry) external override notLiquidated {
+        require(msg.sender == state.apxRegistry, "AssetTransferable: Only apxRegistry can call this function.");
+        state.apxRegistry = newRegistry;
+    }
+
     //------------------------
     //  IAsset IMPL - Read
     //------------------------
@@ -245,6 +251,22 @@ contract AssetTransferable is IAssetTransferable, ChildMintableERC20 {
 
     function getSellHistory() external view override returns (Structs.TokenSaleInfo[] memory) {
         return sellHistory;
+    }
+
+    //---------------------------
+    //  IChildToken IMPL - Write
+    //---------------------------
+    function deposit(address user, bytes calldata depositData) external override {
+        require(
+            msg.sender == state.childChainManager,
+            "AssetTransferable: Only child chain manager can make this action."
+        );
+        uint256 amount = abi.decode(depositData, (uint256));
+        _mint(user, amount);
+    }
+
+    function withdraw(uint256 amount) external override {
+        _burn(_msgSender(), amount);
     }
 
     //------------------------
@@ -297,11 +319,11 @@ contract AssetTransferable is IAssetTransferable, ChildMintableERC20 {
         return true;
     }
 
-    function _tokenValue(uint256 amount, uint256 price) private view returns (uint256) {
+    function _tokenValue(uint256 amount, uint256 price, uint256 pricePrecision) private view returns (uint256) {
         return amount
                 * price
                 * _stablecoin_decimals_precision()
-                / (_asset_decimals_precision() * priceDecimalsPrecision);
+                / (_asset_decimals_precision() * pricePrecision);
     }
 
     function _stablecoin_decimals_precision() private view returns (uint256) {

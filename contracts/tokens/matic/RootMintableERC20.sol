@@ -454,9 +454,9 @@ contract ERC20 is Context, IERC20 {
      * All three of these values are immutable: they can only be set once during
      * construction.
      */
-    constructor (string memory name, string memory symbol) public {
-        _name = name;
-        _symbol = symbol;
+    constructor (string memory name_, string memory symbol_) public {
+        _name = name_;
+        _symbol = symbol_;
         _decimals = 18;
     }
 
@@ -1415,16 +1415,16 @@ contract RootMintableERC20 is
     bytes32 public constant PREDICATE_ROLE = keccak256("PREDICATE_ROLE");
 
     constructor(
-        string memory name,
-        string memory symbol,
+        string memory name_,
+        string memory symbol_,
         address predicateProxy
     )
         public
-        ERC20(name, symbol)
+        ERC20(name_, symbol_)
     {
         _setupContractId("RootMintableERC20");
         _setupRole(PREDICATE_ROLE, predicateProxy);
-        _initializeEIP712(name);
+        _initializeEIP712(name_);
     }
 
     /**

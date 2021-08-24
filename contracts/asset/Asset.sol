@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Snapshot.sol";
 import "./IAsset.sol";
 import "../issuer/IIssuer.sol";
 import "../managers/crowdfunding-softcap/ICfManagerSoftcap.sol";
-import "../tokens/apx-protocol/IMirroredToken.sol";
+import "../apx-protocol/IMirroredToken.sol";
 import "../tokens/IToken.sol";
 import "../shared/Structs.sol";
 
@@ -57,49 +57,38 @@ contract Asset is IAsset, ERC20Snapshot {
     //------------------------
     //  CONSTRUCTOR
     //------------------------
-    constructor(
-        uint256 id,
-        address owner,
-        address issuer,
-        string memory ansName,
-        uint256 ansId,
-        uint256 initialTokenSupply,
-        bool whitelistRequiredForRevenueClaim,
-        bool whitelistRequiredForLiquidationClaim,
-        string memory name,
-        string memory symbol,
-        string memory info
-    ) ERC20(name, symbol)
+    constructor(Structs.AssetConstructorParams memory params) ERC20(params.name, params.symbol)
     {
-        require(owner != address(0), "Asset: Invalid owner provided");
-        require(issuer != address(0), "Asset: Invalid issuer provided");
-        require(initialTokenSupply > 0, "Asset: Initial token supply can't be 0");
+        require(params.owner != address(0), "Asset: Invalid owner provided");
+        require(params.issuer != address(0), "Asset: Invalid issuer provided");
+        require(params.initialTokenSupply > 0, "Asset: Initial token supply can't be 0");
         infoHistory.push(Structs.InfoEntry(
-            info,
+            params.info,
             block.timestamp
         ));
-        bool assetApprovedByIssuer = (IIssuer(issuer).getState().owner == owner);
+        bool assetApprovedByIssuer = (IIssuer(params.issuer).getState().owner == params.owner);
         address contractAddress = address(this);
         state = Structs.AssetState(
-            id,
+            params.id,
             contractAddress,
-            ansName,
-            ansId,
+            params.ansName,
+            params.ansId,
             msg.sender,
-            owner,
-            initialTokenSupply,
-            whitelistRequiredForRevenueClaim,
-            whitelistRequiredForLiquidationClaim,
+            params.owner,
+            params.initialTokenSupply,
+            params.whitelistRequiredForRevenueClaim,
+            params.whitelistRequiredForLiquidationClaim,
             assetApprovedByIssuer,
-            issuer,
-            info,
-            name,
-            symbol,
+            params.issuer,
+            params.apxRegistry,
+            params.info,
+            params.name,
+            params.symbol,
             0, 0, 0, 0, 0,
             false,
             0, 0, 0
         );
-        _mint(owner, initialTokenSupply);
+        _mint(params.owner, params.initialTokenSupply);
     }
 
     //------------------------
@@ -294,6 +283,10 @@ contract Asset is IAsset, ERC20Snapshot {
 
     function snapshot() external override notLiquidated returns (uint256) {
         return _snapshot();
+    }
+
+    function migrateApxRegistry(address newRegistry) external override {
+        
     }
 
     //------------------------

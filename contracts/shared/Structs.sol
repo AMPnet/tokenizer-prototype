@@ -10,12 +10,70 @@ contract Structs {
         uint256 timestamp;
     }
 
+    struct AssetRecord {
+        address originalToken;
+        address mirroredToken;
+        bool exists;
+        bool state;
+        uint256 stateUpdatedAt;
+        uint256 price;
+        uint256 pricePrecision;
+        uint256 priceUpdatedAt;
+        uint256 priceValidUntil;
+        address priceProvider;
+    }
+
     struct TokenPriceRecord {
         uint256 price;
         uint256 updatedAtTimestamp;
         uint256 validUntilTimestamp;
         uint256 capturedSupply;
         address provider;
+    }
+
+    struct AssetTransferableFactoryParams {
+        address creator;
+        address issuer;
+        address apxRegistry;
+        string ansName;
+        uint256 initialTokenSupply;
+        bool whitelistRequiredForRevenueClaim;
+        bool whitelistRequiredForLiquidationClaim;
+        string name;
+        string symbol;
+        string info;
+        address childChainManager;
+    }
+    
+    struct AssetConstructorParams {
+        uint256 id;
+        address owner;
+        address issuer;
+        address apxRegistry;
+        string ansName;
+        uint256 ansId;
+        uint256 initialTokenSupply;
+        bool whitelistRequiredForRevenueClaim;
+        bool whitelistRequiredForLiquidationClaim;
+        string name;
+        string symbol;
+        string info;
+    }
+
+    struct AssetTransferableConstructorParams {
+        uint256 id;
+        address owner;
+        address issuer;
+        address apxRegistry;
+        string ansName;
+        uint256 ansId;
+        uint256 initialTokenSupply;
+        bool whitelistRequiredForRevenueClaim;
+        bool whitelistRequiredForLiquidationClaim;
+        string name;
+        string symbol;
+        string info;
+        address childChainManager;
     }
 
     struct AssetState {
@@ -30,6 +88,7 @@ contract Structs {
         bool whitelistRequiredForLiquidationClaim;
         bool assetApprovedByIssuer;
         address issuer;
+        address apxRegistry;
         string info;
         string name;
         string symbol;
@@ -56,6 +115,7 @@ contract Structs {
         bool whitelistRequiredForLiquidationClaim;
         bool assetApprovedByIssuer;
         address issuer;
+        address apxRegistry;
         string info;
         string name;
         string symbol;
@@ -66,6 +126,7 @@ contract Structs {
         uint256 liquidationFundsTotal;
         uint256 liquidationTimestamp;
         uint256 liquidationFundsClaimed;
+        address childChainManager;
     }
 
     struct IssuerState {

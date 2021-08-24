@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { SafeERC20, ChildMintableERC20, IERC20, ERC20 } from "../matic/ChildMintableERC20.sol";
+import { SafeERC20, ChildMintableERC20, IERC20, ERC20 } from "../tokens/matic/ChildMintableERC20.sol";
 import "./IMirroredToken.sol";
-import "../../asset/IAsset.sol";
-import "../../issuer/IIssuer.sol";
-import "../../shared/Structs.sol";
-import "../IToken.sol";
+import "../asset/IAsset.sol";
+import "../issuer/IIssuer.sol";
+import "../shared/Structs.sol";
+import "../tokens/IToken.sol";
 
 contract MirroredToken is IMirroredToken, ChildMintableERC20 {
     using SafeERC20 for IERC20;

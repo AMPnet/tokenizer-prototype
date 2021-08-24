@@ -6,6 +6,7 @@ interface IAssetFactory {
     function create(
         address creator,
         address issuer,
+        address apxRegistry,
         string memory ansName,
         uint256 initialTokenSupply,
         bool isTransferable,
