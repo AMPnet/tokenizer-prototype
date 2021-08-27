@@ -7,7 +7,7 @@
 # One of the networks defined in the hardhat.config.ts. The script will be executed on the selected network.
 # > If running local node, value should be: localhost
 # > If need to use hardhat in-memory chain kept alive only while the process is running, value should be: hardhat
-export NETWORK=localhost
+export NETWORK=hardhat
 
 ########################################## Predeployed contracts ##########################################
 # Factory and stablecoin addresses. These should be deployed upfront on prod version.
@@ -18,11 +18,11 @@ export ASSET_FACTORY=
 export ASSET_TRANSFERABLE_FACTORY=
 export CF_MANAGER_FACTORY=
 export WALLET_APPROVER=
-export WALLET_APPROVER_MASTER_OWNER=0x0000000000000000000000000000000000000000                        # provide this param if WALLET_APPROVER field empty
+export WALLET_APPROVER_MASTER_OWNER=                        # provide this param if WALLET_APPROVER field empty
 export APX_REGISTRY=
-export APX_REGISRY_MASTER_OWNER=0x0000000000000000000000000000000000000000                                                                      # provide this param if APX_REGISTRY field empty
-export APX_REGISRY_ASSET_MANAGER=0x0000000000000000000000000000000000000000                                                                     # provide this param if APX_REGISTRY field empty
-export APX_REGISRY_PRICE_MANAGER=0x0000000000000000000000000000000000000000                                                                     # provide this param if APX_REGISTRY field empty
+export APX_REGISRY_MASTER_OWNER=                                                                      # provide this param if APX_REGISTRY field empty
+export APX_REGISRY_ASSET_MANAGER=                                                                     # provide this param if APX_REGISTRY field empty
+export APX_REGISRY_PRICE_MANAGER=                                                                     # provide this param if APX_REGISTRY field empty
 export DEPLOYER=
 export QUERY_SERVICE=
 
