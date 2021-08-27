@@ -53,7 +53,12 @@ describe("Full test", function () {
     mark            = accounts[8];
 
     stablecoin = await helpers.deployStablecoin(deployer, "1000000000000");
-    apxRegistry = await helpers.deployApxRegistry(deployer, assetManager, priceManager);
+    apxRegistry = await helpers.deployApxRegistry(
+      deployer, 
+      await deployer.getAddress(), 
+      await assetManager.getAddress(), 
+      await priceManager.getAddress()
+    );
     
     const factories = await helpers.deployFactories(deployer);
     issuerFactory = factories[0];

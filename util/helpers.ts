@@ -1,5 +1,5 @@
 import { ethers } from "hardhat";
-import { Contract, Signer, BigNumber } from "ethers";
+import { Contract, Signer } from "ethers";
 import * as filters from "./filters";
 
 export async function deployStablecoin(deployer: Signer, supply: string): Promise<Contract> {
@@ -10,12 +10,10 @@ export async function deployStablecoin(deployer: Signer, supply: string): Promis
   return stablecoin;
 }
 
-export async function deployApxRegistry(deployer: Signer, assetManager: Signer, priceManager: Signer): Promise<Contract> {
+export async function deployApxRegistry(deployer: Signer, masterOwner: String, assetManager: String, priceManager: String): Promise<Contract> {
   const deployerAddress = await deployer.getAddress();
-  const assetManagerAddress = await assetManager.getAddress();
-  const priceManagerAddress = await priceManager.getAddress();
   const ApxRegistry = await ethers.getContractFactory("ApxAssetsRegistry", deployer);
-  const apxRegistry = await ApxRegistry.deploy(deployerAddress, assetManagerAddress, priceManagerAddress);
+  const apxRegistry = await ApxRegistry.deploy(masterOwner, assetManager, priceManager);
   console.log(`\nApxRegistry deployed\n\tAt address: ${apxRegistry.address}`);
   return apxRegistry;
 }

@@ -7,19 +7,24 @@
 # One of the networks defined in the hardhat.config.ts. The script will be executed on the selected network.
 # > If running local node, value should be: localhost
 # > If need to use hardhat in-memory chain kept alive only while the process is running, value should be: hardhat
-export NETWORK=mumbai
+export NETWORK=localhost
 
 ########################################## Predeployed contracts ##########################################
 # Factory and stablecoin addresses. These should be deployed upfront on prod version.
 # > If omitted, new instance will be deployed for each of the missing fields.
-export STABLECOIN=0x0000000000000000000000000000000000000000
-export ISSUER_FACTORY=0x0000000000000000000000000000000000000000
-export ASSET_FACTORY=0x0000000000000000000000000000000000000000
-export CF_MANAGER_FACTORY=0x0000000000000000000000000000000000000000
+export STABLECOIN=
+export ISSUER_FACTORY=
+export ASSET_FACTORY=
+export ASSET_TRANSFERABLE_FACTORY=
+export CF_MANAGER_FACTORY=
 export WALLET_APPROVER=
-export WALLET_APPROVER_MASTER_OWNER=0xe0bE763bE9b91042Cbd38aB68Ed04BD8E1F1C2e9                        # provide this param if WALLET_APPROVER field empty
-export DEPLOYER=0x0000000000000000000000000000000000000000
-export QUERY_SERVICE=0x0000000000000000000000000000000000000000
+export WALLET_APPROVER_MASTER_OWNER=0x0000000000000000000000000000000000000000                        # provide this param if WALLET_APPROVER field empty
+export APX_REGISTRY=
+export APX_REGISRY_MASTER_OWNER=0x0000000000000000000000000000000000000000                                                                      # provide this param if APX_REGISTRY field empty
+export APX_REGISRY_ASSET_MANAGER=0x0000000000000000000000000000000000000000                                                                     # provide this param if APX_REGISTRY field empty
+export APX_REGISRY_PRICE_MANAGER=0x0000000000000000000000000000000000000000                                                                     # provide this param if APX_REGISTRY field empty
+export DEPLOYER=
+export QUERY_SERVICE=
 
 ############################################ Issuer definition ############################################
 # > Load existing Issuer at given address
