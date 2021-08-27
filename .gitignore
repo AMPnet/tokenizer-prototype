@@ -6,3 +6,5 @@ artifacts
 
 #Env
 .env
+
+.idea
