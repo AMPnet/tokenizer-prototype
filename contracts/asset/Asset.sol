@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Snapshot.sol";
+import "../tokens/erc20/ERC20.sol";
+import "../tokens/erc20/ERC20Snapshot.sol";
 import "./IAsset.sol";
 import "../issuer/IIssuer.sol";
 import "../managers/crowdfunding-softcap/ICfManagerSoftcap.sol";
 import "../apx-protocol/IMirroredToken.sol";
-import "../tokens/IToken.sol";
+import "../tokens/erc20/IToken.sol";
 import "../shared/Structs.sol";
 
 contract Asset is IAsset, ERC20Snapshot {
@@ -245,8 +245,8 @@ contract Asset is IAsset, ERC20Snapshot {
         require(mirroredTokenAddress != address(0), "Asset: Invalid mirrored token address");
         require(locked[mirroredTokenAddress] > 0, "Asset: No tokens mirrored on the provided token address");
         IMirroredToken mirroredToken = IMirroredToken(mirroredTokenAddress);
-        uint256 liquidationFunds = mirroredToken.lastKnownTokenValue();
-        _stablecoin().safeTransferFrom(msg.sender, mirroredTokenAddress, mirroredToken.lastKnownTokenValue());
+        uint256 liquidationFunds = mirroredToken.lastKnownMarketCap();
+        _stablecoin().safeTransferFrom(msg.sender, mirroredTokenAddress, mirroredToken.lastKnownMarketCap());
         uint256 liquidatedTokensAmount = mirroredToken.liquidate();
         require(
             liquidatedTokensAmount == locked[mirroredTokenAddress],
@@ -292,17 +292,11 @@ contract Asset is IAsset, ERC20Snapshot {
     //------------------------
     //  IAsset IMPL - Read
     //------------------------
-    function totalShares() external view override returns (uint256) {
-        return totalSupply();
-    }
-
-    function getDecimals() external view override returns (uint256) {
-        return uint256(decimals());
-    }
-
     function getState() external view override returns (Structs.AssetState memory) {
         return state;
     }
+
+    function getIssuerAddress() external view override returns (address) { return state.issuer; }
 
     function getInfoHistory() external view override returns (Structs.InfoEntry[] memory) {
         return infoHistory;

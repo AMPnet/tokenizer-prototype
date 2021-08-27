@@ -4,15 +4,42 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../asset/IAsset.sol";
 import "../asset/IAssetFactory.sol";
+import "../asset-transferable/IAssetTransferable.sol";
+import "../asset-transferable/IAssetTransferableFactory.sol";
 import "../issuer/IIssuer.sol";
 import "../issuer/IIssuerFactory.sol";
 import "../managers/crowdfunding-softcap/ICfManagerSoftcap.sol";
 import "../managers/crowdfunding-softcap/ICfManagerSoftcapFactory.sol";
+import "../tokens/erc20/IToken.sol";
 
 contract DeployerService {
 
-    event DeployIssuerAssetCampaign(address caller, address issuer, address asset, address campaign, uint256 timestamp);
-    event DeployAssetCampaign(address caller, address asset, address campaign, uint256 timestamp);
+    event DeployIssuerAssetCampaign(
+        address caller,
+        address issuer,
+        address asset,
+        address campaign,
+        uint256 timestamp
+    );
+    event DeployAssetCampaign(
+        address caller,
+        address asset,
+        address campaign,
+        uint256 timestamp
+    );
+    event DeployIssuerAssetTransferableCampaign(
+        address caller,
+        address issuer,
+        address asset,
+        address campaign,
+        uint256 timestamp
+    );
+    event DeployAssetTransferableCampaign(
+        address caller,
+        address asset,
+        address campaign,
+        uint256 timestamp
+    );
 
     struct DeployIssuerAssetCampaignRequest {
         IIssuerFactory issuerFactory;
@@ -26,8 +53,8 @@ contract DeployerService {
         address assetOwner;
         string assetAnsName;
         uint256 assetInitialTokenSupply;
-        bool assetIsTransferable;
-        bool assetWhitelistRequiredForTransfer;
+        bool assetWhitelistRequiredForRevenueClaim;
+        bool assetWhitelistRequiredForLiquidationClaim;
         string assetName;
         string assetSymbol;
         string assetInfo;
@@ -50,8 +77,8 @@ contract DeployerService {
         address assetOwner;
         string assetAnsName;
         uint256 assetInitialTokenSupply;
-        bool assetIsTransferable;
-        bool assetWhitelistRequiredForTransfer;
+        bool assetWhitelistRequiredForRevenueClaim;
+        bool assetWhitelistRequiredForLiquidationClaim;
         string assetName;
         string assetSymbol;
         string assetInfo;
@@ -65,6 +92,61 @@ contract DeployerService {
         bool cfManagerWhitelistRequired;
         string cfManagerInfo;
         address apxRegistry;
+    }
+
+    struct DeployIssuerAssetTransferableCampaignRequest {
+        IIssuerFactory issuerFactory;
+        IAssetTransferableFactory assetTransferableFactory;
+        ICfManagerSoftcapFactory cfManagerSoftcapFactory;
+        address issuerOwner;
+        string issuerAnsName;
+        address issuerStablecoin;
+        address issuerWalletApprover;
+        string issuerInfo;
+        address assetOwner;
+        string assetAnsName;
+        uint256 assetInitialTokenSupply;
+        bool assetWhitelistRequiredForRevenueClaim;
+        bool assetWhitelistRequiredForLiquidationClaim;
+        string assetName;
+        string assetSymbol;
+        string assetInfo;
+        address cfManagerOwner;
+        string cfManagerAnsName;
+        uint256 cfManagerPricePerToken;
+        uint256 cfManagerSoftcap;
+        uint256 cfManagerSoftcapMinInvestment;
+        uint256 cfManagerSoftcapMaxInvestment;
+        uint256 cfManagerTokensToSellAmount;
+        bool cfManagerWhitelistRequired;
+        string cfManagerInfo;
+        address apxRegistry;
+        address childChainManager;
+    }
+
+    struct DeployAssetTransferableCampaignRequest {
+        IAssetTransferableFactory assetTransferableFactory;
+        ICfManagerSoftcapFactory cfManagerSoftcapFactory;
+        address issuer;
+        address assetOwner;
+        string assetAnsName;
+        uint256 assetInitialTokenSupply;
+        bool assetWhitelistRequiredForRevenueClaim;
+        bool assetWhitelistRequiredForLiquidationClaim;
+        string assetName;
+        string assetSymbol;
+        string assetInfo;
+        address cfManagerOwner;
+        string cfManagerAnsName;
+        uint256 cfManagerPricePerToken;
+        uint256 cfManagerSoftcap;
+        uint256 cfManagerSoftcapMinInvestment;
+        uint256 cfManagerSoftcapMaxInvestment;
+        uint256 cfManagerTokensToSellAmount;
+        bool cfManagerWhitelistRequired;
+        string cfManagerInfo;
+        address apxRegistry;
+        address childChainManager;
     }
  
     function deployIssuerAssetCampaign(DeployIssuerAssetCampaignRequest memory request) external {
@@ -82,8 +164,8 @@ contract DeployerService {
             request.apxRegistry,
             request.assetAnsName,
             request.assetInitialTokenSupply,
-            request.assetIsTransferable,
-            request.assetWhitelistRequiredForTransfer,
+            request.assetWhitelistRequiredForRevenueClaim,
+            request.assetWhitelistRequiredForLiquidationClaim,
             request.assetName,
             request.assetSymbol,
             request.assetInfo
@@ -107,7 +189,7 @@ contract DeployerService {
         
         // Transfer tokens to sell to the campaign, transfer the rest to the asset owner's wallet
         uint256 tokensToSell = request.cfManagerTokensToSellAmount;
-        uint256 tokensToKeep = asset.totalShares() - tokensToSell;
+        uint256 tokensToKeep = IERC20(address(asset)).totalSupply() - tokensToSell;
         IERC20 assetERC20 = IERC20(address(asset));
         assetERC20.transfer(address(campaign), tokensToSell);
         assetERC20.transfer(request.assetOwner, tokensToKeep);
@@ -149,7 +231,7 @@ contract DeployerService {
 
         // Transfer tokens to sell to the campaign, transfer the rest to the asset owner's wallet
         uint256 tokensToSell = request.cfManagerTokensToSellAmount;
-        uint256 tokensToKeep = asset.totalShares() - tokensToSell;
+        uint256 tokensToKeep = IERC20(address(asset)).totalSupply() - tokensToSell;
         IERC20 assetERC20 = IERC20(address(asset));
         assetERC20.transfer(address(campaign), tokensToSell);
         assetERC20.transfer(request.assetOwner, tokensToKeep);
@@ -157,6 +239,116 @@ contract DeployerService {
         // Transfer ownerships from address(this) to the actual owner wallets
         // asset.setIsTransferable(request.assetIsTransferable);
         // asset.setWhitelistRequiredForTransfer(request.assetWhitelistRequiredForTransfer);
+        asset.changeOwnership(request.assetOwner);
+        campaign.changeOwnership(request.cfManagerOwner);
+
+        emit DeployAssetCampaign(msg.sender, address(asset), address(campaign), block.timestamp);
+    }
+
+    function deployIssuerAssetTransferableCampaign(
+        DeployIssuerAssetTransferableCampaignRequest memory request
+    ) external {
+        // Deploy contracts
+        IIssuer issuer = IIssuer(request.issuerFactory.create(
+            address(this),
+            request.issuerAnsName,
+            request.issuerStablecoin,
+            address(this),
+            request.issuerInfo
+        ));
+        IAssetTransferable asset = IAssetTransferable(
+            request.assetTransferableFactory.create(
+                Structs.AssetTransferableFactoryParams(
+                    address(this),
+                    address(issuer),
+                    request.apxRegistry,
+                    request.assetAnsName,
+                    request.assetInitialTokenSupply,
+                    request.assetWhitelistRequiredForRevenueClaim,
+                    request.assetWhitelistRequiredForLiquidationClaim,
+                    request.assetName,
+                    request.assetSymbol,
+                    request.assetInfo,
+                    request.childChainManager
+                )
+            )
+        );
+
+        ICfManagerSoftcap campaign = ICfManagerSoftcap(request.cfManagerSoftcapFactory.create(
+            address(this),
+            request.cfManagerAnsName,
+            address(asset),
+            request.cfManagerPricePerToken,
+            request.cfManagerSoftcap,
+            request.cfManagerSoftcapMinInvestment,
+            request.cfManagerSoftcapMaxInvestment,
+            request.cfManagerWhitelistRequired,
+            request.cfManagerInfo
+        ));
+
+        // Whitelist issuer owner
+        issuer.approveWallet(request.issuerOwner);
+        
+        // Transfer tokens to sell to the campaign, transfer the rest to the asset owner's wallet
+        uint256 tokensToSell = request.cfManagerTokensToSellAmount;
+        uint256 tokensToKeep = IERC20(address(asset)).totalSupply() - tokensToSell;
+        IERC20 assetERC20 = IERC20(address(asset));
+        assetERC20.transfer(address(campaign), tokensToSell);
+        assetERC20.transfer(request.assetOwner, tokensToKeep);
+        
+        // Transfer ownerships from address(this) to the actual owner wallets
+        issuer.changeWalletApprover(request.issuerWalletApprover);
+        issuer.changeOwnership(request.issuerOwner);
+        asset.changeOwnership(request.assetOwner);
+        campaign.changeOwnership(request.cfManagerOwner);
+
+        emit DeployIssuerAssetTransferableCampaign(
+            msg.sender,
+            address(issuer),
+            address(asset),
+            address(campaign),
+            block.timestamp
+        );
+    }
+
+    function deployAssetTransferableCampaign(DeployAssetTransferableCampaignRequest memory request) external {
+        // Deploy contracts
+        IAssetTransferable asset = IAssetTransferable(
+            request.assetTransferableFactory.create(
+                Structs.AssetTransferableFactoryParams(
+                    address(this),
+                    request.issuer,
+                    request.apxRegistry,
+                    request.assetAnsName,
+                    request.assetInitialTokenSupply,
+                    request.assetWhitelistRequiredForRevenueClaim,
+                    request.assetWhitelistRequiredForLiquidationClaim,
+                    request.assetName,
+                    request.assetSymbol,
+                    request.assetInfo,
+                    request.childChainManager
+                )
+        ));
+        ICfManagerSoftcap campaign = ICfManagerSoftcap(request.cfManagerSoftcapFactory.create(
+            address(this),
+            request.cfManagerAnsName,
+            address(asset),
+            request.cfManagerPricePerToken,
+            request.cfManagerSoftcap,
+            request.cfManagerSoftcapMinInvestment,
+            request.cfManagerSoftcapMaxInvestment,
+            request.cfManagerWhitelistRequired,
+            request.cfManagerInfo
+        ));
+
+        // Transfer tokens to sell to the campaign, transfer the rest to the asset owner's wallet
+        uint256 tokensToSell = request.cfManagerTokensToSellAmount;
+        uint256 tokensToKeep = IERC20(address(asset)).totalSupply() - tokensToSell;
+        IERC20 assetERC20 = IERC20(address(asset));
+        assetERC20.transfer(address(campaign), tokensToSell);
+        assetERC20.transfer(request.assetOwner, tokensToKeep);
+
+        // Transfer ownerships from address(this) to the actual owner wallets
         asset.changeOwnership(request.assetOwner);
         campaign.changeOwnership(request.cfManagerOwner);
 

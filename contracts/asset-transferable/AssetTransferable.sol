@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Snapshot.sol";
+import "../tokens/erc20/ERC20.sol";
+import "../tokens/erc20/ERC20Snapshot.sol";
 import "../tokens/matic/IChildToken.sol";
 import "./IAssetTransferable.sol";
 import "../issuer/IIssuer.sol";
 import "../managers/crowdfunding-softcap/ICfManagerSoftcap.sol";
-import "../tokens/IToken.sol";
+import "../tokens/erc20/IToken.sol";
 import "../apx-protocol/IApxAssetsRegistry.sol";
 import "../shared/Structs.sol";
 
@@ -185,7 +185,7 @@ contract AssetTransferable is IAssetTransferable, IChildToken, ERC20Snapshot {
         require(assetRecord.exists, "AssetTransferable: Not registered in Apx Registry");
         require(assetRecord.state, "AssetTransferable: Asset blocked in Apx Registry");
         require(assetRecord.mirroredToken == address(this), "AssetTransferable: Invalid mirrored asset record");
-        require(assetRecord.priceValidUntil <= block.timestamp, "AssetTransferable: Price expired");
+        require(block.timestamp <= assetRecord.priceValidUntil, "AssetTransferable: Price expired");
         (uint256 liquidationPrice, uint256 precision) = 
             (state.highestTokenSellPrice > assetRecord.price) ?
                 (state.highestTokenSellPrice, priceDecimalsPrecision) : 
@@ -210,10 +210,10 @@ contract AssetTransferable is IAssetTransferable, IChildToken, ERC20Snapshot {
         require(approvedAmount > 0, "Asset: no tokens approved for claiming liquidation share");
         uint256 liquidationFundsShare = approvedAmount * state.liquidationFundsTotal / totalSupply();
         require(liquidationFundsShare > 0, "Asset: no liquidation funds to claim");
-        _stablecoin().safeTransfer(investor, liquidationFundsShare);
-        transferFrom(investor, address(this), approvedAmount);
         liquidationClaimsMap[investor] += liquidationFundsShare;
         state.liquidationFundsClaimed += liquidationFundsShare;
+        _stablecoin().safeTransfer(investor, liquidationFundsShare);
+        this.transferFrom(investor, address(this), approvedAmount);
         emit ClaimLiquidationShare(investor, liquidationFundsShare, block.timestamp);
     }
 
@@ -229,17 +229,11 @@ contract AssetTransferable is IAssetTransferable, IChildToken, ERC20Snapshot {
     //------------------------
     //  IAsset IMPL - Read
     //------------------------
-    function totalShares() external view override returns (uint256) {
-        return totalSupply();
-    }
-
-    function getDecimals() external view override returns (uint256) {
-        return uint256(decimals());
-    }
-
     function getState() external view override returns (Structs.AssetTransferableState memory) {
         return state;
     }
+
+    function getIssuerAddress() external view override returns (address) { return state.issuer; }
 
     function getInfoHistory() external view override returns (Structs.InfoEntry[] memory) {
         return infoHistory;
@@ -305,10 +299,7 @@ contract AssetTransferable is IAssetTransferable, IChildToken, ERC20Snapshot {
         if (ICfManagerSoftcap(wallet).getState().owner == state.owner) {
             return true;
         }
-        if (_campaignExists(wallet)) { 
-            return approvedCampaigns[approvedCampaignsMap[wallet]].whitelisted;
-        }
-        return false;
+        return _campaignExists(wallet) && approvedCampaigns[approvedCampaignsMap[wallet]].whitelisted;
     }
 
     function _campaignExists(address wallet) private view returns (bool) {
@@ -327,7 +318,7 @@ contract AssetTransferable is IAssetTransferable, IChildToken, ERC20Snapshot {
     }
 
     function _stablecoin_decimals_precision() private view returns (uint256) {
-        return IToken(_stablecoin_address()).decimals();
+        return 10 ** IToken(_stablecoin_address()).decimals();
     }
 
     function _asset_decimals_precision() private view returns (uint256) {

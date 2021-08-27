@@ -96,7 +96,7 @@ contract ApxAssetsRegistry is IApxAssetsRegistry {
             "ApxAssetsRegistry: Mirrored asset already exists and is in circulation. Can't overwrite."
         );
         require(
-            IERC20(mirrored).totalSupply() == 0,
+            original == mirrored || IERC20(mirrored).totalSupply() == 0,
             "ApxAssetsRegistry: Mirrored asset provided should have initial supply 0."
         );
         originalToMirrored[original] = mirrored;

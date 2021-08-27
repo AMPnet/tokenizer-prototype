@@ -31,7 +31,7 @@ contract CfManagerSoftcapFactory is ICfManagerSoftcapFactory {
         bool whitelistRequired,
         string memory info
     ) external override returns (address) {
-        address issuer = IAsset(assetAddress).getState().issuer;
+        address issuer = IAssetCommon(assetAddress).getIssuerAddress();
         require(
             namespace[issuer][ansName] == address(0),
             "CfManagerSoftcapFactory: issuer with this name already exists"

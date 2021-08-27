@@ -22,36 +22,46 @@ task("accounts", "Prints the list of accounts", async (args, hre) => {
 /**
  * @type import('hardhat/config').HardhatUserConfig
  */
+function networks() {
+ let networks = {}
+ if (process.env.SEED_PHRASE) {
+   if (process.env.ROPSTEN_RPC) {
+     networks["ropsten"] = {
+        url: process.env.ROPSTEN_RPC,
+        accounts: {
+          mnemonic: process.env.SEED_PHRASE
+        }
+     }
+   }
+   if (process.env.GOERLI_RPC) {
+    networks["goerli"] = {
+       url: process.env.GOERLI_RPC,
+       accounts: {
+         mnemonic: process.env.SEED_PHRASE
+       }
+    }
+   }
+   if (process.env.MUMBAI_RPC) {
+    networks["mumbai"] = {
+       url: process.env.MUMBAI_RPC,
+       accounts: {
+         mnemonic: process.env.SEED_PHRASE
+       }
+    }
+  }
+ }
+ return networks;
+}
+
 module.exports = {
   solidity: {
     version: "0.8.0",
     settings: {
       optimizer: {
         enabled: true,
-        runs: 1000
+        runs: 200
       }
     }
   },
-  networks: {
-    ropsten: {
-      url: process.env.ROPSTEN_RPC,
-      accounts: {
-        mnemonic: process.env.SEED_PHRASE
-      }
-    },
-    goerli: {
-      url: process.env.GOERLI_RPC,
-      accounts: {
-        mnemonic: process.env.SEED_PHRASE
-      },
-      gasPrice: 10000000000
-    },
-    mumbai: {
-      url: process.env.MUMBAI_RPC,
-      accounts: {
-        mnemonic: process.env.SEED_PHRASE
-      },
-      gasPrice: 10000000000
-    }
-  }
+  networks: networks()
 };

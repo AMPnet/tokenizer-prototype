@@ -112,13 +112,9 @@ contract Issuer is IIssuer {
     function getState() external override view returns (Structs.IssuerState memory) { return state; }
     
     function isWalletApproved(address wallet) external view override returns (bool) {
-        if (wallet == state.owner) {
-            return true;
-        } else if (!_addressExists(wallet)) {
-            return false;
-        } else {
-            return approvedWallets[approvedWalletsMap[wallet]].whitelisted;
-        }
+        return
+            wallet == state.owner ||
+            (_addressExists(wallet) && approvedWallets[approvedWalletsMap[wallet]].whitelisted);
     }
 
     function getInfoHistory() external view override returns (Structs.InfoEntry[] memory) {
@@ -142,19 +138,13 @@ contract Issuer is IIssuer {
     }
 
     function _addressWhitelisted(address wallet) private view returns (bool) {
-        if (_addressExists(wallet)) { 
-            return approvedWallets[approvedWalletsMap[wallet]].whitelisted;
-        }
-        else {
-            return false;
-        }
+        return _addressExists(wallet) && approvedWallets[approvedWalletsMap[wallet]].whitelisted;
     }
 
     function _addressExists(address wallet) private view returns (bool) {
         uint256 index = approvedWalletsMap[wallet];
         if (index >= approvedWallets.length) { return false; }
-        if (approvedWallets[index].wallet != wallet) { return false; }
-        return true;
+        return approvedWallets[index].wallet == wallet;
     }
 
 }

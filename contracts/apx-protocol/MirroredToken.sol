@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { SafeERC20, ChildMintableERC20, IERC20, ERC20 } from "../tokens/matic/ChildMintableERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./IMirroredToken.sol";
 import "../asset/IAsset.sol";
 import "../issuer/IIssuer.sol";
 import "../shared/Structs.sol";
-import "../tokens/IToken.sol";
+import "../tokens/erc20/ERC20.sol";
+import "../tokens/erc20/ERC20Snapshot.sol";
 
-contract MirroredToken is IMirroredToken, ChildMintableERC20 {
+contract MirroredToken is IMirroredToken, ERC20Snapshot {
     using SafeERC20 for IERC20;
 
     //------------------------
@@ -46,11 +47,11 @@ contract MirroredToken is IMirroredToken, ChildMintableERC20 {
         address _priceProvider,
         IAsset _originalToken,
         address _childChainManager
-    ) ChildMintableERC20(_name, _symbol, _childChainManager) {
+    ) ERC20(_name, _symbol) {
         require(address(_originalToken) != address(0), "MirroredToken: invalid original token address");
         require(_priceProvider != address(0), "MirroredToken: invalid price provider address");
         require(
-            _originalToken.getDecimals() == decimals(),
+            IToken(address(_originalToken)).decimals() == decimals(),
             "MirroredToken: original and mirrored asset decimal precision mismatch"
         );
         require(_childChainManager != address(0), "MirroredToken: invalid child chain manager address");
@@ -151,7 +152,7 @@ contract MirroredToken is IMirroredToken, ChildMintableERC20 {
     //------------------------------
     //  IMirroredToken IMPL - Read
     //------------------------------
-    function lastKnownTokenValue() external view override returns (uint256) {
+    function lastKnownMarketCap() external view override returns (uint256) {
         return _tokenValue(totalSupply());
     }
 
@@ -162,11 +163,11 @@ contract MirroredToken is IMirroredToken, ChildMintableERC20 {
         return tokenAmount
                     * tokenPriceRecord.price
                     * _stablecoin_decimals_precision()
-                    / (originalToken.getDecimals() * originalToken.priceDecimalsPrecision());
+                    / (IToken(address(originalToken)).decimals() * originalToken.priceDecimalsPrecision());
     }
 
     function _originalAssetDecimalsPrecision() private view returns (uint256) {
-        return 10 ** originalToken.getDecimals();
+        return 10 ** IToken(address(originalToken)).decimals();
     }
 
     function _stablecoin_decimals_precision() private view returns (uint256) {

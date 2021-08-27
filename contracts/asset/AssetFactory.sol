@@ -19,8 +19,8 @@ contract AssetFactory is IAssetFactory {
         address apxRegistry,
         string memory ansName,
         uint256 initialTokenSupply,
-        bool isTransferable,
-        bool whitelistRequiredForTransfer,
+        bool whitelistRequiredForRevenueClaim,
+        bool wnitelistRequiredForLiquidationClaim,
         string memory name,
         string memory symbol,
         string memory info
@@ -40,8 +40,8 @@ contract AssetFactory is IAssetFactory {
                         ansName,
                         ansId,
                         initialTokenSupply,
-                        isTransferable,
-                        whitelistRequiredForTransfer,
+                        whitelistRequiredForRevenueClaim,
+                        wnitelistRequiredForLiquidationClaim,
                         name,
                         symbol,
                         info

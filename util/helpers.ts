@@ -10,10 +10,21 @@ export async function deployStablecoin(deployer: Signer, supply: string): Promis
   return stablecoin;
 }
 
+export async function deployApxRegistry(deployer: Signer, assetManager: Signer, priceManager: Signer): Promise<Contract> {
+  const deployerAddress = await deployer.getAddress();
+  const assetManagerAddress = await assetManager.getAddress();
+  const priceManagerAddress = await priceManager.getAddress();
+  const ApxRegistry = await ethers.getContractFactory("ApxAssetsRegistry", deployer);
+  const apxRegistry = await ApxRegistry.deploy(deployerAddress, assetManagerAddress, priceManagerAddress);
+  console.log(`\nApxRegistry deployed\n\tAt address: ${apxRegistry.address}`);
+  return apxRegistry;
+}
+
 export async function deployFactories(deployer: Signer): Promise<Contract[]> {
   return [
     await deployIssuerFactory(deployer),
     await deployAssetFactory(deployer),
+    await deployAssetTransferableFactory(deployer),
     await deployCfManagerFactory(deployer),
     await deployPayoutManagerFactory(deployer)
   ];
@@ -69,6 +80,13 @@ export async function deployAssetFactory(deployer: Signer): Promise<Contract> {
   return assetFactory;
 }
 
+export async function deployAssetTransferableFactory(deployer: Signer): Promise<Contract> {
+  const AssetTransferableFactory = await ethers.getContractFactory("AssetTransferableFactory", deployer);
+  const assetTransferableFactory = await AssetTransferableFactory.deploy();
+  console.log(`\nAssetTransferableFactory deployed\n\tAt address: ${assetTransferableFactory.address}`);
+  return assetTransferableFactory;
+}
+
 export async function deployCfManagerFactory(deployer: Signer): Promise<Contract> {
   const CfManagerFactory = await ethers.getContractFactory("CfManagerSoftcapFactory", deployer);
   const cfManagerFactory = await CfManagerFactory.deploy();
@@ -81,192 +99,6 @@ export async function deployPayoutManagerFactory(deployer: Signer): Promise<Cont
   const payoutManagerFactory = await PayoutManagerFactory.deploy();
   console.log(`\nPayoutManagerFactory deployed\n\tAt address: ${payoutManagerFactory.address}`);
   return payoutManagerFactory;
-}
-
-export async function createIssuerAssetCampaign(
-  issuerOwner: String,
-  issuerAnsName: String,
-  issuerStablecoin: String,
-  issuerWalletApprover: String,
-  issuerInfo: String,
-  assetOwner: String,
-  assetAnsName: String,
-  assetInitialTokenSupply: Number,
-  assetWhitelistRequired: boolean,
-  assetName: String,
-  assetSymbol: String,
-  assetInfo: String,
-  cfManagerOwner: String,
-  cfManagerAnsName: String,
-  cfManagerPricePerToken: Number,
-  cfManagerSoftcap: Number,
-  cfManagerMinInvestment: Number,
-  cfManagerMaxInvestment: Number,
-  cfManagerTokensToSellAmount: Number,
-  cfManagerWhitelistRequired: boolean,
-  cfManagerInfo: String,
-  issuerFactory: Contract,
-  assetFactory: Contract,
-  cfManagerFactory: Contract,
-  deployerService: Contract
-): Promise<Array<Contract>> {
-  const assetInitialTokenSupplyWei = ethers.utils.parseEther(assetInitialTokenSupply.toString());
-  const cfManagerSoftcapWei = ethers.utils.parseEther(cfManagerSoftcap.toString());
-  const cfManagerTokensToSellAmountWei = ethers.utils.parseEther(cfManagerTokensToSellAmount.toString());
-  const cfManagerMinInvestmentWei = ethers.utils.parseEther(cfManagerMinInvestment.toString());
-  const cfManagerMaxInvestmentWei = ethers.utils.parseEther(cfManagerMaxInvestment.toString());
-  const deployTx = await deployerService.deployIssuerAssetCampaign(
-    [
-      issuerFactory.address,
-      assetFactory.address,
-      cfManagerFactory.address,
-      issuerOwner,
-      issuerAnsName,
-      issuerStablecoin,
-      issuerWalletApprover,
-      issuerInfo,
-      assetOwner,
-      assetAnsName,
-      assetInitialTokenSupplyWei,
-      assetWhitelistRequired,
-      assetName,
-      assetSymbol,
-      assetInfo,
-      cfManagerOwner,
-      cfManagerAnsName,
-      cfManagerPricePerToken,
-      cfManagerSoftcapWei,
-      cfManagerMinInvestmentWei,
-      cfManagerMaxInvestmentWei,
-      cfManagerTokensToSellAmountWei,
-      cfManagerWhitelistRequired,
-      cfManagerInfo
-    ]
-  );
-  const receipt = await ethers.provider.waitForTransaction(deployTx.hash);
-  
-  let issuerAddress: string;
-  let assetAddress: string;
-  let cfManagerAddress: string;
-  for (const log of receipt.logs) {
-    try {
-      const parsedLog = issuerFactory.interface.parseLog(log);
-      if (parsedLog.name == "IssuerCreated") {
-        const ownerAddress = parsedLog.args.creator;
-        const id = parsedLog.args.id;
-        issuerAddress = parsedLog.args.issuer;
-        console.log(`\nIssuer deployed\n\tAt address: ${issuerAddress}\n\tOwner: ${ownerAddress}\n\tID: ${id}`);
-      }
-    } catch (_) {}
-
-    try {
-      const parsedLog = assetFactory.interface.parseLog(log);
-      if (parsedLog.name == "AssetCreated") {
-        const ownerAddress = parsedLog.args.creator;
-        const id = parsedLog.args.id;
-        assetAddress = parsedLog.args.asset;
-        console.log(`\nAsset deployed\n\tAt address: ${assetAddress}\n\tOwner: ${ownerAddress}\n\tID: ${id}`);
-      }
-    } catch (_) {}
-
-    try {
-      const parsedLog = cfManagerFactory.interface.parseLog(log);
-      if (parsedLog.name == "CfManagerSoftcapCreated") {
-        const ownerAddress = parsedLog.args.creator;
-        const assetAddress = parsedLog.args.asset;
-        const id = parsedLog.args.id;
-        cfManagerAddress = parsedLog.args.cfManager;
-        console.log(`\nCrowdfunding Campaign deployed\n\tAt address: ${cfManagerAddress}\n\tOwner: ${ownerAddress}\n\tAsset: ${assetAddress}\n\tID: ${id}`);
-      }
-    } catch (_) {}
-  }
-  const issuer = await ethers.getContractAt("Issuer", issuerAddress);
-  const asset = await ethers.getContractAt("Asset", assetAddress);
-  const campaign = await ethers.getContractAt("CfManagerSoftcap", cfManagerAddress);
-
-  return [issuer, asset, campaign];
-}
-
-export async function createAssetCampaign(
-  issuer: Contract,
-  assetOwner: String,
-  assetAnsName: String,
-  assetInitialTokenSupply: Number,
-  assetWhitelistRequired: boolean,
-  assetName: String,
-  assetSymbol: String,
-  assetInfo: String,
-  cfManagerOwner: String,
-  cfManagerAnsName: String,
-  cfManagerPricePerToken: Number,
-  cfManagerSoftcap: Number,
-  cfManagerMinInvestment: Number,
-  cfManagerMaxInvestment: Number,
-  cfManagerTokensToSellAmount: Number,
-  cfManagerWhitelistRequired: boolean,
-  cfManagerInfo: String,
-  assetFactory: Contract,
-  cfManagerFactory: Contract,
-  deployerService: Contract
-): Promise<Array<Contract>> {
-  const assetInitialTokenSupplyWei = ethers.utils.parseEther(assetInitialTokenSupply.toString());
-  const cfManagerSoftcapWei = ethers.utils.parseEther(cfManagerSoftcap.toString());
-  const cfManagerMinInvestmentWei = ethers.utils.parseEther(cfManagerMinInvestment.toString());
-  const cfManagerMaxInvestmentWei = ethers.utils.parseEther(cfManagerMaxInvestment.toString());
-  const cfManagerTokensToSellAmountWei = ethers.utils.parseEther(cfManagerTokensToSellAmount.toString());
-  const deployTx = await deployerService.deployAssetCampaign(
-    [
-      assetFactory.address,
-      cfManagerFactory.address,
-      issuer.address,
-      assetOwner,
-      assetAnsName,
-      assetInitialTokenSupplyWei,
-      assetWhitelistRequired,
-      assetName,
-      assetSymbol,
-      assetInfo,
-      cfManagerOwner,
-      cfManagerAnsName,
-      cfManagerPricePerToken,
-      cfManagerSoftcapWei,
-      cfManagerMinInvestmentWei,
-      cfManagerMaxInvestmentWei,
-      cfManagerTokensToSellAmountWei,
-      cfManagerWhitelistRequired,
-      cfManagerInfo
-    ]
-  );
-  const receipt = await ethers.provider.waitForTransaction(deployTx.hash);
-
-  let assetAddress: string;
-  let cfManagerAddress: string;
-  for (const log of receipt.logs) {
-    try {
-      const parsedLog = assetFactory.interface.parseLog(log);
-      if (parsedLog.name == "AssetCreated") {
-        const ownerAddress = parsedLog.args.creator;
-        const id = parsedLog.args.id;
-        assetAddress = parsedLog.args.asset;
-        console.log(`\nAsset deployed\n\tAt address: ${assetAddress}\n\tOwner: ${ownerAddress}\n\tID: ${id}`);
-      }
-    } catch (_) {}
-
-    try {
-      const parsedLog = cfManagerFactory.interface.parseLog(log);
-      if (parsedLog.name == "CfManagerSoftcapCreated") {
-        const ownerAddress = parsedLog.args.creator;
-        const assetAddress = parsedLog.args.asset;
-        const id = parsedLog.args.id;
-        cfManagerAddress = parsedLog.args.cfManager;
-        console.log(`\nCrowdfunding Campaign deployed\n\tAt address: ${cfManagerAddress}\n\tOwner: ${ownerAddress}\n\tAsset: ${assetAddress}\n\tID: ${id}`);
-      }
-    } catch (_) {}
-  }
-  const asset = await ethers.getContractAt("Asset", assetAddress);
-  const campaign = await ethers.getContractAt("CfManagerSoftcap", cfManagerAddress);
-
-  return [asset, campaign];
 }
 
 /**
@@ -575,6 +407,34 @@ export async function claimRevenue(investor: Signer, payoutManager: Contract, pa
  */
 export async function setInfo(owner: Signer, contract: Contract, infoHash: String) {
   await contract.connect(owner).setInfo(infoHash);
+}
+
+/**
+ * ApxAssetRegistry related functions. Handled by the APX protocol!
+ */
+export async function registerAsset(assetManager: Signer, apxRegistry: Contract, original: String, mirrored: String) {
+  await apxRegistry.connect(assetManager).registerAsset(original, mirrored, true);
+}
+export async function updateState(assetManager: Signer, apxRegistry: Contract, asset: String, state: boolean) {
+  await apxRegistry.connect(assetManager).updateState(asset, state);
+}
+export async function updatePrice(priceManager: Signer, apxRegistry: Contract, asset: String, price: Number, precision: Number, expiry: Number) {
+  await apxRegistry.connect(priceManager).updatePrice(asset, price, precision, expiry);
+}
+
+/**
+ * Liquidation functions.
+ */
+export async function liquidate(liquidator: Signer, asset: Contract, stablecoin: Contract, liquidationFunds: Number) {
+  const liquidationFundsWei = ethers.utils.parseEther(liquidationFunds.toString());
+  await stablecoin.connect(liquidator).approve(asset.address, liquidationFundsWei);
+  await asset.connect(liquidator).liquidate();
+}
+export async function claimLiquidationShare(investor: Signer, asset: Contract) {
+  const investorAddress = await investor.getAddress();
+  const tokenAmount = await asset.balanceBeforeLiquidation(investorAddress);
+  await asset.connect(investor).approve(asset.address, tokenAmount);
+  await asset.claimLiquidationShare(investorAddress);
 }
 
 /**
