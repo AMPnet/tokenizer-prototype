@@ -9,6 +9,7 @@ import "../../issuer/IIssuer.sol";
 import "../payout/IPayoutManager.sol";
 import "./IERC20Snapshot.sol";
 import "../../shared/Structs.sol";
+import "../../shared/IAssetCommon.sol";
 
 contract PayoutManager is IPayoutManager {
     using SafeERC20 for IERC20;
@@ -43,6 +44,7 @@ contract PayoutManager is IPayoutManager {
     ) {
         require(owner != address(0), "PayoutManager: invalid owner");
         require(assetAddress != address(0), "PayoutManager: invalid asset address");
+        address assetFactory = IAssetCommon(assetAddress).getAssetFactory();
         state = Structs.PayoutManagerState(
             id,
             address(this),
@@ -51,6 +53,7 @@ contract PayoutManager is IPayoutManager {
             msg.sender,
             owner,
             assetAddress,
+            assetFactory,
             0, 0,
             info
         );

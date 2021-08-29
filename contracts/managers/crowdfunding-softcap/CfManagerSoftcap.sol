@@ -80,6 +80,7 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
         require(maxInvestment >= minInvestment, "CfManagerSoftcap: Max has to be bigger than min investment.");
         require(maxInvestment > 0, "CfManagerSoftcap: Max investment has to be bigger than 0.");
         address issuer = address(IAssetCommon(asset).getIssuerAddress());
+        address assetFactory = address(IAssetCommon(asset).getAssetFactory());
         state = Structs.CfManagerSoftcapState(
             id,
             address(this),
@@ -88,6 +89,7 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
             msg.sender,
             owner,
             asset,
+            assetFactory,
             issuer,
             tokenPrice,
             softCap,

@@ -298,6 +298,8 @@ contract Asset is IAsset, ERC20Snapshot {
 
     function getIssuerAddress() external view override returns (address) { return state.issuer; }
 
+    function getAssetFactory() external view override returns (address) { return state.createdBy; }
+
     function getInfoHistory() external view override returns (Structs.InfoEntry[] memory) {
         return infoHistory;
     }
