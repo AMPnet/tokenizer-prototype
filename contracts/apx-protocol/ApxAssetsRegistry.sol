@@ -48,7 +48,7 @@ contract ApxAssetsRegistry is IApxAssetsRegistry {
 
     modifier onlyAssetManagerOrMasterOwner() {
         require(
-            msg.sender == assetManager,
+            msg.sender == assetManager || msg.sender == masterOwner,
             "ApxAssetsRegistry: Only asset manager or master owner can call this function."
         );
         _;
@@ -56,8 +56,8 @@ contract ApxAssetsRegistry is IApxAssetsRegistry {
 
     modifier onlyPriceManagerOrMasterOwner() {
         require(
-            msg.sender == priceManager,
-            "ApxAssetsRegistry: Only price manager can call this function."
+            msg.sender == priceManager || msg.sender == masterOwner,
+            "ApxAssetsRegistry: Only price manager or master owner can call this function."
         );
         _;
     }
