@@ -20,9 +20,9 @@ export CF_MANAGER_FACTORY=
 export WALLET_APPROVER=
 export WALLET_APPROVER_MASTER_OWNER=                        # provide this param if WALLET_APPROVER field empty
 export APX_REGISTRY=
-export APX_REGISRY_MASTER_OWNER=                                                                      # provide this param if APX_REGISTRY field empty
-export APX_REGISRY_ASSET_MANAGER=                                                                     # provide this param if APX_REGISTRY field empty
-export APX_REGISRY_PRICE_MANAGER=                                                                     # provide this param if APX_REGISTRY field empty
+export APX_REGISTRY_MASTER_OWNER=                                                                      # provide this param if APX_REGISTRY field empty
+export APX_REGISTRY_ASSET_MANAGER=                                                                     # provide this param if APX_REGISTRY field empty
+export APX_REGISTRY_PRICE_MANAGER=                                                                     # provide this param if APX_REGISTRY field empty
 export DEPLOYER=
 export QUERY_SERVICE=
 
