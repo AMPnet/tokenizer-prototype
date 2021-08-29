@@ -11,7 +11,6 @@ export async function deployStablecoin(deployer: Signer, supply: string): Promis
 }
 
 export async function deployApxRegistry(deployer: Signer, masterOwner: String, assetManager: String, priceManager: String): Promise<Contract> {
-  const deployerAddress = await deployer.getAddress();
   const ApxRegistry = await ethers.getContractFactory("ApxAssetsRegistry", deployer);
   const apxRegistry = await ApxRegistry.deploy(masterOwner, assetManager, priceManager);
   console.log(`\nApxRegistry deployed\n\tAt address: ${apxRegistry.address}`);
