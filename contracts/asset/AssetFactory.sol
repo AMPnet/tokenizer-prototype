@@ -20,7 +20,7 @@ contract AssetFactory is IAssetFactory {
         string memory ansName,
         uint256 initialTokenSupply,
         bool whitelistRequiredForRevenueClaim,
-        bool wnitelistRequiredForLiquidationClaim,
+        bool whitelistRequiredForLiquidationClaim,
         string memory name,
         string memory symbol,
         string memory info
@@ -41,7 +41,7 @@ contract AssetFactory is IAssetFactory {
                         ansId,
                         initialTokenSupply,
                         whitelistRequiredForRevenueClaim,
-                        wnitelistRequiredForLiquidationClaim,
+                        whitelistRequiredForLiquidationClaim,
                         name,
                         symbol,
                         info
