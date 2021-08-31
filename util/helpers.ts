@@ -406,6 +406,10 @@ export async function setInfo(owner: Signer, contract: Contract, infoHash: Strin
   await contract.connect(owner).setInfo(infoHash);
 }
 
+export async function setChildChainManager(owner: Signer, contract: Contract, manager: String) {
+  await contract.connect(owner).setChildChainManager(manager);
+}
+
 /**
  * ApxAssetRegistry related functions. Handled by the APX protocol!
  */
@@ -423,7 +427,13 @@ export async function updatePrice(priceManager: Signer, apxRegistry: Contract, a
  * Liquidation functions.
  */
 export async function liquidate(liquidator: Signer, asset: Contract, stablecoin: Contract, liquidationFunds: Number) {
+  const liquidatorAddress = await liquidator.getAddress();
+  const liquidatorOwnedAssetTokens = await asset.balanceOf(liquidatorAddress);
+  console.log("liquidatorOwnedAssetTokens", liquidatorOwnedAssetTokens.toString());
+  console.log("liquidator balance preliquidation", (await stablecoin.balanceOf(liquidatorAddress)).toString());
+
   const liquidationFundsWei = ethers.utils.parseEther(liquidationFunds.toString());
+  await asset.connect(liquidator).approve(asset.address, liquidatorOwnedAssetTokens);
   await stablecoin.connect(liquidator).approve(asset.address, liquidationFundsWei);
   await asset.connect(liquidator).liquidate();
 }
@@ -486,6 +496,10 @@ export async function getIssuerState(contract: Contract): Promise<String> {
  */
 export async function getAssetState(contract: Contract): Promise<object> {
   return contract.getState();
+}
+export async function getAssetChildChainManager(contract: Contract): Promise<string> {
+  const state = await contract.getState();
+  return state.childChainManager;
 }
 
 /**

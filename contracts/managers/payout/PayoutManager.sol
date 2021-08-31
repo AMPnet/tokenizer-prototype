@@ -27,7 +27,7 @@ contract PayoutManager is IPayoutManager {
     //------------------------
     //  EVENTS
     //------------------------
-    event CreatePayout(address indexed creator, uint256 payoutId, uint256 amount, uint256 timestamp);
+    event CreatePayout(address indexed creator, address asset, uint256 payoutId, uint256 amount, uint256 timestamp);
     event Release(address indexed investor, address asset, uint256 payoutId, uint256 amount, uint256 timestamp);
     event SetInfo(string info, address setter, uint256 timestamp);
 
@@ -86,7 +86,7 @@ contract PayoutManager is IPayoutManager {
         snapshotToPayout[snapshotId] = payouts.length - 1; 
         state.totalPayoutsCreated += 1;
         state.totalPayoutsAmount += amount;
-        emit CreatePayout(msg.sender, payoutId, amount, block.timestamp);
+        emit CreatePayout(msg.sender, state.asset, payoutId, amount, block.timestamp);
     }
 
     //------------------------

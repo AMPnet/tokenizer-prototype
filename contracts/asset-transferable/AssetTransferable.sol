@@ -44,6 +44,7 @@ contract AssetTransferable is IAssetTransferable, IChildToken, ERC20Snapshot {
     event FinalizeSale(address campaign, uint256 tokenAmount, uint256 tokenValue, uint256 timestamp);
     event Liquidated(address liquidator, uint256 liquidationFunds, uint256 timestamp);
     event ClaimLiquidationShare(address indexed investor, uint256 amount,  uint256 timestamp);
+    event SetChildChainManager(address caller, address oldManager, address newManager, uint256 timestamp);
 
     //------------------------
     //  CONSTRUCTOR
@@ -190,13 +191,26 @@ contract AssetTransferable is IAssetTransferable, IChildToken, ERC20Snapshot {
             (state.highestTokenSellPrice > assetRecord.price) ?
                 (state.highestTokenSellPrice, priceDecimalsPrecision) : 
                 (assetRecord.price, assetRecord.pricePrecision);
-        uint256 liquidationFunds = _tokenValue(totalSupply(), liquidationPrice, precision);
-        require(liquidationFunds > 0, "AssetTransferable: Liquidation funds are zero.");
-        _stablecoin().safeTransferFrom(msg.sender, address(this), liquidationFunds);
+        uint256 liquidatorApprovedTokenAmount = this.allowance(msg.sender, address(this));
+        uint256 liquidatorApprovedTokenValue = _tokenValue(
+            liquidatorApprovedTokenAmount,
+            liquidationPrice,
+            precision
+        );
+        if (liquidatorApprovedTokenValue > 0) {
+            liquidationClaimsMap[msg.sender] += liquidatorApprovedTokenValue;
+            state.liquidationFundsClaimed += liquidatorApprovedTokenValue;
+            this.transferFrom(msg.sender, address(this), liquidatorApprovedTokenAmount);
+        }
+        uint256 liquidationFundsTotal = _tokenValue(totalSupply(), liquidationPrice, precision);
+        uint256 liquidationFundsToPull = liquidationFundsTotal - liquidatorApprovedTokenValue;
+        if (liquidationFundsToPull > 0) {
+            _stablecoin().safeTransferFrom(msg.sender, address(this), liquidationFundsToPull);
+        }
         state.liquidated = true;
         state.liquidationTimestamp = block.timestamp;
-        state.liquidationFundsTotal = liquidationFunds;
-        emit Liquidated(msg.sender, liquidationFunds, block.timestamp);
+        state.liquidationFundsTotal = liquidationFundsTotal;
+        emit Liquidated(msg.sender, liquidationFundsTotal, block.timestamp);
     }
 
     function claimLiquidationShare(address investor) external override {
@@ -224,6 +238,12 @@ contract AssetTransferable is IAssetTransferable, IChildToken, ERC20Snapshot {
     function migrateApxRegistry(address newRegistry) external override notLiquidated {
         require(msg.sender == state.apxRegistry, "AssetTransferable: Only apxRegistry can call this function.");
         state.apxRegistry = newRegistry;
+    }
+
+    function setChildChainManager(address newManager) external override ownerOnly {
+        address oldManager = state.childChainManager;
+        state.childChainManager = newManager;
+        emit SetChildChainManager(msg.sender, oldManager, newManager, block.timestamp);
     }
 
     //------------------------

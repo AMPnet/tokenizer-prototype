@@ -10,6 +10,7 @@ async function main() {
     console.log(`Network name: ${network.name}`);
     console.log(`Chain Id: ${network.chainId}`);
     console.log(`Deployer address (accounts[0]): ${deployerAddress}`);
+    console.log(`Deployer balance (accounts[0]):`, (await ethers.provider.getBalance(deployerAddress)).toString());
 
     const stablecoin: Contract = (process.env.STABLECOIN) ? 
         await ethers.getContractAt("USDC", process.env.STABLECOIN) :
@@ -39,6 +40,10 @@ async function main() {
     const cfManagerFactory: Contract = (process.env.CF_MANAGER_FACTORY) ?
         await ethers.getContractAt("CfManagerSoftcapFactory", process.env.CF_MANAGER_FACTORY) :
         await helpers.deployCfManagerFactory(deployer);
+
+    const payoutManagerFactory: Contract = (process.env.PAYOUT_MANAGER_FACTORY) ?
+        await ethers.getContractAt("PayoutManagerFactory", process.env.PAYOUT_MANAGER_FACTORY) :
+        await helpers.deployPayoutManagerFactory(deployer);
 
     const walletApproverService: Contract = (process.env.WALLET_APPROVER) ?
         await ethers.getContractAt("WalletApproverService", process.env.WALLET_APPROVER) :

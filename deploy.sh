@@ -17,6 +17,7 @@ export ISSUER_FACTORY=
 export ASSET_FACTORY=
 export ASSET_TRANSFERABLE_FACTORY=
 export CF_MANAGER_FACTORY=
+export PAYOUT_MANAGER_FACTORY=
 export WALLET_APPROVER=
 export WALLET_APPROVER_MASTER_OWNER=                        # provide this param if WALLET_APPROVER field empty
 export APX_REGISTRY=

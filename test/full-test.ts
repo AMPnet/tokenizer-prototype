@@ -193,8 +193,10 @@ describe("Full test", function () {
       const revenueAmount = 300000;
       const revenueAmountWei = ethers.utils.parseEther(revenueAmount.toString());
       const issuerAddress = await issuerOwner.getAddress();
-      await stablecoin.transfer(issuerAddress, revenueAmountWei); 
+      await stablecoin.transfer(issuerAddress, revenueAmountWei);
+      console.log("issuer balance before share payout: ", ethers.utils.formatEther(await stablecoin.balanceOf(issuerAddress)));
       await helpers.createPayout(issuerOwner, payoutManager, stablecoin, revenueAmount, payoutDescription)
+      console.log("issuer balance after share payout: ", ethers.utils.formatEther(await stablecoin.balanceOf(issuerAddress)));
 
       //// Alice claims her revenue share by calling previously created PayoutManager contract and providing the payoutId param (0 in this case)
       //// PayoutManager address has to be known upfront (can be found for one asset by scanning PayoutManagerCreated event for asset address)
@@ -221,34 +223,43 @@ describe("Full test", function () {
       await helpers.registerAsset(assetManager, apxRegistry, asset.address, asset.address);
       // update market price for asset
       // price: $0.70, expiry: 60 seconds
-      await helpers.updatePrice(priceManager, apxRegistry, asset.address, 7000, 10000, 60);
+      await helpers.updatePrice(priceManager, apxRegistry, asset.address, 11000, 10000, 60);
       console.log("price updated");
 
       //// Asset owner liquidates asset
-      // Asset was crowdfunded at $1/token and is now trading at $0.70/token so the total supply must be liquidated
-      // at the max($1, $0.70), therefore must be liquidated at the price of $1.
-      // Since the asset supply is 300k tokens, liqudiation funds = 300k tokens * $1
-      const liquidationAmount = 300000;
-      const liquidationAmountWei = ethers.utils.parseEther(liquidationAmount.toString());
-      await stablecoin.transfer(issuerAddress, liquidationAmountWei); 
+      // Asset was crowdfunded at $1/token and is now trading at $1.10/token so the total supply must be liquidated
+      // at the max($1, $1.10), therefore must be liquidated at the price of $1.10.
+      // Since the asset supply is 300k tokens, liqudiation funds = 300k tokens * $1.10 = $330k
+      // Project owner already holds $200k at his wallet after finalizing the campaign, so we transfer another $20k
+      // to his wallet and call liquidate() function. Liquidate function doesn't require full $330k payment since the
+      // caller holds (1/3) of the token and is entitled to $110k claim. This is deducted in the liquidate() function so
+      // caller only has to approve the liquidation funds for the rest of the holders.
+      // Jane and Alice hold (1/3) of the total supply each, so they can claim $110k each.
+      const liquidationAmount = 220000;
+      await stablecoin.transfer(issuerOwnerAddress, ethers.utils.parseEther("20000"));
+      const liquidatorBalanceBeforeLiquidation = await stablecoin.balanceOf(issuerAddress);
+      expect (liquidatorBalanceBeforeLiquidation).to.be.equal(ethers.utils.parseEther(liquidationAmount.toString()));
       await helpers.liquidate(issuerOwner, asset, stablecoin, liquidationAmount);
+      const liquidatorBalanceAfterLiquidation = await stablecoin.balanceOf(issuerAddress);
+      expect (liquidatorBalanceAfterLiquidation).to.be.equal(0);
       const assetTotalSupply = await asset.totalSupply();
       expect(await (asset.balanceOf(issuerOwnerAddress))).to.be.equal(assetTotalSupply);
-      console.log("liquidated");
 
       //// Alice claims liquidation share
-      const aliceLiquidationShare = 100000;
+      const aliceLiquidationShare = 110000;
       const aliceLiquidationShareWei = ethers.utils.parseEther(aliceLiquidationShare.toString());
       await helpers.claimLiquidationShare(alice, asset);
       const aliceBalanceAfterLiquidationClaim = await stablecoin.balanceOf(aliceAddress);
       expect(aliceBalanceAfterLiquidationClaim).to.be.equal(aliceRevenueShareWei.add(aliceLiquidationShareWei));
+      expect(await asset.balanceOf(aliceAddress)).to.be.equal(0);
 
       //// Jane claims liquidation share
-      const janeLiquidationShare = 100000;
+      const janeLiquidationShare = 110000;
       const janeLiquidationShareWei = ethers.utils.parseEther(janeLiquidationShare.toString());
       await helpers.claimLiquidationShare(jane, asset);
       const janeBalanceAfterLiquidationClaim = await stablecoin.balanceOf(janeAddress);
       expect(janeBalanceAfterLiquidationClaim).to.be.equal(janeRevenueShareWei.add(janeLiquidationShareWei));
+      expect(await asset.balanceOf(janeAddress)).to.be.equal(0);
 
       //// Fetch issuer state
       const fetchedIssuerState = await helpers.getIssuerState(issuer);
@@ -257,7 +268,13 @@ describe("Full test", function () {
       //// Fetch asset state
       const fetchedAssetState = await helpers.getAssetState(asset);
       console.log("fetched asset state", fetchedAssetState);
-
+      const oldChildChainManager = await helpers.getAssetChildChainManager(asset);
+      expect(oldChildChainManager).to.be.equal(childChainManager);
+      const newChildChainManager = await ethers.Wallet.createRandom().getAddress();
+      await helpers.setChildChainManager(issuerOwner, asset, newChildChainManager);
+      const fetchedChildChainManager = await helpers.getAssetChildChainManager(asset);
+      expect(fetchedChildChainManager).to.be.equal(newChildChainManager);
+      
       //// Fetch crowdfunding campaign state
       const fetchedCampaignState = await helpers.getCrowdfundingCampaignState(cfManager);
       console.log("fetched crowdfunding campaign state", fetchedCampaignState);
