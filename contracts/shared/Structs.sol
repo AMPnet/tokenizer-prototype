@@ -148,6 +148,7 @@ contract Structs {
         address createdBy;
         address owner;
         address asset;
+        address assetFactory;
         address issuer;
         uint256 tokenPrice;
         uint256 softCap;
@@ -173,6 +174,7 @@ contract Structs {
         address createdBy;
         address owner;
         address asset;
+        address assetFactory;
         uint256 totalPayoutsCreated;
         uint256 totalPayoutsAmount;
         string info;

@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Snapshot.sol";
+import "../tokens/erc20/ERC20.sol";
+import "../tokens/erc20/ERC20Snapshot.sol";
 import "../tokens/matic/IChildToken.sol";
 import "./IAssetTransferable.sol";
 import "../issuer/IIssuer.sol";
 import "../managers/crowdfunding-softcap/ICfManagerSoftcap.sol";
-import "../tokens/IToken.sol";
+import "../tokens/erc20/IToken.sol";
 import "../apx-protocol/IApxAssetsRegistry.sol";
 import "../shared/Structs.sol";
 
@@ -44,6 +44,7 @@ contract AssetTransferable is IAssetTransferable, IChildToken, ERC20Snapshot {
     event FinalizeSale(address campaign, uint256 tokenAmount, uint256 tokenValue, uint256 timestamp);
     event Liquidated(address liquidator, uint256 liquidationFunds, uint256 timestamp);
     event ClaimLiquidationShare(address indexed investor, uint256 amount,  uint256 timestamp);
+    event SetChildChainManager(address caller, address oldManager, address newManager, uint256 timestamp);
 
     //------------------------
     //  CONSTRUCTOR
@@ -185,18 +186,31 @@ contract AssetTransferable is IAssetTransferable, IChildToken, ERC20Snapshot {
         require(assetRecord.exists, "AssetTransferable: Not registered in Apx Registry");
         require(assetRecord.state, "AssetTransferable: Asset blocked in Apx Registry");
         require(assetRecord.mirroredToken == address(this), "AssetTransferable: Invalid mirrored asset record");
-        require(assetRecord.priceValidUntil <= block.timestamp, "AssetTransferable: Price expired");
+        require(block.timestamp <= assetRecord.priceValidUntil, "AssetTransferable: Price expired");
         (uint256 liquidationPrice, uint256 precision) = 
             (state.highestTokenSellPrice > assetRecord.price) ?
                 (state.highestTokenSellPrice, priceDecimalsPrecision) : 
                 (assetRecord.price, assetRecord.pricePrecision);
-        uint256 liquidationFunds = _tokenValue(totalSupply(), liquidationPrice, precision);
-        require(liquidationFunds > 0, "AssetTransferable: Liquidation funds are zero.");
-        _stablecoin().safeTransferFrom(msg.sender, address(this), liquidationFunds);
+        uint256 liquidatorApprovedTokenAmount = this.allowance(msg.sender, address(this));
+        uint256 liquidatorApprovedTokenValue = _tokenValue(
+            liquidatorApprovedTokenAmount,
+            liquidationPrice,
+            precision
+        );
+        if (liquidatorApprovedTokenValue > 0) {
+            liquidationClaimsMap[msg.sender] += liquidatorApprovedTokenValue;
+            state.liquidationFundsClaimed += liquidatorApprovedTokenValue;
+            this.transferFrom(msg.sender, address(this), liquidatorApprovedTokenAmount);
+        }
+        uint256 liquidationFundsTotal = _tokenValue(totalSupply(), liquidationPrice, precision);
+        uint256 liquidationFundsToPull = liquidationFundsTotal - liquidatorApprovedTokenValue;
+        if (liquidationFundsToPull > 0) {
+            _stablecoin().safeTransferFrom(msg.sender, address(this), liquidationFundsToPull);
+        }
         state.liquidated = true;
         state.liquidationTimestamp = block.timestamp;
-        state.liquidationFundsTotal = liquidationFunds;
-        emit Liquidated(msg.sender, liquidationFunds, block.timestamp);
+        state.liquidationFundsTotal = liquidationFundsTotal;
+        emit Liquidated(msg.sender, liquidationFundsTotal, block.timestamp);
     }
 
     function claimLiquidationShare(address investor) external override {
@@ -210,10 +224,10 @@ contract AssetTransferable is IAssetTransferable, IChildToken, ERC20Snapshot {
         require(approvedAmount > 0, "Asset: no tokens approved for claiming liquidation share");
         uint256 liquidationFundsShare = approvedAmount * state.liquidationFundsTotal / totalSupply();
         require(liquidationFundsShare > 0, "Asset: no liquidation funds to claim");
-        _stablecoin().safeTransfer(investor, liquidationFundsShare);
-        transferFrom(investor, address(this), approvedAmount);
         liquidationClaimsMap[investor] += liquidationFundsShare;
         state.liquidationFundsClaimed += liquidationFundsShare;
+        _stablecoin().safeTransfer(investor, liquidationFundsShare);
+        this.transferFrom(investor, address(this), approvedAmount);
         emit ClaimLiquidationShare(investor, liquidationFundsShare, block.timestamp);
     }
 
@@ -226,20 +240,22 @@ contract AssetTransferable is IAssetTransferable, IChildToken, ERC20Snapshot {
         state.apxRegistry = newRegistry;
     }
 
+    function setChildChainManager(address newManager) external override ownerOnly {
+        address oldManager = state.childChainManager;
+        state.childChainManager = newManager;
+        emit SetChildChainManager(msg.sender, oldManager, newManager, block.timestamp);
+    }
+
     //------------------------
     //  IAsset IMPL - Read
     //------------------------
-    function totalShares() external view override returns (uint256) {
-        return totalSupply();
-    }
-
-    function getDecimals() external view override returns (uint256) {
-        return uint256(decimals());
-    }
-
     function getState() external view override returns (Structs.AssetTransferableState memory) {
         return state;
     }
+
+    function getIssuerAddress() external view override returns (address) { return state.issuer; }
+
+    function getAssetFactory() external view override returns (address) { return state.createdBy; }
 
     function getInfoHistory() external view override returns (Structs.InfoEntry[] memory) {
         return infoHistory;
@@ -305,10 +321,7 @@ contract AssetTransferable is IAssetTransferable, IChildToken, ERC20Snapshot {
         if (ICfManagerSoftcap(wallet).getState().owner == state.owner) {
             return true;
         }
-        if (_campaignExists(wallet)) { 
-            return approvedCampaigns[approvedCampaignsMap[wallet]].whitelisted;
-        }
-        return false;
+        return _campaignExists(wallet) && approvedCampaigns[approvedCampaignsMap[wallet]].whitelisted;
     }
 
     function _campaignExists(address wallet) private view returns (bool) {
@@ -327,7 +340,7 @@ contract AssetTransferable is IAssetTransferable, IChildToken, ERC20Snapshot {
     }
 
     function _stablecoin_decimals_precision() private view returns (uint256) {
-        return IToken(_stablecoin_address()).decimals();
+        return 10 ** IToken(_stablecoin_address()).decimals();
     }
 
     function _asset_decimals_precision() private view returns (uint256) {

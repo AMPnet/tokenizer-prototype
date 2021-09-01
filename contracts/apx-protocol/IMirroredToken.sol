@@ -13,6 +13,6 @@ interface IMirroredToken {
     
     // Read
 
-    function lastKnownTokenValue() external view returns(uint256);
+    function lastKnownMarketCap() external view returns(uint256);
 
 }

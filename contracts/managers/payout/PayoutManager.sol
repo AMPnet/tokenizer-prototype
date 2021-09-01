@@ -9,6 +9,7 @@ import "../../issuer/IIssuer.sol";
 import "../payout/IPayoutManager.sol";
 import "./IERC20Snapshot.sol";
 import "../../shared/Structs.sol";
+import "../../shared/IAssetCommon.sol";
 
 contract PayoutManager is IPayoutManager {
     using SafeERC20 for IERC20;
@@ -26,7 +27,7 @@ contract PayoutManager is IPayoutManager {
     //------------------------
     //  EVENTS
     //------------------------
-    event CreatePayout(address indexed creator, uint256 payoutId, uint256 amount, uint256 timestamp);
+    event CreatePayout(address indexed creator, address asset, uint256 payoutId, uint256 amount, uint256 timestamp);
     event Release(address indexed investor, address asset, uint256 payoutId, uint256 amount, uint256 timestamp);
     event SetInfo(string info, address setter, uint256 timestamp);
 
@@ -43,6 +44,7 @@ contract PayoutManager is IPayoutManager {
     ) {
         require(owner != address(0), "PayoutManager: invalid owner");
         require(assetAddress != address(0), "PayoutManager: invalid asset address");
+        address assetFactory = IAssetCommon(assetAddress).getAssetFactory();
         state = Structs.PayoutManagerState(
             id,
             address(this),
@@ -51,6 +53,7 @@ contract PayoutManager is IPayoutManager {
             msg.sender,
             owner,
             assetAddress,
+            assetFactory,
             0, 0,
             info
         );
@@ -78,13 +81,12 @@ contract PayoutManager is IPayoutManager {
         payout.amount = amount;
         payout.ignoredWallets = ignored;
         payout.ignoredWallets.push(state.asset);
-        // payout.ignoredWallets.push(_asset().getState().mirroredToken);
         uint256 ignoredTokensAmount = _process_ignored_addresses(payoutId, ignored);
         payout.ignoredAmount = ignoredTokensAmount;
         snapshotToPayout[snapshotId] = payouts.length - 1; 
         state.totalPayoutsCreated += 1;
         state.totalPayoutsAmount += amount;
-        emit CreatePayout(msg.sender, payoutId, amount, block.timestamp);
+        emit CreatePayout(msg.sender, state.asset, payoutId, amount, block.timestamp);
     }
 
     //------------------------
@@ -104,9 +106,9 @@ contract PayoutManager is IPayoutManager {
         require(!ignoredWalletsMapPerPayout[payoutId][account], "PayoutManager: Account has no shares.");
         require(releaseMapPerPayout[payoutId][account] == 0, "PayoutManager: Account has already released funds");
         Structs.Payout storage payout = payouts[payoutId];
-        uint256 sharesAtSnapshot = _shares(account, snapshotId);
+        uint256 sharesAtSnapshot = _shares_at(account, snapshotId);
         require(sharesAtSnapshot > 0, "Account has no shares.");
-        uint256 nonIgnorableShares = _asset().totalShares() - payout.ignoredAmount;
+        uint256 nonIgnorableShares = _supply_at(snapshotId) - payout.ignoredAmount;
         uint256 payment = payout.amount * sharesAtSnapshot / nonIgnorableShares;
         require(payment != 0, "Account is not due payment.");
         releaseMapPerPayout[payoutId][account] = payment;
@@ -114,17 +116,13 @@ contract PayoutManager is IPayoutManager {
         _stablecoin().safeTransfer(account, payment);
         emit Release(account, address(state.asset), payoutId, payment, block.timestamp);
     }
-
-    function totalShares() external view override returns (uint256) {
-        return _asset().totalShares();
-    }
-
+    
     function totalReleased(uint256 snapshotId) external view override returns (uint256) {
         return payouts[snapshotToPayout[snapshotId]].totalReleased;
     }
 
     function shares(address account, uint256 snapshotId) external view override returns (uint256) {
-        return _shares(account, snapshotId);
+        return _shares_at(account, snapshotId);
     }
 
     function released(address account, uint256 snapshotId) external view override returns (uint256) {
@@ -156,8 +154,12 @@ contract PayoutManager is IPayoutManager {
         return sum;
     }
 
-    function _shares(address account, uint256 snapshotId) internal view returns (uint256) {
+    function _shares_at(address account, uint256 snapshotId) internal view returns (uint256) {
         return IERC20Snapshot(state.asset).balanceOfAt(account, snapshotId);
+    }
+
+    function _supply_at(uint256 snapshotId) internal view returns (uint256) {
+        return IERC20Snapshot(state.asset).totalSupplyAt(snapshotId);
     }
 
     function _stablecoin() private view returns (IERC20) {
