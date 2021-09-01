@@ -24,7 +24,6 @@ async function main() {
             process.env.APX_REGISTRY_ASSET_MANAGER,
             process.env.APX_REGISTRY_PRICE_MANAGER
         );
-    
     const issuerFactory: Contract = (process.env.ISSUER_FACTORY) ?
         await ethers.getContractAt("IssuerFactory", process.env.ISSUER_FACTORY) :
         await helpers.deployIssuerFactory(deployer);

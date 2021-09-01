@@ -2,28 +2,30 @@ import { ethers } from "hardhat";
 import { Contract, Signer } from "ethers";
 import * as filters from "./filters";
 
-export async function deployStablecoin(deployer: Signer, supply: string): Promise<Contract> {
+export async function deployStablecoin(deployer: Signer, supply: string, confirmations: number = 1): Promise<Contract> {
   const supplyWei = ethers.utils.parseEther(supply);
   const USDC = await ethers.getContractFactory("USDC", deployer);
   const stablecoin = await USDC.deploy(supplyWei);
+  await ethers.provider.waitForTransaction(stablecoin.deployTransaction.hash, confirmations)
   console.log(`\nStablecoin deployed\n\tAt address: ${stablecoin.address}`);
   return stablecoin;
 }
 
-export async function deployApxRegistry(deployer: Signer, masterOwner: String, assetManager: String, priceManager: String): Promise<Contract> {
+export async function deployApxRegistry(deployer: Signer, masterOwner: String, assetManager: String, priceManager: String, confirmations: number = 1): Promise<Contract> {
   const ApxRegistry = await ethers.getContractFactory("ApxAssetsRegistry", deployer);
   const apxRegistry = await ApxRegistry.deploy(masterOwner, assetManager, priceManager);
+  await ethers.provider.waitForTransaction(apxRegistry.deployTransaction.hash, confirmations)
   console.log(`\nApxRegistry deployed\n\tAt address: ${apxRegistry.address}`);
   return apxRegistry;
 }
 
-export async function deployFactories(deployer: Signer): Promise<Contract[]> {
+export async function deployFactories(deployer: Signer, confirmations: number = 1): Promise<Contract[]> {
   return [
-    await deployIssuerFactory(deployer),
-    await deployAssetFactory(deployer),
-    await deployAssetTransferableFactory(deployer),
-    await deployCfManagerFactory(deployer),
-    await deployPayoutManagerFactory(deployer)
+    await deployIssuerFactory(deployer, confirmations),
+    await deployAssetFactory(deployer, confirmations),
+    await deployAssetTransferableFactory(deployer, confirmations),
+    await deployCfManagerFactory(deployer, confirmations),
+    await deployPayoutManagerFactory(deployer, confirmations)
   ];
 }
 
@@ -63,37 +65,42 @@ export async function deployQueryService(deployer: Signer): Promise<Contract> {
   return queryService;
 }
 
-export async function deployIssuerFactory(deployer: Signer): Promise<Contract> {
+export async function deployIssuerFactory(deployer: Signer, confirmations: number = 1): Promise<Contract> {
   const IssuerFactory = await ethers.getContractFactory("IssuerFactory", deployer);
   const issuerFactory = await IssuerFactory.deploy();
+  await ethers.provider.waitForTransaction(issuerFactory.deployTransaction.hash, confirmations)
   console.log(`\nIssuerFactory deployed\n\tAt address: ${issuerFactory.address}`);
   return issuerFactory;
 }
 
-export async function deployAssetFactory(deployer: Signer): Promise<Contract> {
+export async function deployAssetFactory(deployer: Signer, confirmations: number = 1): Promise<Contract> {
   const AssetFactory = await ethers.getContractFactory("AssetFactory", deployer);
   const assetFactory = await AssetFactory.deploy();
+  await ethers.provider.waitForTransaction(assetFactory.deployTransaction.hash, confirmations)
   console.log(`\nAssetFactory deployed\n\tAt address: ${assetFactory.address}`);
   return assetFactory;
 }
 
-export async function deployAssetTransferableFactory(deployer: Signer): Promise<Contract> {
+export async function deployAssetTransferableFactory(deployer: Signer, confirmations: number = 1): Promise<Contract> {
   const AssetTransferableFactory = await ethers.getContractFactory("AssetTransferableFactory", deployer);
   const assetTransferableFactory = await AssetTransferableFactory.deploy();
+  await ethers.provider.waitForTransaction(assetTransferableFactory.deployTransaction.hash, confirmations)
   console.log(`\nAssetTransferableFactory deployed\n\tAt address: ${assetTransferableFactory.address}`);
   return assetTransferableFactory;
 }
 
-export async function deployCfManagerFactory(deployer: Signer): Promise<Contract> {
+export async function deployCfManagerFactory(deployer: Signer, confirmations: number = 1): Promise<Contract> {
   const CfManagerFactory = await ethers.getContractFactory("CfManagerSoftcapFactory", deployer);
   const cfManagerFactory = await CfManagerFactory.deploy();
+  await ethers.provider.waitForTransaction(cfManagerFactory.deployTransaction.hash, confirmations)
   console.log(`\nCfManagerFactory deployed\n\tAt address: ${cfManagerFactory.address}`);
   return cfManagerFactory;
 }
 
-export async function deployPayoutManagerFactory(deployer: Signer): Promise<Contract> {
+export async function deployPayoutManagerFactory(deployer: Signer, confirmations: number = 1): Promise<Contract> {
   const PayoutManagerFactory = await ethers.getContractFactory("PayoutManagerFactory", deployer);
   const payoutManagerFactory = await PayoutManagerFactory.deploy();
+  await ethers.provider.waitForTransaction(payoutManagerFactory.deployTransaction.hash, confirmations)
   console.log(`\nPayoutManagerFactory deployed\n\tAt address: ${payoutManagerFactory.address}`);
   return payoutManagerFactory;
 }

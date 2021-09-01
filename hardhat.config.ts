@@ -50,13 +50,13 @@ function networks() {
        gasPrice: 10000000000
     }
   }
-  if (process.env.MUMBAI_RPC) {
+  if (process.env.MATIC_RPC) {
     networks["matic"] = {
        url: process.env.MATIC_RPC,
        accounts: {
          mnemonic: process.env.SEED_PHRASE
        },
-       gasPrice: 10000000000
+       gasPrice: 50000000000
     }
   }
  }
