@@ -8,6 +8,7 @@ import "./IAsset.sol";
 import "../issuer/IIssuer.sol";
 import "../managers/crowdfunding-softcap/ICfManagerSoftcap.sol";
 import "../apx-protocol/IMirroredToken.sol";
+import "../apx-protocol/IApxAssetsRegistry.sol";
 import "../tokens/erc20/IToken.sol";
 import "../shared/Structs.sol";
 
@@ -42,14 +43,7 @@ contract Asset is IAsset, ERC20Snapshot {
     event CampaignWhitelist(address approver, address wallet, bool whitelisted, uint256 timestamp);
     event SetIssuerStatus(address approver, bool status, uint256 timestamp);
     event FinalizeSale(address campaign, uint256 tokenAmount, uint256 tokenValue, uint256 timestamp);
-    event Liquidated(address liquidator, uint256 liquidationFunds, uint256 liquidatedTokensAmount, uint256 timestamp);
-    event LiquidateMirrored(
-        address liquidator,
-        uint256 liquidationFunds,
-        uint256 liquidatedTokensAmount,
-        address mirroredToken,
-        uint256 timestamp
-    );
+    event Liquidated(address liquidator, uint256 liquidationFunds, uint256 timestamp);
     event ClaimLiquidationShare(address indexed investor,uint256 amount, uint256 timestamp);
     event LockTokens(address indexed wallet, address mirroredToken, uint256 amount, uint256 timestamp);
     event UnlockTokens(address indexed wallet, address mirroredToken, uint256 amount, uint256 timestamp);
@@ -130,16 +124,28 @@ contract Asset is IAsset, ERC20Snapshot {
     //------------------------
     //  IAsset IMPL - Write
     //------------------------
-    function lockTokens(address mirroredToken, uint256 amount) external override notLiquidated {
-        require(allowance(msg.sender, address(this)) >= amount, "Asset: Missing allowance for token lock");
-        transferFrom(msg.sender, address(this), amount);
-        IMirroredToken(mirroredToken).mintMirrored(msg.sender, amount);
+    function lockTokens(uint256 amount) external override {
+        Structs.AssetRecord memory assetRecord = 
+            IApxAssetsRegistry(state.apxRegistry).getMirroredFromOriginal(address(this));
+        require(assetRecord.exists, "Asset: Mirrored APX token does not exist.");
+        require(assetRecord.state, "Asset: Mirrored APX token is blacklisted.");
+        require(
+            assetRecord.originalToken == address(this),
+            "Asset: Mirrored APX token is not connected to the original."
+        );
+        require(assetRecord.mirroredToken != address(0), "Asset: Invalid mirrored token bridged to the original.");
+        require(allowance(msg.sender, address(this)) >= amount, "Asset: Missing allowance for token lock.");
+        
+        address mirroredToken = assetRecord.mirroredToken;
         state.totalTokensLocked += amount;
         locked[mirroredToken] += amount;
+
+        transferFrom(msg.sender, address(this), amount); 
+        IMirroredToken(mirroredToken).mintMirrored(msg.sender, amount);
         emit LockTokens(msg.sender, mirroredToken, amount, block.timestamp);
     }
 
-    function unlockTokens(address wallet, uint256 amount) external override notLiquidated {
+    function unlockTokens(address wallet, uint256 amount) external override {
         require(locked[msg.sender] >= amount, "Asset: insufficent amount of locked tokens");
         transfer(wallet, amount);
         state.totalTokensLocked -= amount;
@@ -222,45 +228,46 @@ contract Asset is IAsset, ERC20Snapshot {
         );
     }
 
-    function liquidate(address[] memory mirroredTokens) external override notLiquidated ownerOnly {
-        // Liquidate mirrored tokens first (if any provided)
-        for (uint i = 0; i < mirroredTokens.length; i++) { liquidateMirrored(mirroredTokens[i]); }
-        require(
-            state.totalTokensLocked == state.totalTokensLockedAndLiquidated,
-            "Asset: Can't liquidate original token. Liquidate mirrored tokens!"
+    function liquidate() external override notLiquidated ownerOnly {
+        IApxAssetsRegistry apxRegistry = IApxAssetsRegistry(state.apxRegistry);
+        Structs.AssetRecord memory assetRecord = apxRegistry.getMirrored(address(this));
+        
+        uint256 liquidationPrice;
+        uint256 precision;
+        if (assetRecord.exists && state.totalTokensLocked > 0) {
+            require(assetRecord.state, "Asset: Asset blocked in Apx Registry");
+            require(assetRecord.mirroredToken == address(this), "Asset: Invalid mirrored asset record");
+            require(block.timestamp <= assetRecord.priceValidUntil, "Asset: Price expired");
+            require(totalSupply() == assetRecord.capturedSupply, "Asset: MirroredToken supply inconsistent");
+            (liquidationPrice, precision) = 
+            (state.highestTokenSellPrice > assetRecord.price) ?
+                (state.highestTokenSellPrice, priceDecimalsPrecision) : 
+                (assetRecord.price, assetRecord.pricePrecision);
+        } else {
+            (liquidationPrice, precision) = (state.highestTokenSellPrice, priceDecimalsPrecision);
+        }
+
+        uint256 liquidatorApprovedTokenAmount = this.allowance(msg.sender, address(this));
+        uint256 liquidatorApprovedTokenValue = _tokenValue(
+            liquidatorApprovedTokenAmount,
+            liquidationPrice,
+            precision
         );
-        // If mirrored liquidated, proceed with liquidating the original asset (this)
-        uint256 activeSupply = totalSupply() - state.totalTokensLocked;
-        uint256 liquidationFunds = _tokenValue(activeSupply, state.highestTokenSellPrice);
-        if (liquidationFunds > 0) {
-            _stablecoin().safeTransferFrom(msg.sender, address(this), liquidationFunds);
+        if (liquidatorApprovedTokenValue > 0) {
+            liquidationClaimsMap[msg.sender] += liquidatorApprovedTokenValue;
+            state.liquidationFundsClaimed += liquidatorApprovedTokenValue;
+            this.transferFrom(msg.sender, address(this), liquidatorApprovedTokenAmount);
+        }
+
+        uint256 liquidationFundsTotal = _tokenValue(totalSupply(), liquidationPrice, precision);
+        uint256 liquidationFundsToPull = liquidationFundsTotal - liquidatorApprovedTokenValue;
+        if (liquidationFundsToPull > 0) {
+            _stablecoin().safeTransferFrom(msg.sender, address(this), liquidationFundsToPull);
         }
         state.liquidated = true;
-        state.liquidationFundsTotal = liquidationFunds;
         state.liquidationTimestamp = block.timestamp;
-        emit Liquidated(msg.sender, liquidationFunds, activeSupply, block.timestamp);
-    }
-
-    function liquidateMirrored(address mirroredTokenAddress) public override notLiquidated ownerOnly {
-        require(mirroredTokenAddress != address(0), "Asset: Invalid mirrored token address");
-        require(locked[mirroredTokenAddress] > 0, "Asset: No tokens mirrored on the provided token address");
-        IMirroredToken mirroredToken = IMirroredToken(mirroredTokenAddress);
-        uint256 liquidationFunds = mirroredToken.lastKnownMarketCap();
-        _stablecoin().safeTransferFrom(msg.sender, mirroredTokenAddress, mirroredToken.lastKnownMarketCap());
-        uint256 liquidatedTokensAmount = mirroredToken.liquidate();
-        require(
-            liquidatedTokensAmount == locked[mirroredTokenAddress],
-            "Asset: Liquidated tokens supply does not match the locked tokens supply."
-        );
-        state.totalTokensLockedAndLiquidated += liquidatedTokensAmount;
-        locked[mirroredTokenAddress] = 0;
-        emit LiquidateMirrored(
-            msg.sender,
-            liquidationFunds,
-            liquidatedTokensAmount,
-            mirroredTokenAddress,
-            block.timestamp
-        );
+        state.liquidationFundsTotal = liquidationFundsTotal;
+        emit Liquidated(msg.sender, liquidationFundsTotal, block.timestamp);
     }
 
     function claimLiquidationShare(address investor) external override {
@@ -286,7 +293,8 @@ contract Asset is IAsset, ERC20Snapshot {
     }
 
     function migrateApxRegistry(address newRegistry) external override {
-        
+        require(msg.sender == state.apxRegistry, "Asset: Only apxRegistry can call this function.");
+        state.apxRegistry = newRegistry;
     }
 
     //------------------------
@@ -294,6 +302,10 @@ contract Asset is IAsset, ERC20Snapshot {
     //------------------------
     function getState() external view override returns (Structs.AssetState memory) {
         return state;
+    }
+
+    function getOwner() external view override returns (address) {
+        return state.owner;
     }
 
     function getIssuerAddress() external view override returns (address) { return state.issuer; }
@@ -380,11 +392,11 @@ contract Asset is IAsset, ERC20Snapshot {
         return true;
     }
 
-    function _tokenValue(uint256 amount, uint256 price) private view returns (uint256) {
+    function _tokenValue(uint256 amount, uint256 price, uint256 pricePrecision) private view returns (uint256) {
         return amount
                 * price
                 * _stablecoin_decimals_precision()
-                / (_asset_decimals_precision() * priceDecimalsPrecision);
+                / (_asset_decimals_precision() * pricePrecision);
     }
 
     function _stablecoin_decimals_precision() private view returns (uint256) {

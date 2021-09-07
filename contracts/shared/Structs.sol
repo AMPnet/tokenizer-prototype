@@ -20,6 +20,7 @@ contract Structs {
         uint256 pricePrecision;
         uint256 priceUpdatedAt;
         uint256 priceValidUntil;
+        uint256 capturedSupply;
         address priceProvider;
     }
 

@@ -9,7 +9,7 @@ interface IAsset is IAssetCommon {
 
     // Write
     
-    function lockTokens(address mirroredToken, uint256 amount) external;
+    function lockTokens(uint256 amount) external;
     function unlockTokens(address wallet, uint256 amount) external;
     function approveCampaign(address campaign) external;
     function suspendCampaign(address campaign) external;
@@ -18,8 +18,7 @@ interface IAsset is IAssetCommon {
     function setWhitelistRequiredForRevenueClaim(bool whitelistRequired) external;
     function setWhitelistRequiredForLiquidationClaim(bool whitelistRequired) external;
     function setIssuerStatus(bool status) external;
-    function liquidate(address[] memory mirroredTokens) external;
-    function liquidateMirrored(address mirroredToken) external;
+    function liquidate() external;
     function claimLiquidationShare(address investor) external;
     function snapshot() external returns (uint256);
     function migrateApxRegistry(address newRegistry) external;
@@ -27,6 +26,7 @@ interface IAsset is IAssetCommon {
     // Read
 
     function getState() external view returns (Structs.AssetState memory);
+    function getOwner() external view returns (address);
     function getInfoHistory() external view returns (Structs.InfoEntry[] memory);
     function getCampaignRecords() external view returns (Structs.WalletRecord[] memory);
     function getSellHistory() external view returns (Structs.TokenSaleInfo[] memory);
