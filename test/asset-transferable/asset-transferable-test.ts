@@ -144,23 +144,49 @@ describe("Asset transferable test", function () {
         await helpers.updatePrice(priceManager, apxRegistry, asset.address, 1, 1, 60);
         await helpers.liquidate(issuerOwner, asset, stablecoin, liquidationFunds);
 
+        const modifierMessage = "Asset: Action forbidden, asset liquidated."
+
         await expect(
             asset.connect(assetManager).finalizeSale()
-        ).to.be.revertedWith("Asset: Action forbidden, asset liquidated.");
+        ).to.be.revertedWith(modifierMessage);
         await expect(
             asset.connect(issuerOwner).approveCampaign(cfManager.address)
-        ).to.be.revertedWith("Asset: Action forbidden, asset liquidated.");
+        ).to.be.revertedWith(modifierMessage);
         await expect(
             asset.connect(issuerOwner).suspendCampaign(cfManager.address)
-        ).to.be.revertedWith("Asset: Action forbidden, asset liquidated.");
+        ).to.be.revertedWith(modifierMessage);
         await expect(
             asset.connect(assetManager).liquidate()
-        ).to.be.revertedWith("Asset: Action forbidden, asset liquidated.");
+        ).to.be.revertedWith(modifierMessage);
         await expect(
             asset.connect(assetManager).snapshot()
-        ).to.be.revertedWith("Asset: Action forbidden, asset liquidated.");
+        ).to.be.revertedWith(modifierMessage);
         await expect(
             asset.connect(assetManager).liquidate()
-        ).to.be.revertedWith("Asset: Action forbidden, asset liquidated.");
+        ).to.be.revertedWith(modifierMessage);
     })
+
+    it('should verify ownerOnly modifier', async function () {
+        const modifierMessage = "Asset: Only asset creator can make this action."
+        const address = await jane.getAddress()
+
+        await expect(
+            asset.connect(alice).approveCampaign(cfManager.address)
+        ).to.be.revertedWith(modifierMessage);
+        await expect(
+            asset.connect(alice).suspendCampaign(cfManager.address)
+        ).to.be.revertedWith(modifierMessage);
+        await expect(
+            asset.connect(alice).changeOwnership(address)
+        ).to.be.revertedWith(modifierMessage);
+        await expect(
+            asset.connect(alice).setInfo("ipfs-hash")
+        ).to.be.revertedWith(modifierMessage);
+        await expect(
+            asset.connect(alice).changeOwnership(address)
+        ).to.be.revertedWith(modifierMessage);
+        await expect(
+            asset.connect(alice).setChildChainManager(address)
+        ).to.be.revertedWith(modifierMessage);
+    });
 })
