@@ -219,12 +219,19 @@ describe("Asset transferable test", function () {
         ).to.be.revertedWith("Asset: no tokens approved for claiming liquidation share")
     })
 
+    it('should verify that only apxRegistry can change apxRegistry address', async function () {
+        const newApxRegistry = await alice.getAddress()
+        await expect(
+            asset.connect(issuerOwner).migrateApxRegistry(newApxRegistry)
+        ).to.be.revertedWith("AssetTransferable: Only apxRegistry can call this function.")
+    })
+
     it.skip('should fail to finalize not approved campaign', async function () {
         // don't know how to test finalize sale
         await asset.connect(issuerOwner).suspendCampaign(cfManager.address)
         await cfManager.connect(issuerOwner).finalize()
         await expect(
-            asset.connect(issuerOwner).finalizeSale()
+            cfManager.connect(issuerOwner).finalize()
         ).to.be.revertedWith("Asset: Campaign not approved.")
     })
 
