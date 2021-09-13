@@ -4,6 +4,7 @@ import {Contract, Signer} from "ethers";
 import * as helpers from "../../util/helpers";
 import * as deployerServiceUtil from "../../util/deployer-service";
 import {expect} from "chai";
+import {it} from "mocha";
 
 describe("Asset transferable test", function () {
 
@@ -137,14 +138,8 @@ describe("Asset transferable test", function () {
     });
 
     it(`should verify notLiquidated modifier`, async function () {
-        const liquidationFunds = 300000;
-        await stablecoin.transfer(await issuerOwner.getAddress(), ethers.utils.parseEther(liquidationFunds.toString()));
-        await stablecoin.connect(assetManager).approve(asset.address, ethers.utils.parseEther(liquidationFunds.toString()));
-        await helpers.registerAsset(assetManager, apxRegistry, asset.address, asset.address);
-        await helpers.updatePrice(priceManager, apxRegistry, asset.address, 1, 1, 60);
-        await helpers.liquidate(issuerOwner, asset, stablecoin, liquidationFunds);
-
         const modifierMessage = "Asset: Action forbidden, asset liquidated."
+        await liquidateAsset()
 
         await expect(
             asset.connect(assetManager).finalizeSale()
@@ -183,10 +178,78 @@ describe("Asset transferable test", function () {
             asset.connect(alice).setInfo("ipfs-hash")
         ).to.be.revertedWith(modifierMessage);
         await expect(
+            asset.connect(alice).setWhitelistRequiredForRevenueClaim(false)
+        ).to.be.revertedWith(modifierMessage);
+        await expect(
+            asset.connect(alice).setWhitelistRequiredForLiquidationClaim(false)
+        ).to.be.revertedWith(modifierMessage);
+        await expect(
             asset.connect(alice).changeOwnership(address)
         ).to.be.revertedWith(modifierMessage);
         await expect(
             asset.connect(alice).setChildChainManager(address)
         ).to.be.revertedWith(modifierMessage);
-    });
+    })
+
+    it('should verify that only issuer owner can set issuer status', async function () {
+        await expect(
+            asset.connect(assetManager).setIssuerStatus(false)
+        ).to.be.revertedWith("Asset: Only issuer owner can make this action.")
+        await asset.connect(issuerOwner).setIssuerStatus(false)
+    })
+
+    it('should fail to claim liquidation share on not liquidated asset', async function () {
+        await expect(
+            asset.connect(alice).claimLiquidationShare(await alice.getAddress())
+        ).to.be.revertedWith("Asset: not liquidated")
+    })
+
+    it('should fail to claim liquidation share on not whitelisted address', async function () {
+        await liquidateAsset()
+        await expect(
+            asset.connect(alice).claimLiquidationShare(await alice.getAddress())
+        ).to.be.revertedWith("Asset: wallet must be whitelisted before claiming liquidation share.")
+    })
+
+    it('should fail to claim zero liquidation funds', async function () {
+        await asset.connect(issuerOwner).setWhitelistRequiredForLiquidationClaim(false)
+        await liquidateAsset()
+        await expect(
+            asset.connect(alice).claimLiquidationShare(await alice.getAddress())
+        ).to.be.revertedWith("Asset: no tokens approved for claiming liquidation share")
+    })
+
+    it.skip('should fail to finalize not approved campaign', async function () {
+        // don't know how to test finalize sale
+        await asset.connect(issuerOwner).suspendCampaign(cfManager.address)
+        await cfManager.connect(issuerOwner).finalize()
+        await expect(
+            asset.connect(issuerOwner).finalizeSale()
+        ).to.be.revertedWith("Asset: Campaign not approved.")
+    })
+
+    it.skip('should fail to finalize already finalized campaign', async function () {
+        // don't know how to test finalize sale
+        await asset.connect(issuerOwner).finalizeSale()
+        await expect(
+            asset.connect(issuerOwner).finalizeSale()
+        ).to.be.revertedWith("Asset: Campaign not finalized")
+    })
+
+    it.skip('should fail to claim zero liquidation funds', async function () {
+        // this case is not possible, not sure how to assert that it cannot happen
+        await expect(
+            asset.connect(alice).claimLiquidationShare(await alice.getAddress())
+        ).to.be.revertedWith("Asset: no liquidation funds to claim")
+    })
+
+    async function liquidateAsset() {
+        const liquidationFunds = 300000;
+        await stablecoin.transfer(await issuerOwner.getAddress(), ethers.utils.parseEther(liquidationFunds.toString()));
+        await stablecoin.connect(assetManager).approve(asset.address, ethers.utils.parseEther(liquidationFunds.toString()));
+        await helpers.registerAsset(assetManager, apxRegistry, asset.address, asset.address);
+        await helpers.updatePrice(priceManager, apxRegistry, asset.address, 1, 1, 60);
+        await helpers.liquidate(issuerOwner, asset, stablecoin, liquidationFunds);
+    }
+
 })
