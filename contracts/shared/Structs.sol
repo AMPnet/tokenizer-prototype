@@ -17,7 +17,6 @@ contract Structs {
         bool state;
         uint256 stateUpdatedAt;
         uint256 price;
-        uint256 pricePrecision;
         uint256 priceUpdatedAt;
         uint256 priceValidUntil;
         uint256 capturedSupply;
@@ -45,6 +44,20 @@ contract Structs {
         string info;
         address childChainManager;
     }
+
+    struct AssetFactoryParams {
+        address creator;
+        address issuer;
+        address apxRegistry;
+        string ansName;
+        uint256 initialTokenSupply;
+        bool transferable;
+        bool whitelistRequiredForRevenueClaim;
+        bool whitelistRequiredForLiquidationClaim;
+        string name;
+        string symbol;
+        string info;
+    }
     
     struct AssetConstructorParams {
         uint256 id;
@@ -54,6 +67,7 @@ contract Structs {
         string ansName;
         uint256 ansId;
         uint256 initialTokenSupply;
+        bool transferable;
         bool whitelistRequiredForRevenueClaim;
         bool whitelistRequiredForLiquidationClaim;
         string name;
@@ -85,6 +99,7 @@ contract Structs {
         address createdBy;
         address owner;
         uint256 initialTokenSupply;
+        bool transferable;
         bool whitelistRequiredForRevenueClaim;
         bool whitelistRequiredForLiquidationClaim;
         bool assetApprovedByIssuer;

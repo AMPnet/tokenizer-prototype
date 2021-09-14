@@ -13,44 +13,33 @@ contract AssetFactory is IAssetFactory {
     mapping (address => address[]) instancesPerIssuer;
     mapping (address => mapping (string => address)) public override namespace;
 
-    function create(
-        address creator,
-        address issuer,
-        address apxRegistry,
-        string memory ansName,
-        uint256 initialTokenSupply,
-        bool whitelistRequiredForRevenueClaim,
-        bool whitelistRequiredForLiquidationClaim,
-        string memory name,
-        string memory symbol,
-        string memory info
-    ) public override returns (address)
-    {
-        require(namespace[issuer][ansName] == address(0), "AssetFactory: asset with this name already exists");
+    function create(Structs.AssetFactoryParams memory params) public override returns (address) {
+        require(namespace[params.issuer][params.ansName] == address(0), "AssetFactory: asset with this name already exists");
         uint256 id = instances.length;
-        uint256 ansId = instancesPerIssuer[issuer].length;
+        uint256 ansId = instancesPerIssuer[params.issuer].length;
         address asset = 
             address(
                 new Asset(
                     Structs.AssetConstructorParams(
                         id,
-                        creator,
-                        issuer,
-                        apxRegistry,
-                        ansName,
+                        params.creator,
+                        params.issuer,
+                        params.apxRegistry,
+                        params.ansName,
                         ansId,
-                        initialTokenSupply,
-                        whitelistRequiredForRevenueClaim,
-                        whitelistRequiredForLiquidationClaim,
-                        name,
-                        symbol,
-                        info
+                        params.initialTokenSupply,
+                        params.transferable,
+                        params.whitelistRequiredForRevenueClaim,
+                        params.whitelistRequiredForLiquidationClaim,
+                        params.name,
+                        params.symbol,
+                        params.info
                     )
         ));
         instances.push(asset);
-        instancesPerIssuer[issuer].push(asset);
-        namespace[issuer][ansName] = asset;
-        emit AssetCreated(creator, asset, id, block.timestamp);
+        instancesPerIssuer[params.issuer].push(asset);
+        namespace[params.issuer][params.ansName] = asset;
+        emit AssetCreated(params.creator, asset, id, block.timestamp);
         return asset;
     }
 

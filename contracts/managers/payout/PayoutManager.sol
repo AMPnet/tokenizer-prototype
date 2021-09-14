@@ -4,8 +4,8 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import "../../asset/IAsset.sol";
 import "../../issuer/IIssuer.sol";
+import "../../asset/IAsset.sol";
 import "../payout/IPayoutManager.sol";
 import "./IERC20Snapshot.sol";
 import "../../shared/Structs.sol";
@@ -73,7 +73,7 @@ contract PayoutManager is IPayoutManager {
     function createPayout(string memory description, uint256 amount, address[] memory ignored) external onlyOwner {
         require(amount > 0, "PayoutManager: invalid payout amount provided");
         _stablecoin().transferFrom(msg.sender, address(this), amount);
-        uint256 snapshotId = _asset().snapshot();
+        uint256 snapshotId = IAsset(state.asset).snapshot();
         uint256 payoutId = payouts.length;
         Structs.Payout storage payout = payouts.push();
         payout.snapshotId = snapshotId;
@@ -166,12 +166,12 @@ contract PayoutManager is IPayoutManager {
         return IERC20(_issuer().getState().stablecoin);
     }
 
-    function _asset() private view returns (IAsset) {
-        return IAsset(state.asset);
+    function _asset() private view returns (IAssetCommon) {
+        return IAssetCommon(state.asset);
     }
 
     function _issuer() private view returns (IIssuer) {
-        return IIssuer(_asset().getState().issuer);
+        return IIssuer(_asset().getIssuerAddress());
     }
 
 }

@@ -80,7 +80,7 @@ describe("Full test", function () {
 
   it(
     `should successfully complete the flow:\n
-          1)create Issuer + AssetTransferable + Campaign using deployer service\n
+          1)create Issuer + Asset + Campaign using deployer service\n
           2)successfully fund the project with two different investors
           3)update asset price
           4)liquidate asset with the correct price: max(crowdfunding campaign price, market price)
@@ -117,7 +117,7 @@ describe("Full test", function () {
         issuerInfoHash,
         issuerFactory
       );
-      const contracts = await deployerServiceUtil.createAssetTransferableCampaign(
+      const contracts = await deployerServiceUtil.createAssetCampaign(
         issuer,
         issuerOwnerAddress,
         assetAnsName,
@@ -137,8 +137,7 @@ describe("Full test", function () {
         campaignWhitelistRequired,
         campaignInfoHash,
         apxRegistry.address,
-        childChainManager,
-        assetTransferableFactory,
+        assetFactory,
         cfManagerFactory,
         deployerService
       );
@@ -219,11 +218,32 @@ describe("Full test", function () {
       expect(janeBalanceAfterPayout).to.be.equal(janeRevenueShareWei); // jane claims (1/3) of total revenue
       console.log("Jane total balance", await stablecoin.balanceOf(janeAddress));
 
-      //// Asset is registered on the APX Registry and the market price is updated
-      await helpers.registerAsset(assetManager, apxRegistry, asset.address, asset.address);
+      //// Mirrored token deployed
+      const mirroredAsset = await (await ethers.getContractFactory("MirroredToken", deployer)).deploy(
+        `APX-${assetName}`,
+        `APX-${assetTicker}`,
+        asset.address,
+        childChainManager
+      );
+
+      //// Asset is registered on the APX Registry and connected to the mirrored token
+      await helpers.registerAsset(assetManager, apxRegistry, asset.address, mirroredAsset.address);
+
+      //// Jane mirrors her tokens
+      const tokensToMirror = ethers.utils.parseEther("100000"); // all of the jane tokens will be mirrored
+      await asset.connect(jane).approve(asset.address, tokensToMirror);
+      await asset.connect(jane).lockTokens(tokensToMirror);
+      const janePostLockAssetBalance = await asset.balanceOf(janeAddress);
+      expect(janePostLockAssetBalance).to.be.equal(0);
+      const janePostLockMirroredAssetBalance = await mirroredAsset.balanceOf(janeAddress);
+      expect(janePostLockMirroredAssetBalance).to.be.equal(tokensToMirror);
+      const mirroredTokenSupply = await mirroredAsset.totalSupply();
+      expect(mirroredTokenSupply).to.be.equal(tokensToMirror);
+
       // update market price for asset
       // price: $0.70, expiry: 60 seconds
-      await helpers.updatePrice(priceManager, apxRegistry, asset.address, 11000, 10000, 60);
+      const capturedSupply = await mirroredAsset.totalSupply();
+      await helpers.updatePrice(priceManager, apxRegistry, mirroredAsset.address, 11000, 60, capturedSupply);
       console.log("price updated");
 
       //// Asset owner liquidates asset
@@ -236,7 +256,7 @@ describe("Full test", function () {
       // caller only has to approve the liquidation funds for the rest of the holders.
       // Jane and Alice hold (1/3) of the total supply each, so they can claim $110k each.
       const liquidationAmount = 220000;
-      await stablecoin.transfer(issuerOwnerAddress, ethers.utils.parseEther("20000"));
+      await stablecoin.transfer(issuerAddress, ethers.utils.parseEther("20000"));
       const liquidatorBalanceBeforeLiquidation = await stablecoin.balanceOf(issuerAddress);
       expect (liquidatorBalanceBeforeLiquidation).to.be.equal(ethers.utils.parseEther(liquidationAmount.toString()));
       await helpers.liquidate(issuerOwner, asset, stablecoin, liquidationAmount);
@@ -253,7 +273,8 @@ describe("Full test", function () {
       expect(aliceBalanceAfterLiquidationClaim).to.be.equal(aliceRevenueShareWei.add(aliceLiquidationShareWei));
       expect(await asset.balanceOf(aliceAddress)).to.be.equal(0);
 
-      //// Jane claims liquidation share
+      //// Jane converts mirrored to original and claims liquidation share   
+      await mirroredAsset.connect(jane).burnMirrored(tokensToMirror);   
       const janeLiquidationShare = 110000;
       const janeLiquidationShareWei = ethers.utils.parseEther(janeLiquidationShare.toString());
       await helpers.claimLiquidationShare(jane, asset);
@@ -266,13 +287,11 @@ describe("Full test", function () {
       console.log("fetched issuer state", fetchedIssuerState);
 
       //// Fetch asset state
-      const fetchedAssetState = await helpers.getAssetState(asset);
-      console.log("fetched asset state", fetchedAssetState);
-      const oldChildChainManager = await helpers.getAssetChildChainManager(asset);
+      const oldChildChainManager = await helpers.getMirroredAssetChildChainManager(mirroredAsset);
       expect(oldChildChainManager).to.be.equal(childChainManager);
       const newChildChainManager = await ethers.Wallet.createRandom().getAddress();
-      await helpers.setChildChainManager(issuerOwner, asset, newChildChainManager);
-      const fetchedChildChainManager = await helpers.getAssetChildChainManager(asset);
+      await helpers.setChildChainManager(issuerOwner, mirroredAsset, newChildChainManager);
+      const fetchedChildChainManager = await helpers.getMirroredAssetChildChainManager(mirroredAsset);
       expect(fetchedChildChainManager).to.be.equal(newChildChainManager);
       
       //// Fetch crowdfunding campaign state
@@ -324,7 +343,7 @@ describe("Full test", function () {
       console.log("fetched issuer for id=0", fetchedIssuerById);
 
       //// Fetch Asset instance by id
-      const fetchedAssetById = await helpers.fetchAssetStateById(assetTransferableFactory, 0);
+      const fetchedAssetById = await helpers.fetchAssetStateById(assetFactory, 0);
       console.log("fetched asset for id=0", fetchedAssetById);
 
       //// Fetch Crowdfunding campaign instance by id
@@ -346,10 +365,6 @@ describe("Full test", function () {
       //// Fetch issuer approved wallets
       const walletRecords = await helpers.fetchWalletRecords(issuer);
       console.log("Wallet records", walletRecords);
-
-      //// Fetch issuer approved campaigns
-      const campaignRecords = await helpers.fetchCampaignRecords(asset);
-      console.log("Campaign records", campaignRecords);
 
       //// Fetch campaigns for issuer
       const campaignStates = await helpers.queryCampaignsForIssuer(queryService, cfManagerFactory, issuer);

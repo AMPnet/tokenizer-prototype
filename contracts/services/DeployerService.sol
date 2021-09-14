@@ -159,16 +159,19 @@ contract DeployerService {
             request.issuerInfo
         ));
         IAsset asset = IAsset(request.assetFactory.create(
-            address(this),
-            address(issuer),
-            request.apxRegistry,
-            request.assetAnsName,
-            request.assetInitialTokenSupply,
-            request.assetWhitelistRequiredForRevenueClaim,
-            request.assetWhitelistRequiredForLiquidationClaim,
-            request.assetName,
-            request.assetSymbol,
-            request.assetInfo
+            Structs.AssetFactoryParams(
+                address(this),
+                address(issuer),
+                request.apxRegistry,
+                request.assetAnsName,
+                request.assetInitialTokenSupply,
+                true,
+                request.assetWhitelistRequiredForRevenueClaim,
+                request.assetWhitelistRequiredForLiquidationClaim,
+                request.assetName,
+                request.assetSymbol,
+                request.assetInfo
+            )
         ));
         ICfManagerSoftcap campaign = ICfManagerSoftcap(request.cfManagerSoftcapFactory.create(
             address(this),
@@ -206,16 +209,19 @@ contract DeployerService {
     function deployAssetCampaign(DeployAssetCampaignRequest memory request) external {
         // Deploy contracts
         IAsset asset = IAsset(request.assetFactory.create(
-            address(this),
-            request.issuer,
-            request.apxRegistry,
-            request.assetAnsName,
-            request.assetInitialTokenSupply,
-            true,
-            false,
-            request.assetName,
-            request.assetSymbol,
-            request.assetInfo
+            Structs.AssetFactoryParams(
+                address(this),
+                request.issuer,
+                request.apxRegistry,
+                request.assetAnsName,
+                request.assetInitialTokenSupply,
+                true,
+                request.assetWhitelistRequiredForRevenueClaim,
+                request.assetWhitelistRequiredForLiquidationClaim,
+                request.assetName,
+                request.assetSymbol,
+                request.assetInfo
+            )
         ));
         ICfManagerSoftcap campaign = ICfManagerSoftcap(request.cfManagerSoftcapFactory.create(
             address(this),
@@ -237,8 +243,7 @@ contract DeployerService {
         assetERC20.transfer(request.assetOwner, tokensToKeep);
 
         // Transfer ownerships from address(this) to the actual owner wallets
-        // asset.setIsTransferable(request.assetIsTransferable);
-        // asset.setWhitelistRequiredForTransfer(request.assetWhitelistRequiredForTransfer);
+        asset.freezeTransfer();
         asset.changeOwnership(request.assetOwner);
         campaign.changeOwnership(request.cfManagerOwner);
 

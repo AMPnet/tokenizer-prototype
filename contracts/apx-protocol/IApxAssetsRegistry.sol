@@ -14,7 +14,6 @@ interface IApxAssetsRegistry {
     function updatePrice(
         address asset,
         uint256 price,
-        uint256 pricePrecision,
         uint256 expiry,
         uint256 capturedSupply
     ) external;

@@ -51,6 +51,7 @@ contract Issuer is IIssuer {
             walletApprover,
             info
         );
+        _setWalletState(owner, true);
     }
 
     //------------------------
@@ -112,9 +113,7 @@ contract Issuer is IIssuer {
     function getState() external override view returns (Structs.IssuerState memory) { return state; }
     
     function isWalletApproved(address wallet) external view override returns (bool) {
-        return
-            wallet == state.owner ||
-            (_addressExists(wallet) && approvedWallets[approvedWalletsMap[wallet]].whitelisted);
+        return (_addressExists(wallet) && approvedWallets[approvedWalletsMap[wallet]].whitelisted);
     }
 
     function getInfoHistory() external view override returns (Structs.InfoEntry[] memory) {

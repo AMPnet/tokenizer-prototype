@@ -107,7 +107,7 @@ contract ApxAssetsRegistry is IApxAssetsRegistry {
             true,
             state,
             block.timestamp,
-            0, 0, 0, 0, 0, address(0)
+            0, 0, 0, 0, address(0)
         );
         assetsList.push(mirrored);
         emit RegisterAsset(msg.sender, original, mirrored, state, block.timestamp);
@@ -125,7 +125,6 @@ contract ApxAssetsRegistry is IApxAssetsRegistry {
     function updatePrice(
         address asset,
         uint256 price,
-        uint256 pricePrecision,
         uint256 expiry,
         uint256 capturedSupply
     ) external override onlyPriceManagerOrMasterOwner assetExists(asset) {
@@ -134,7 +133,6 @@ contract ApxAssetsRegistry is IApxAssetsRegistry {
         require(expiry > 0, "MirroredToken: expiry has to be > 0;");
         require(capturedSupply == IToken(asset).totalSupply(), "MirroredToken: inconsistent asset supply.");
         assets[asset].price = price;
-        assets[asset].pricePrecision = pricePrecision;
         assets[asset].priceUpdatedAt = block.timestamp;
         assets[asset].priceValidUntil = block.timestamp + expiry;
         assets[asset].capturedSupply = capturedSupply;
