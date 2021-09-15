@@ -157,7 +157,7 @@ describe("Asset transferable test", function () {
             asset.connect(assetManager).snapshot()
         ).to.be.revertedWith(modifierMessage);
         await expect(
-            asset.connect(assetManager).liquidate()
+            asset.connect(assetManager).migrateApxRegistry(cfManager.address)
         ).to.be.revertedWith(modifierMessage);
     })
 
@@ -195,7 +195,11 @@ describe("Asset transferable test", function () {
         await expect(
             asset.connect(assetManager).setIssuerStatus(false)
         ).to.be.revertedWith("Asset: Only issuer owner can make this action.")
-        await asset.connect(issuerOwner).setIssuerStatus(false)
+        const issuerStatus = await asset.connect(issuerOwner).getState()
+        const newIssuerStatus = !issuerStatus.assetApprovedByIssuer
+        await asset.connect(issuerOwner).setIssuerStatus(newIssuerStatus)
+        const setValue = (await asset.connect(issuerOwner).getState()).assetApprovedByIssuer
+        expect(setValue).to.be.equal(newIssuerStatus)
     })
 
     it('should fail to claim liquidation share on not liquidated asset', async function () {
@@ -220,18 +224,28 @@ describe("Asset transferable test", function () {
     })
 
     it('should verify that only apxRegistry can change apxRegistry address', async function () {
-        const newApxRegistry = await alice.getAddress()
+        const newApxRegistry: Contract = await helpers.deployApxRegistry(
+            deployer,
+            await deployer.getAddress(),
+            await assetManager.getAddress(),
+            await priceManager.getAddress()
+        )
+        await apxRegistry.connect(assetManager).registerAsset(asset.address, asset.address, true)
+        await newApxRegistry.connect(assetManager).registerAsset(asset.address, asset.address, true)
         await expect(
-            asset.connect(issuerOwner).migrateApxRegistry(newApxRegistry)
+            asset.connect(issuerOwner).migrateApxRegistry(newApxRegistry.address)
         ).to.be.revertedWith("AssetTransferable: Only apxRegistry can call this function.")
+        const oldApxRegistryAddress = (await asset.connect(issuerOwner).getState()).apxRegistry
+        expect(oldApxRegistryAddress).to.be.equal(apxRegistry.address)
+        await apxRegistry.connect(deployer).migrate(newApxRegistry.address, asset.address)
+        const newApxRegistryAddress = (await asset.connect(issuerOwner).getState()).apxRegistry
+        expect(newApxRegistryAddress).to.be.equal(newApxRegistry.address)
     })
 
     it.skip('should fail to finalize not approved campaign', async function () {
-        // don't know how to test finalize sale
-        await asset.connect(issuerOwner).suspendCampaign(cfManager.address)
-        await cfManager.connect(issuerOwner).finalize()
+        // use smodit to mock owner
         await expect(
-            cfManager.connect(issuerOwner).finalize()
+            asset.connect(alice).finalizeSale()
         ).to.be.revertedWith("Asset: Campaign not approved.")
     })
 
