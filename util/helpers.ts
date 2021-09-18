@@ -1,5 +1,5 @@
 import { ethers } from "hardhat";
-import { Contract, Signer } from "ethers";
+import { BigNumber, Contract, Signer } from "ethers";
 import * as filters from "./filters";
 
 export async function deployStablecoin(deployer: Signer, supply: string, confirmations: number = 1): Promise<Contract> {
@@ -426,8 +426,8 @@ export async function registerAsset(assetManager: Signer, apxRegistry: Contract,
 export async function updateState(assetManager: Signer, apxRegistry: Contract, asset: String, state: boolean) {
   await apxRegistry.connect(assetManager).updateState(asset, state);
 }
-export async function updatePrice(priceManager: Signer, apxRegistry: Contract, asset: String, price: Number, precision: Number, expiry: Number) {
-  await apxRegistry.connect(priceManager).updatePrice(asset, price, precision, expiry);
+export async function updatePrice(priceManager: Signer, apxRegistry: Contract, asset: String, price: Number, expiry: Number, capturedSupply: BigNumber) {
+  await apxRegistry.connect(priceManager).updatePrice(asset, price, expiry, capturedSupply);
 }
 
 /**
@@ -436,9 +436,6 @@ export async function updatePrice(priceManager: Signer, apxRegistry: Contract, a
 export async function liquidate(liquidator: Signer, asset: Contract, stablecoin: Contract, liquidationFunds: Number) {
   const liquidatorAddress = await liquidator.getAddress();
   const liquidatorOwnedAssetTokens = await asset.balanceOf(liquidatorAddress);
-  console.log("liquidatorOwnedAssetTokens", liquidatorOwnedAssetTokens.toString());
-  console.log("liquidator balance preliquidation", (await stablecoin.balanceOf(liquidatorAddress)).toString());
-
   const liquidationFundsWei = ethers.utils.parseEther(liquidationFunds.toString());
   await asset.connect(liquidator).approve(asset.address, liquidatorOwnedAssetTokens);
   await stablecoin.connect(liquidator).approve(asset.address, liquidationFundsWei);
@@ -507,6 +504,9 @@ export async function getAssetState(contract: Contract): Promise<object> {
 export async function getAssetChildChainManager(contract: Contract): Promise<string> {
   const state = await contract.getState();
   return state.childChainManager;
+}
+export async function getMirroredAssetChildChainManager(contract: Contract): Promise<string> {
+  return contract.childChainManager();
 }
 
 /**
@@ -709,6 +709,12 @@ export async function fetchAssetStateById(assetFactory: Contract, id: Number): P
   return instance.getState();
 }
 
+export async function fetchAssetTransferableStateById(assetFactory: Contract, id: Number): Promise<object> {
+  const instanceAddress = await assetFactory.instances(id);
+  const instance = await ethers.getContractAt("AssetTransferable", instanceAddress);
+  return instance.getState();
+}
+
 /**
  * @param payoutManagerFactory Predeployed PayoutManager factory
  * @param id PayoutManager id
@@ -768,14 +774,6 @@ export async function fetchTxHistory(
  */
 export async function fetchWalletRecords(issuer: Contract): Promise<Array<object>> {
   return issuer.getWalletRecords();
-}
-
-/**
- * @param issuer Issuer contract instance
- * @returns Array of issuer campaign records
- */
-export async function fetchCampaignRecords(asset: Contract): Promise<Array<object>> {
-  return asset.getCampaignRecords();
 }
 
 /**

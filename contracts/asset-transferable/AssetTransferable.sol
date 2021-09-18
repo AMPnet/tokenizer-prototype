@@ -187,22 +187,16 @@ contract AssetTransferable is IAssetTransferable, IChildToken, ERC20Snapshot {
         require(assetRecord.state, "AssetTransferable: Asset blocked in Apx Registry");
         require(assetRecord.mirroredToken == address(this), "AssetTransferable: Invalid mirrored asset record");
         require(block.timestamp <= assetRecord.priceValidUntil, "AssetTransferable: Price expired");
-        (uint256 liquidationPrice, uint256 precision) = 
-            (state.highestTokenSellPrice > assetRecord.price) ?
-                (state.highestTokenSellPrice, priceDecimalsPrecision) : 
-                (assetRecord.price, assetRecord.pricePrecision);
+        uint256 liquidationPrice = 
+            (state.highestTokenSellPrice > assetRecord.price) ? state.highestTokenSellPrice : assetRecord.price;
         uint256 liquidatorApprovedTokenAmount = this.allowance(msg.sender, address(this));
-        uint256 liquidatorApprovedTokenValue = _tokenValue(
-            liquidatorApprovedTokenAmount,
-            liquidationPrice,
-            precision
-        );
+        uint256 liquidatorApprovedTokenValue = _tokenValue(liquidatorApprovedTokenAmount, liquidationPrice);
         if (liquidatorApprovedTokenValue > 0) {
             liquidationClaimsMap[msg.sender] += liquidatorApprovedTokenValue;
             state.liquidationFundsClaimed += liquidatorApprovedTokenValue;
             this.transferFrom(msg.sender, address(this), liquidatorApprovedTokenAmount);
         }
-        uint256 liquidationFundsTotal = _tokenValue(totalSupply(), liquidationPrice, precision);
+        uint256 liquidationFundsTotal = _tokenValue(totalSupply(), liquidationPrice);
         uint256 liquidationFundsToPull = liquidationFundsTotal - liquidatorApprovedTokenValue;
         if (liquidationFundsToPull > 0) {
             _stablecoin().safeTransferFrom(msg.sender, address(this), liquidationFundsToPull);
@@ -332,11 +326,11 @@ contract AssetTransferable is IAssetTransferable, IChildToken, ERC20Snapshot {
         return true;
     }
 
-    function _tokenValue(uint256 amount, uint256 price, uint256 pricePrecision) private view returns (uint256) {
+    function _tokenValue(uint256 amount, uint256 price) private view returns (uint256) {
         return amount
                 * price
                 * _stablecoin_decimals_precision()
-                / (_asset_decimals_precision() * pricePrecision);
+                / (_asset_decimals_precision() * priceDecimalsPrecision);
     }
 
     function _stablecoin_decimals_precision() private view returns (uint256) {

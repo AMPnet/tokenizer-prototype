@@ -3,8 +3,8 @@ pragma solidity ^0.8.0;
 
 import "./IPayoutManagerFactory.sol";
 import "./PayoutManager.sol";
-import "../../asset/IAsset.sol";
 import "../../issuer/IIssuer.sol";
+import "../../shared/IAssetCommon.sol";
 
 contract PayoutManagerFactory is IPayoutManagerFactory {
 
@@ -27,7 +27,7 @@ contract PayoutManagerFactory is IPayoutManagerFactory {
         address assetAddress,
         string memory info
     ) public override returns (address) {
-        address issuer = IAsset(assetAddress).getState().issuer;
+        address issuer = IAssetCommon(assetAddress).getIssuerAddress();
         require(
             namespace[issuer][ansName] == address(0),
             "PayoutManagerFactory: issuer with this name already exists"

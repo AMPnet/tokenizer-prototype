@@ -224,7 +224,8 @@ describe("Full test", function () {
       await helpers.registerAsset(assetManager, apxRegistry, asset.address, asset.address);
       // update market price for asset
       // price: $0.70, expiry: 60 seconds
-      await helpers.updatePrice(priceManager, apxRegistry, asset.address, 11000, 10000, 60);
+      const capturedSupply = await asset.totalSupply();
+      await helpers.updatePrice(priceManager, apxRegistry, asset.address, 11000, 60, capturedSupply);
       console.log("price updated");
 
       //// Asset owner liquidates asset
@@ -325,7 +326,7 @@ describe("Full test", function () {
       console.log("fetched issuer for id=0", fetchedIssuerById);
 
       //// Fetch Asset instance by id
-      const fetchedAssetById = await helpers.fetchAssetStateById(assetTransferableFactory, 0);
+      const fetchedAssetById = await helpers.fetchAssetTransferableStateById(assetTransferableFactory, 0);
       console.log("fetched asset for id=0", fetchedAssetById);
 
       //// Fetch Crowdfunding campaign instance by id
@@ -347,10 +348,6 @@ describe("Full test", function () {
       //// Fetch issuer approved wallets
       const walletRecords = await helpers.fetchWalletRecords(issuer);
       console.log("Wallet records", walletRecords);
-
-      //// Fetch issuer approved campaigns
-      const campaignRecords = await helpers.fetchCampaignRecords(asset);
-      console.log("Campaign records", campaignRecords);
 
       //// Fetch campaigns for issuer
       const campaignStates = await helpers.queryCampaignsForIssuer(queryService, cfManagerFactory, issuer);

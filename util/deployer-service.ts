@@ -110,7 +110,8 @@ export async function createIssuerAssetCampaign(
     assetOwner: String,
     assetAnsName: String,
     assetInitialTokenSupply: Number,
-    assetWhitelistRequired: boolean,
+    assetWhitelistRequiredForRevenueClaim: boolean,
+    assetWhitelistRequiredForLiquidationClaim: boolean,
     assetName: String,
     assetSymbol: String,
     assetInfo: String,
@@ -123,6 +124,7 @@ export async function createIssuerAssetCampaign(
     cfManagerTokensToSellAmount: Number,
     cfManagerWhitelistRequired: boolean,
     cfManagerInfo: String,
+    apxRegistry: String,
     assetFactory: Contract,
     cfManagerFactory: Contract,
     deployerService: Contract
@@ -140,7 +142,8 @@ export async function createIssuerAssetCampaign(
         assetOwner,
         assetAnsName,
         assetInitialTokenSupplyWei,
-        assetWhitelistRequired,
+        assetWhitelistRequiredForRevenueClaim,
+        assetWhitelistRequiredForLiquidationClaim,
         assetName,
         assetSymbol,
         assetInfo,
@@ -152,7 +155,8 @@ export async function createIssuerAssetCampaign(
         cfManagerMaxInvestmentWei,
         cfManagerTokensToSellAmountWei,
         cfManagerWhitelistRequired,
-        cfManagerInfo
+        cfManagerInfo,
+        apxRegistry
       ]
     );
     const receipt = await ethers.provider.waitForTransaction(deployTx.hash);

@@ -11,7 +11,12 @@ interface IApxAssetsRegistry {
     function transferPriceManagerRole(address newPriceManager) external;
     function registerAsset(address original, address mirrored, bool state) external;
     function updateState(address asset, bool state) external;
-    function updatePrice(address asset, uint256 price, uint256 pricePrecision, uint256 expiry) external;
+    function updatePrice(
+        address asset,
+        uint256 price,
+        uint256 expiry,
+        uint256 capturedSupply
+    ) external;
     function migrate(address newAssetsRegistry, address originalAsset) external;
 
     // READ
