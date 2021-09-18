@@ -2,8 +2,8 @@
 import { ethers } from "hardhat";
 import { Contract, Signer } from "ethers";
 import { expect } from "chai";
-import * as helpers from "../util/helpers";
-import * as deployerServiceUtil from "../util/deployer-service";
+import * as helpers from "../../util/helpers";
+import * as deployerServiceUtil from "../../util/deployer-service";
 
 describe("Full test", function () {
 
@@ -224,8 +224,7 @@ describe("Full test", function () {
       await helpers.registerAsset(assetManager, apxRegistry, asset.address, asset.address);
       // update market price for asset
       // price: $0.70, expiry: 60 seconds
-      const capturedSupply = await asset.totalSupply();
-      await helpers.updatePrice(priceManager, apxRegistry, asset.address, 11000, 60, capturedSupply);
+      await helpers.updatePrice(priceManager, apxRegistry, asset, 11000, 60);
       console.log("price updated");
 
       //// Asset owner liquidates asset

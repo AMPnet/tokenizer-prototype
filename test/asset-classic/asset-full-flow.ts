@@ -1,8 +1,8 @@
 import { ethers } from "hardhat";
 import { Contract, Signer } from "ethers";
 import { expect } from "chai";
-import * as helpers from "../util/helpers";
-import * as deployerServiceUtil from "../util/deployer-service";
+import * as helpers from "../../util/helpers";
+import * as deployerServiceUtil from "../../util/deployer-service";
 
 describe("Full test", function () {
 
@@ -242,8 +242,7 @@ describe("Full test", function () {
 
       // update market price for asset
       // price: $0.70, expiry: 60 seconds
-      const capturedSupply = await mirroredAsset.totalSupply();
-      await helpers.updatePrice(priceManager, apxRegistry, mirroredAsset.address, 11000, 60, capturedSupply);
+      await helpers.updatePrice(priceManager, apxRegistry, mirroredAsset, 11000, 60);
       console.log("price updated");
 
       //// Asset owner liquidates asset

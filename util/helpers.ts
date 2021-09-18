@@ -1,5 +1,5 @@
 import { ethers } from "hardhat";
-import { BigNumber, Contract, Signer } from "ethers";
+import { Contract, Signer } from "ethers";
 import * as filters from "./filters";
 
 export async function deployStablecoin(deployer: Signer, supply: string, confirmations: number = 1): Promise<Contract> {
@@ -426,8 +426,9 @@ export async function registerAsset(assetManager: Signer, apxRegistry: Contract,
 export async function updateState(assetManager: Signer, apxRegistry: Contract, asset: String, state: boolean) {
   await apxRegistry.connect(assetManager).updateState(asset, state);
 }
-export async function updatePrice(priceManager: Signer, apxRegistry: Contract, asset: String, price: Number, expiry: Number, capturedSupply: BigNumber) {
-  await apxRegistry.connect(priceManager).updatePrice(asset, price, expiry, capturedSupply);
+export async function updatePrice(priceManager: Signer, apxRegistry: Contract, asset: Contract, price: Number, expiry: Number) {
+  const capturedSupply = await asset.totalSupply();
+  await apxRegistry.connect(priceManager).updatePrice(asset.address, price, expiry, capturedSupply);
 }
 
 /**

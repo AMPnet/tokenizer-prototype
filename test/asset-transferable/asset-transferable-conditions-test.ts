@@ -6,7 +6,7 @@ import * as deployerServiceUtil from "../../util/deployer-service";
 import {expect} from "chai";
 import {it} from "mocha";
 
-describe("Asset transferable test", function () {
+describe("Asset transferable - test function conditions", function () {
 
     //////// FACTORIES ////////
     let issuerFactory: Contract;
@@ -269,7 +269,7 @@ describe("Asset transferable test", function () {
         await stablecoin.transfer(await issuerOwner.getAddress(), ethers.utils.parseEther(liquidationFunds.toString()));
         await stablecoin.connect(assetManager).approve(asset.address, ethers.utils.parseEther(liquidationFunds.toString()));
         await helpers.registerAsset(assetManager, apxRegistry, asset.address, asset.address);
-        await helpers.updatePrice(priceManager, apxRegistry, asset.address, 1, 1, 60);
+        await helpers.updatePrice(priceManager, apxRegistry, asset, 1, 60);
         await helpers.liquidate(issuerOwner, asset, stablecoin, liquidationFunds);
     }
 
