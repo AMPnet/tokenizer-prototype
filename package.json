@@ -8,8 +8,8 @@
     "artifacts"
   ],
   "scripts": {
-    "lint": "hh check",
-    "test": "hh test"
+    "lint": "npx hardhat check",
+    "test": "npx hardhat test"
   },
   "repository": {
     "type": "git",
