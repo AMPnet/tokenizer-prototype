@@ -20,9 +20,9 @@ contract Asset is IAsset, ERC20Snapshot {
     //------------------------
     uint256 constant public override priceDecimalsPrecision = 10 ** 4;
 
-    //----------------------
+    //-----------------------
     //  STATE
-    //------------------------
+    //-----------------------
     Structs.AssetState private state;
     Structs.InfoEntry[] private infoHistory;
     Structs.TokenSaleInfo[] private sellHistory;
@@ -293,10 +293,6 @@ contract Asset is IAsset, ERC20Snapshot {
     
     function getState() external view override returns (Structs.AssetState memory) {
         return state;
-    }
-
-    function getOwner() external view override returns (address) {
-        return state.owner;
     }
 
     function getInfoHistory() external view override returns (Structs.InfoEntry[] memory) {

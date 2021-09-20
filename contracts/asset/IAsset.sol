@@ -25,7 +25,6 @@ interface IAsset is IAssetCommon {
     // Read
 
     function getState() external view returns (Structs.AssetState memory);
-    function getOwner() external view returns (address);
     function getInfoHistory() external view returns (Structs.InfoEntry[] memory);
     function getSellHistory() external view returns (Structs.TokenSaleInfo[] memory);
     
