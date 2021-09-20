@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "../../shared/ICampaignCommon.sol";
 import "../../shared/Structs.sol";
 
-interface ICfManagerSoftcap {
+interface ICfManagerSoftcap is ICampaignCommon {
     function setInfo(string memory info) external;
     function getInfoHistory() external view returns (Structs.InfoEntry[] memory);
     function getState() external view returns (Structs.CfManagerSoftcapState memory);

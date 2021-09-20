@@ -63,11 +63,9 @@ contract AssetTransferable is IAssetTransferable, IChildToken, ERC20Snapshot {
         bool assetApprovedByIssuer = (IIssuer(params.issuer).getState().owner == params.owner);
         address contractAddress = address(this);
         state = Structs.AssetTransferableState(
-            params.id,
+            params.flavor,
+            params.version,
             contractAddress,
-            params.ansName,
-            params.ansId,
-            msg.sender,
             params.owner,
             params.initialTokenSupply,
             params.whitelistRequiredForRevenueClaim,
@@ -243,13 +241,28 @@ contract AssetTransferable is IAssetTransferable, IChildToken, ERC20Snapshot {
     //------------------------
     //  IAsset IMPL - Read
     //------------------------
+    function flavor() external view override returns (string memory) { return state.flavor; }
+
+    function version() external view override returns (string memory) { return state.version; }
+    
+    function commonState() external view override returns (Structs.AssetCommonState memory) {
+        return Structs.AssetCommonState(
+            state.flavor,
+            state.version,
+            state.contractAddress,
+            state.owner,
+            state.info,
+            state.name,
+            state.symbol,
+            totalSupply(),
+            decimals(),
+            state.issuer
+        );
+    }
+
     function getState() external view override returns (Structs.AssetTransferableState memory) {
         return state;
     }
-
-    function getIssuerAddress() external view override returns (address) { return state.issuer; }
-
-    function getAssetFactory() external view override returns (address) { return state.createdBy; }
 
     function getInfoHistory() external view override returns (Structs.InfoEntry[] memory) {
         return infoHistory;

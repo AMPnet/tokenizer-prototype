@@ -4,29 +4,33 @@ pragma solidity ^0.8.0;
 import "../asset/IAssetFactory.sol";
 import "../asset/Asset.sol";
 import "../shared/Structs.sol";
+import "../registry/INameRegistry.sol";
 
 contract AssetFactory is IAssetFactory {
+
+    string constant public FLAVOR = "AssetV1";
+    string constant public VERSION = "1.0.13";
     
-    event AssetCreated(address indexed creator, address asset, uint256 id, uint256 timestamp);
+    event AssetCreated(address indexed creator, address asset, uint256 timestamp);
 
     address[] public instances;
     mapping (address => address[]) instancesPerIssuer;
-    mapping (address => mapping (string => address)) public override namespace;
 
     function create(Structs.AssetFactoryParams memory params) public override returns (address) {
-        require(namespace[params.issuer][params.ansName] == address(0), "AssetFactory: asset with this name already exists");
-        uint256 id = instances.length;
-        uint256 ansId = instancesPerIssuer[params.issuer].length;
+        INameRegistry nameRegistry = INameRegistry(params.nameRegistry);
+        require(
+            nameRegistry.getAsset(params.mappedName) == address(0),
+            "AssetFactory: asset with this name already exists"
+        );
         address asset = 
             address(
                 new Asset(
                     Structs.AssetConstructorParams(
-                        id,
+                        FLAVOR,
+                        VERSION,
                         params.creator,
                         params.issuer,
                         params.apxRegistry,
-                        params.ansName,
-                        ansId,
                         params.initialTokenSupply,
                         params.transferable,
                         params.whitelistRequiredForRevenueClaim,
@@ -38,8 +42,7 @@ contract AssetFactory is IAssetFactory {
         ));
         instances.push(asset);
         instancesPerIssuer[params.issuer].push(asset);
-        namespace[params.issuer][params.ansName] = asset;
-        emit AssetCreated(params.creator, asset, id, block.timestamp);
+        emit AssetCreated(params.creator, asset, block.timestamp);
         return asset;
     }
 

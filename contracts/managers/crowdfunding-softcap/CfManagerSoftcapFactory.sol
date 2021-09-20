@@ -3,46 +3,46 @@ pragma solidity ^0.8.0;
 
 import "./CfManagerSoftcap.sol";
 import "./ICfManagerSoftcapFactory.sol";
-import "../../asset/IAsset.sol";
+import "../../shared/IAssetCommon.sol";
+import "../../registry/INameRegistry.sol";
 
 contract CfManagerSoftcapFactory is ICfManagerSoftcapFactory {
-
+    
+    string constant public FLAVOR = "CfManagerSoftcapV1";
+    string constant public VERSION = "1.0.13";
+    
     address[] public instances;
     mapping (address => address[]) instancesPerIssuer;
     mapping (address => address[]) instancesPerAsset;
-    mapping (address => mapping(string => address)) public override namespace;
 
     event CfManagerSoftcapCreated(
         address indexed creator,
         address cfManager,
-        uint256 id,
         address asset,
         uint256 timestamp
     );
 
     function create(
         address owner,
-        string memory ansName,
+        string memory mappedName,
         address assetAddress,
         uint256 initialPricePerToken,
         uint256 softCap,
         uint256 minInvestment,
         uint256 maxInvestment,
         bool whitelistRequired,
-        string memory info
+        string memory info,
+        address nameRegistry
     ) external override returns (address) {
-        address issuer = IAssetCommon(assetAddress).getIssuerAddress();
+        INameRegistry registry = INameRegistry(nameRegistry);
         require(
-            namespace[issuer][ansName] == address(0),
-            "CfManagerSoftcapFactory: issuer with this name already exists"
+            registry.getCampaign(mappedName) == address(0),
+            "CfManagerSoftcapFactory: campaign with this name already exists"
         );
-        uint256 id = instances.length;
-        uint256 ansId = instancesPerIssuer[issuer].length;
         address cfManagerSoftcap = address(new CfManagerSoftcap(
-            id,
+            FLAVOR,
+            VERSION,
             owner,
-            ansName,
-            ansId,
             assetAddress,
             initialPricePerToken,
             softCap,
@@ -52,10 +52,11 @@ contract CfManagerSoftcapFactory is ICfManagerSoftcapFactory {
             info
         ));
         instances.push(cfManagerSoftcap);
+        address issuer = IAssetCommon(assetAddress).commonState().issuer;
         instancesPerIssuer[issuer].push(cfManagerSoftcap);
         instancesPerAsset[assetAddress].push(cfManagerSoftcap);
-        namespace[issuer][ansName] = cfManagerSoftcap;
-        emit CfManagerSoftcapCreated(owner, cfManagerSoftcap, id, address(assetAddress), block.timestamp);
+        registry.mapCampaign(mappedName, cfManagerSoftcap);
+        emit CfManagerSoftcapCreated(owner, cfManagerSoftcap, address(assetAddress), block.timestamp);
         return cfManagerSoftcap;
     }
 

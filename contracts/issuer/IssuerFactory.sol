@@ -3,35 +3,42 @@ pragma solidity ^0.8.0;
 
 import "./Issuer.sol";
 import "./IIssuerFactory.sol";
+import "../registry/INameRegistry.sol";
 
 contract IssuerFactory is IIssuerFactory {
 
-    address[] public instances;
-    mapping (string => address) public override namespace;
+    string constant public FLAVOR = "IssuerV1";
+    string constant public VERSION = "1.0.13";
 
-    event IssuerCreated(address indexed creator, address issuer, uint256 id, uint256 timestamp);
+    address[] public instances;
+
+    event IssuerCreated(address indexed creator, address issuer, uint256 timestamp);
 
     function create(
         address owner,
-        string memory ansName,
+        string memory mappedName,
         address stablecoin,
         address walletApprover,
-        string memory info
+        string memory info,
+        address nameRegistry
     ) external override returns (address)
     {
-        require(namespace[ansName] == address(0), "IssuerFactory: issuer with this name already exists");
-        uint256 id = instances.length;
+        INameRegistry registry = INameRegistry(nameRegistry);
+        require(
+            registry.getIssuer(mappedName) == address(0),
+            "IssuerFactory: issuer with this name already exists"
+        );
         address issuer = address(new Issuer(
-            id,
+            FLAVOR,
+            VERSION,
             owner,
-            ansName,
             stablecoin,
             walletApprover,
             info
         ));
         instances.push(issuer);
-        namespace[ansName] = issuer;
-        emit IssuerCreated(owner, issuer, id, block.timestamp);
+        registry.mapIssuer(mappedName, issuer);
+        emit IssuerCreated(owner, issuer, block.timestamp);
         return issuer;
     }
 

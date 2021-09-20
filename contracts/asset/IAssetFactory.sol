@@ -10,7 +10,5 @@ interface IAssetFactory {
     function getInstances() external view returns (address[] memory);
     
     function getInstancesForIssuer(address issuer) external view returns (address[] memory);
-
-    function namespace(address issuer, string memory ansName) external view returns (address);
     
 }

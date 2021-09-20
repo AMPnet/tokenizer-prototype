@@ -35,25 +35,21 @@ contract PayoutManager is IPayoutManager {
     //  CONSTRUCTOR
     //------------------------
     constructor(
-        uint256 id,
+        string memory contractFlavor,
+        string memory contractVersion,
         address owner,
-        string memory ansName,
-        uint256 ansId,
         address assetAddress,
         string memory info
     ) {
         require(owner != address(0), "PayoutManager: invalid owner");
         require(assetAddress != address(0), "PayoutManager: invalid asset address");
-        address assetFactory = IAssetCommon(assetAddress).getAssetFactory();
+        address assetFactory = IAssetCommon(assetAddress).commonState().issuer;
         state = Structs.PayoutManagerState(
-            id,
+            contractFlavor,
+            contractVersion,
             address(this),
-            ansName,
-            ansId,
-            msg.sender,
             owner,
             assetAddress,
-            assetFactory,
             0, 0,
             info
         );
@@ -171,7 +167,7 @@ contract PayoutManager is IPayoutManager {
     }
 
     function _issuer() private view returns (IIssuer) {
-        return IIssuer(_asset().getIssuerAddress());
+        return IIssuer(_asset().commonState().issuer);
     }
 
 }

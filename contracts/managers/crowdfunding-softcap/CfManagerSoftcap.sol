@@ -62,10 +62,9 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
     //  CONSTRUCTOR
     //------------------------
     constructor(
-        uint256 id,
+        string memory contractFlavor,
+        string memory contractVersion,
         address owner,
-        string memory ansName,
-        uint256 ansId,
         address asset,
         uint256 tokenPrice,
         uint256 softCap,
@@ -79,17 +78,13 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
         require(tokenPrice > 0, "CfManagerSoftcap: Initial price per token must be greater than 0.");
         require(maxInvestment >= minInvestment, "CfManagerSoftcap: Max has to be bigger than min investment.");
         require(maxInvestment > 0, "CfManagerSoftcap: Max investment has to be bigger than 0.");
-        address issuer = address(IAssetCommon(asset).getIssuerAddress());
-        address assetFactory = address(IAssetCommon(asset).getAssetFactory());
+        address issuer = address(IAssetCommon(asset).commonState().issuer);
         state = Structs.CfManagerSoftcapState(
-            id,
+            contractFlavor,
+            contractVersion,
             address(this),
-            ansName,
-            ansId,
-            msg.sender,
             owner,
             asset,
-            assetFactory,
             issuer,
             tokenPrice,
             softCap,
@@ -120,8 +115,8 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
 
     modifier active() {
         require(
-            !state.cancelled,
-            "CfManagerSoftcap: The campaign has been cancelled."
+            !state.canceled,
+            "CfManagerSoftcap: The campaign has been canceled."
         );
         _;
     }
@@ -241,7 +236,7 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
     }
 
     function cancelCampaign() external ownerOnly active notFinalized {
-        state.cancelled = true;
+        state.canceled = true;
         uint256 tokenBalance = _assetERC20().balanceOf(address(this));
         if(tokenBalance > 0) {
             _assetERC20().safeTransfer(msg.sender, tokenBalance);
@@ -252,6 +247,27 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
     //------------------------
     //  ICfManagerSoftcap IMPL
     //------------------------
+    function flavor() external view override returns (string memory) { return state.flavor; }
+
+    function version() external view override returns (string memory) { return state.version; }
+    
+    function commonState() external view override returns (Structs.CampaignCommonState memory) {
+        return Structs.CampaignCommonState(
+            state.flavor,
+            state.version,
+            state.contractAddress,
+            state.owner,
+            state.info,
+            state.asset,
+            state.softCap,
+            state.finalized,
+            state.canceled,
+            state.tokenPrice,
+            state.totalFundsRaised,
+            state.totalTokensSold
+        );
+    }
+
     function setInfo(string memory info) external override ownerOnly {
         infoHistory.push(Structs.InfoEntry(
             info,

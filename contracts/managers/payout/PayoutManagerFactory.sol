@@ -5,13 +5,16 @@ import "./IPayoutManagerFactory.sol";
 import "./PayoutManager.sol";
 import "../../issuer/IIssuer.sol";
 import "../../shared/IAssetCommon.sol";
+import "../../registry/INameRegistry.sol";
 
 contract PayoutManagerFactory is IPayoutManagerFactory {
+
+    string constant public FLAVOR = "PayoutManagerV1";
+    string constant public VERSION = "1.0.13";
 
     event PayoutManagerCreated(
         address indexed creator,
         address payoutManager,
-        uint256 id,
         address asset,
         uint256 timestamp
     );
@@ -19,27 +22,23 @@ contract PayoutManagerFactory is IPayoutManagerFactory {
     address[] public instances;
     mapping (address => address[]) instancesPerIssuer;
     mapping (address => address[]) instancesPerAsset;
-    mapping (address => mapping (string => address)) public override namespace;
 
     function create(
         address owner,
-        string memory ansName,
+        string memory mappedName,
         address assetAddress,
-        string memory info
+        string memory info,
+        address nameRegistry
     ) public override returns (address) {
-        address issuer = IAssetCommon(assetAddress).getIssuerAddress();
-        require(
-            namespace[issuer][ansName] == address(0),
-            "PayoutManagerFactory: issuer with this name already exists"
-        );
-        uint256 id = instances.length;
-        uint256 ansId = instancesPerIssuer[issuer].length;
-        address payoutManager = address(new PayoutManager(id, owner, ansName, ansId, assetAddress, info));
+        INameRegistry registry = INameRegistry(nameRegistry);
+        // TODO: check for registry if manager exists
+        address payoutManager = address(new PayoutManager(FLAVOR, VERSION, owner, assetAddress, info));
+        address issuer = IAssetCommon(assetAddress).commonState().issuer;
         instances.push(payoutManager);
         instancesPerIssuer[issuer].push(payoutManager);
         instancesPerAsset[assetAddress].push(payoutManager);
-        namespace[issuer][ansName] = payoutManager;
-        emit PayoutManagerCreated(owner, payoutManager, id, assetAddress, block.timestamp);
+        // TODO: map manager
+        emit PayoutManagerCreated(owner, payoutManager, assetAddress, block.timestamp);
         return payoutManager;
     }
 
