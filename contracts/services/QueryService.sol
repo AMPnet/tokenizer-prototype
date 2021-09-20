@@ -12,7 +12,7 @@ contract QueryService {
         uint256 tokenAmount;
         uint256 tokenValue;
     }
-
+    
     function getCampaignsForIssuer(
         address issuer,
         address cfManagerFactoryAddress
