@@ -7,6 +7,7 @@ import "./Structs.sol";
 interface IAssetCommon is IVersioned {
     
     // WRITE
+    function setInfo(string memory info) external;
     function finalizeSale() external;
     
     // READ

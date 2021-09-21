@@ -19,8 +19,9 @@ describe("Full test", function () {
   let deployerService: Contract;
   let queryService: Contract;
 
-  ////////// APX //////////
+  ////////// REGISTRIES //////////
   let apxRegistry: Contract;
+  let nameRegistry: Contract;
 
   //////// SIGNERS ////////
   let deployer: Signer;
@@ -54,12 +55,6 @@ describe("Full test", function () {
     mark            = accounts[8];
 
     stablecoin = await helpers.deployStablecoin(deployer, "1000000000000");
-    apxRegistry = await helpers.deployApxRegistry(
-      deployer, 
-      await deployer.getAddress(), 
-      await assetManager.getAddress(), 
-      await priceManager.getAddress()
-    );
     
     const factories = await helpers.deployFactories(deployer);
     issuerFactory = factories[0];
@@ -67,6 +62,18 @@ describe("Full test", function () {
     assetTransferableFactory = factories[2];
     cfManagerFactory = factories[3];
     payoutManagerFactory = factories[4];
+
+    apxRegistry = await helpers.deployApxRegistry(
+      deployer, 
+      await deployer.getAddress(), 
+      await assetManager.getAddress(), 
+      await priceManager.getAddress()
+    );
+    nameRegistry = await helpers.deployNameRegistry(
+      deployer,
+      await deployer.getAddress(),
+      factories.map(factory => factory.address)
+    );
 
     const walletApproverAddress = await walletApprover.getAddress();
     const services = await helpers.deployServices(
@@ -116,7 +123,8 @@ describe("Full test", function () {
         stablecoin,
         walletApproverService.address,
         issuerInfoHash,
-        issuerFactory
+        issuerFactory,
+        nameRegistry
       );
       const contracts = await deployerServiceUtil.createAssetTransferableCampaign(
         issuer,
@@ -138,6 +146,7 @@ describe("Full test", function () {
         campaignWhitelistRequired,
         campaignInfoHash,
         apxRegistry.address,
+        nameRegistry.address,
         childChainManager,
         assetTransferableFactory,
         cfManagerFactory,
@@ -185,7 +194,8 @@ describe("Full test", function () {
         payoutManagerAnsName,
         asset,
         payoutManagerInfoHash,
-        payoutManagerFactory
+        payoutManagerFactory,
+        nameRegistry
       );
       await helpers.setInfo(issuerOwner, payoutManager, updatedPayoutManagerInfoHash);
 
@@ -349,11 +359,11 @@ describe("Full test", function () {
       console.log("Wallet records", walletRecords);
 
       //// Fetch campaigns for issuer
-      const campaignStates = await helpers.queryCampaignsForIssuer(queryService, cfManagerFactory, issuer);
+      const campaignStates = await helpers.queryCampaignsForIssuer(queryService, cfManagerFactory, issuer, nameRegistry);
       console.log("Campaign states", campaignStates);
 
       //// Fetch campaigns for issuer and investor
-      const campaignStatesForInvestor = await helpers.queryCampaignsForIssuerInvestor(queryService, cfManagerFactory, issuer, aliceAddress);
+      const campaignStatesForInvestor = await helpers.queryCampaignsForIssuerInvestor(queryService, cfManagerFactory, issuer, aliceAddress, nameRegistry);
       console.log("Campaign states for investor", campaignStatesForInvestor);
     
     }

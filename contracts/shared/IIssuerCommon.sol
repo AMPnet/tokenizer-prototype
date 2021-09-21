@@ -5,6 +5,9 @@ import "./IVersioned.sol";
 import "./Structs.sol";
 
 interface IIssuerCommon is IVersioned {
+
+    // WRITE
+    function setInfo(string memory info) external;
     
     // READ
     function commonState() external view returns (Structs.IssuerCommonState memory);

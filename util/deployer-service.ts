@@ -26,7 +26,9 @@ export async function createIssuerAssetCampaign(
     issuerFactory: Contract,
     assetFactory: Contract,
     cfManagerFactory: Contract,
-    deployerService: Contract
+    deployerService: Contract,
+    apxRegistry: Contract,
+    nameRegistry: Contract
   ): Promise<Array<Contract>> {
     const assetInitialTokenSupplyWei = ethers.utils.parseEther(assetInitialTokenSupply.toString());
     const cfManagerSoftcapWei = ethers.utils.parseEther(cfManagerSoftcap.toString());
@@ -58,7 +60,9 @@ export async function createIssuerAssetCampaign(
         cfManagerMaxInvestmentWei,
         cfManagerTokensToSellAmountWei,
         cfManagerWhitelistRequired,
-        cfManagerInfo
+        cfManagerInfo,
+        apxRegistry.address,
+        nameRegistry.address
       ]
     );
     const receipt = await ethers.provider.waitForTransaction(deployTx.hash);
@@ -71,9 +75,8 @@ export async function createIssuerAssetCampaign(
         const parsedLog = issuerFactory.interface.parseLog(log);
         if (parsedLog.name == "IssuerCreated") {
           const ownerAddress = parsedLog.args.creator;
-          const id = parsedLog.args.id;
           issuerAddress = parsedLog.args.issuer;
-          console.log(`\nIssuer deployed\n\tAt address: ${issuerAddress}\n\tOwner: ${ownerAddress}\n\tID: ${id}`);
+          console.log(`\nIssuer deployed\n\tAt address: ${issuerAddress}\n\tOwner: ${ownerAddress}`);
         }
       } catch (_) {}
   
@@ -81,9 +84,8 @@ export async function createIssuerAssetCampaign(
         const parsedLog = assetFactory.interface.parseLog(log);
         if (parsedLog.name == "AssetCreated") {
           const ownerAddress = parsedLog.args.creator;
-          const id = parsedLog.args.id;
           assetAddress = parsedLog.args.asset;
-          console.log(`\nAsset deployed\n\tAt address: ${assetAddress}\n\tOwner: ${ownerAddress}\n\tID: ${id}`);
+          console.log(`\nAsset deployed\n\tAt address: ${assetAddress}\n\tOwner: ${ownerAddress}`);
         }
       } catch (_) {}
   
@@ -92,9 +94,8 @@ export async function createIssuerAssetCampaign(
         if (parsedLog.name == "CfManagerSoftcapCreated") {
           const ownerAddress = parsedLog.args.creator;
           const assetAddress = parsedLog.args.asset;
-          const id = parsedLog.args.id;
           cfManagerAddress = parsedLog.args.cfManager;
-          console.log(`\nCrowdfunding Campaign deployed\n\tAt address: ${cfManagerAddress}\n\tOwner: ${ownerAddress}\n\tAsset: ${assetAddress}\n\tID: ${id}`);
+          console.log(`\nCrowdfunding Campaign deployed\n\tAt address: ${cfManagerAddress}\n\tOwner: ${ownerAddress}\n\tAsset: ${assetAddress}`);
         }
       } catch (_) {}
     }
@@ -108,7 +109,7 @@ export async function createIssuerAssetCampaign(
   export async function createAssetCampaign(
     issuer: Contract,
     assetOwner: String,
-    assetAnsName: String,
+    assetMappedName: String,
     assetInitialTokenSupply: Number,
     assetWhitelistRequiredForRevenueClaim: boolean,
     assetWhitelistRequiredForLiquidationClaim: boolean,
@@ -116,7 +117,7 @@ export async function createIssuerAssetCampaign(
     assetSymbol: String,
     assetInfo: String,
     cfManagerOwner: String,
-    cfManagerAnsName: String,
+    cfManagerMappedName: String,
     cfManagerPricePerToken: Number,
     cfManagerSoftcap: Number,
     cfManagerMinInvestment: Number,
@@ -125,6 +126,7 @@ export async function createIssuerAssetCampaign(
     cfManagerWhitelistRequired: boolean,
     cfManagerInfo: String,
     apxRegistry: String,
+    nameRegistry: String,
     assetFactory: Contract,
     cfManagerFactory: Contract,
     deployerService: Contract
@@ -140,7 +142,7 @@ export async function createIssuerAssetCampaign(
         cfManagerFactory.address,
         issuer.address,
         assetOwner,
-        assetAnsName,
+        assetMappedName,
         assetInitialTokenSupplyWei,
         assetWhitelistRequiredForRevenueClaim,
         assetWhitelistRequiredForLiquidationClaim,
@@ -148,7 +150,7 @@ export async function createIssuerAssetCampaign(
         assetSymbol,
         assetInfo,
         cfManagerOwner,
-        cfManagerAnsName,
+        cfManagerMappedName,
         cfManagerPricePerToken,
         cfManagerSoftcapWei,
         cfManagerMinInvestmentWei,
@@ -156,7 +158,8 @@ export async function createIssuerAssetCampaign(
         cfManagerTokensToSellAmountWei,
         cfManagerWhitelistRequired,
         cfManagerInfo,
-        apxRegistry
+        apxRegistry,
+        nameRegistry
       ]
     );
     const receipt = await ethers.provider.waitForTransaction(deployTx.hash);
@@ -168,9 +171,8 @@ export async function createIssuerAssetCampaign(
         const parsedLog = assetFactory.interface.parseLog(log);
         if (parsedLog.name == "AssetCreated") {
           const ownerAddress = parsedLog.args.creator;
-          const id = parsedLog.args.id;
           assetAddress = parsedLog.args.asset;
-          console.log(`\nAsset deployed\n\tAt address: ${assetAddress}\n\tOwner: ${ownerAddress}\n\tID: ${id}`);
+          console.log(`\nAsset deployed\n\tAt address: ${assetAddress}\n\tOwner: ${ownerAddress}`);
         }
       } catch (_) {}
   
@@ -179,9 +181,8 @@ export async function createIssuerAssetCampaign(
         if (parsedLog.name == "CfManagerSoftcapCreated") {
           const ownerAddress = parsedLog.args.creator;
           const assetAddress = parsedLog.args.asset;
-          const id = parsedLog.args.id;
           cfManagerAddress = parsedLog.args.cfManager;
-          console.log(`\nCrowdfunding Campaign deployed\n\tAt address: ${cfManagerAddress}\n\tOwner: ${ownerAddress}\n\tAsset: ${assetAddress}\n\tID: ${id}`);
+          console.log(`\nCrowdfunding Campaign deployed\n\tAt address: ${cfManagerAddress}\n\tOwner: ${ownerAddress}\n\tAsset: ${assetAddress}`);
         }
       } catch (_) {}
     }
@@ -193,12 +194,12 @@ export async function createIssuerAssetCampaign(
 
 export async function createIssuerAssetTransferableCampaign(
     issuerOwner: String,
-    issuerAnsName: String,
+    issuerMappedName: String,
     issuerStablecoin: String,
     issuerWalletApprover: String,
     issuerInfo: String,
     assetOwner: String,
-    assetAnsName: String,
+    assetMappedName: String,
     assetInitialTokenSupply: Number,
     assetWhitelistRequiredForRevenueClaim: boolean,
     assetWhitelistRequiredForLiquidationClaim: boolean,
@@ -206,7 +207,7 @@ export async function createIssuerAssetTransferableCampaign(
     assetSymbol: String,
     assetInfo: String,
     cfManagerOwner: String,
-    cfManagerAnsName: String,
+    cfManagerMappedName: String,
     cfManagerPricePerToken: Number,
     cfManagerSoftcap: Number,
     cfManagerMinInvestment: Number,
@@ -215,6 +216,7 @@ export async function createIssuerAssetTransferableCampaign(
     cfManagerWhitelistRequired: boolean,
     cfManagerInfo: String,
     apxRegistry: String,
+    nameRegistry: String,
     childChainManager: String,
     issuerFactory: Contract,
     assetTransferableFactory: Contract,
@@ -232,12 +234,12 @@ export async function createIssuerAssetTransferableCampaign(
         assetTransferableFactory.address,
         cfManagerFactory.address,
         issuerOwner,
-        issuerAnsName,
+        issuerMappedName,
         issuerStablecoin,
         issuerWalletApprover,
         issuerInfo,
         assetOwner,
-        assetAnsName,
+        assetMappedName,
         assetInitialTokenSupplyWei,
         assetWhitelistRequiredForRevenueClaim,
         assetWhitelistRequiredForLiquidationClaim,
@@ -245,7 +247,7 @@ export async function createIssuerAssetTransferableCampaign(
         assetSymbol,
         assetInfo,
         cfManagerOwner,
-        cfManagerAnsName,
+        cfManagerMappedName,
         cfManagerPricePerToken,
         cfManagerSoftcapWei,
         cfManagerMinInvestmentWei,
@@ -254,6 +256,7 @@ export async function createIssuerAssetTransferableCampaign(
         cfManagerWhitelistRequired,
         cfManagerInfo,
         apxRegistry,
+        nameRegistry,
         childChainManager
       ]
     );
@@ -267,9 +270,8 @@ export async function createIssuerAssetTransferableCampaign(
         const parsedLog = issuerFactory.interface.parseLog(log);
         if (parsedLog.name == "IssuerCreated") {
           const ownerAddress = parsedLog.args.creator;
-          const id = parsedLog.args.id;
           issuerAddress = parsedLog.args.issuer;
-          console.log(`\nIssuer deployed\n\tAt address: ${issuerAddress}\n\tOwner: ${ownerAddress}\n\tID: ${id}`);
+          console.log(`\nIssuer deployed\n\tAt address: ${issuerAddress}\n\tOwner: ${ownerAddress}`);
         }
       } catch (_) {}
   
@@ -277,9 +279,8 @@ export async function createIssuerAssetTransferableCampaign(
         const parsedLog = assetTransferableFactory.interface.parseLog(log);
         if (parsedLog.name == "AssetTransferableCreated") {
           const ownerAddress = parsedLog.args.creator;
-          const id = parsedLog.args.id;
           assetTransferableAddress = parsedLog.args.asset;
-          console.log(`\nAsset deployed\n\tAt address: ${assetTransferableAddress}\n\tOwner: ${ownerAddress}\n\tID: ${id}`);
+          console.log(`\nAsset deployed\n\tAt address: ${assetTransferableAddress}\n\tOwner: ${ownerAddress}`);
         }
       } catch (_) {}
   
@@ -288,9 +289,8 @@ export async function createIssuerAssetTransferableCampaign(
         if (parsedLog.name == "CfManagerSoftcapCreated") {
           const ownerAddress = parsedLog.args.creator;
           const assetAddress = parsedLog.args.asset;
-          const id = parsedLog.args.id;
           cfManagerAddress = parsedLog.args.cfManager;
-          console.log(`\nCrowdfunding Campaign deployed\n\tAt address: ${cfManagerAddress}\n\tOwner: ${ownerAddress}\n\tAsset: ${assetAddress}\n\tID: ${id}`);
+          console.log(`\nCrowdfunding Campaign deployed\n\tAt address: ${cfManagerAddress}\n\tOwner: ${ownerAddress}\n\tAsset: ${assetAddress}`);
         }
       } catch (_) {}
     }
@@ -304,7 +304,7 @@ export async function createIssuerAssetTransferableCampaign(
 export async function createAssetTransferableCampaign(
     issuer: Contract,
     assetOwner: String,
-    assetAnsName: String,
+    assetMappedName: String,
     assetInitialTokenSupply: Number,
     assetWhitelistRequiredForRevenueClaim: boolean,
     assetWhitelistRequiredForLiquidationClaim: boolean,
@@ -312,7 +312,7 @@ export async function createAssetTransferableCampaign(
     assetSymbol: String,
     assetInfo: String,
     cfManagerOwner: String,
-    cfManagerAnsName: String,
+    cfManagerMappedName: String,
     cfManagerPricePerToken: Number,
     cfManagerSoftcap: Number,
     cfManagerMinInvestment: Number,
@@ -321,6 +321,7 @@ export async function createAssetTransferableCampaign(
     cfManagerWhitelistRequired: boolean,
     cfManagerInfo: String,
     apxRegistry: String,
+    nameRegistry: String,
     childChainManager: String,
     assetTransferableFactory: Contract,
     cfManagerFactory: Contract,
@@ -337,7 +338,7 @@ export async function createAssetTransferableCampaign(
         cfManagerFactory.address,
         issuer.address,
         assetOwner,
-        assetAnsName,
+        assetMappedName,
         assetInitialTokenSupplyWei,
         assetWhitelistRequiredForRevenueClaim,
         assetWhitelistRequiredForLiquidationClaim,
@@ -345,7 +346,7 @@ export async function createAssetTransferableCampaign(
         assetSymbol,
         assetInfo,
         cfManagerOwner,
-        cfManagerAnsName,
+        cfManagerMappedName,
         cfManagerPricePerToken,
         cfManagerSoftcapWei,
         cfManagerMinInvestmentWei,
@@ -354,6 +355,7 @@ export async function createAssetTransferableCampaign(
         cfManagerWhitelistRequired,
         cfManagerInfo,
         apxRegistry,
+        nameRegistry,
         childChainManager
       ]
     );
@@ -366,9 +368,8 @@ export async function createAssetTransferableCampaign(
         const parsedLog = assetTransferableFactory.interface.parseLog(log);
         if (parsedLog.name == "AssetTransferableCreated") {
           const ownerAddress = parsedLog.args.creator;
-          const id = parsedLog.args.id;
           assetTransferableAddress = parsedLog.args.asset;
-          console.log(`\nAssetTransferable deployed\n\tAt address: ${assetTransferableAddress}\n\tOwner: ${ownerAddress}\n\tID: ${id}`);
+          console.log(`\nAssetTransferable deployed\n\tAt address: ${assetTransferableAddress}\n\tOwner: ${ownerAddress}`);
         }
       } catch (_) {}
   
@@ -377,9 +378,8 @@ export async function createAssetTransferableCampaign(
         if (parsedLog.name == "CfManagerSoftcapCreated") {
           const ownerAddress = parsedLog.args.creator;
           const assetAddress = parsedLog.args.asset;
-          const id = parsedLog.args.id;
           cfManagerAddress = parsedLog.args.cfManager;
-          console.log(`\nCrowdfunding Campaign deployed\n\tAt address: ${cfManagerAddress}\n\tOwner: ${ownerAddress}\n\tAsset: ${assetAddress}\n\tID: ${id}`);
+          console.log(`\nCrowdfunding Campaign deployed\n\tAt address: ${cfManagerAddress}\n\tOwner: ${ownerAddress}\n\tAsset: ${assetAddress}`);
         }
       } catch (_) {}
     }

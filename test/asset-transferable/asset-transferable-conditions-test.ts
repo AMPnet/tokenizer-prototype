@@ -20,8 +20,9 @@ describe("Asset transferable - test function conditions", function () {
     let deployerService: Contract;
     let queryService: Contract;
 
-    ////////// APX //////////
+    ////////// REGISTRIES //////////
     let apxRegistry: Contract;
+    let nameRegistry: Contract;
 
     //////// SIGNERS ////////
     let deployer: Signer;
@@ -42,7 +43,7 @@ describe("Asset transferable - test function conditions", function () {
 
     beforeEach(async function () {
         const accounts: Signer[] = await ethers.getSigners();
-
+        
         deployer        = accounts[0];
         assetManager    = accounts[1];
         priceManager    = accounts[2];
@@ -55,19 +56,25 @@ describe("Asset transferable - test function conditions", function () {
         mark            = accounts[8];
 
         stablecoin = await helpers.deployStablecoin(deployer, "1000000000000");
-        apxRegistry = await helpers.deployApxRegistry(
-            deployer,
-            await deployer.getAddress(),
-            await assetManager.getAddress(),
-            await priceManager.getAddress()
-        );
-
+        
         const factories = await helpers.deployFactories(deployer);
         issuerFactory = factories[0];
         assetFactory = factories[1];
         assetTransferableFactory = factories[2];
         cfManagerFactory = factories[3];
         payoutManagerFactory = factories[4];
+
+        apxRegistry = await helpers.deployApxRegistry(
+            deployer, 
+            await deployer.getAddress(), 
+            await assetManager.getAddress(), 
+            await priceManager.getAddress()
+        );
+        nameRegistry = await helpers.deployNameRegistry(
+            deployer,
+            await deployer.getAddress(),
+            factories.map(factory => factory.address)
+        );
 
         const walletApproverAddress = await walletApprover.getAddress();
         const services = await helpers.deployServices(
@@ -78,6 +85,7 @@ describe("Asset transferable - test function conditions", function () {
         walletApproverService = services[0];
         deployerService = services[1];
         queryService = services[2];
+
         //// Set the config for Issuer, Asset and Crowdfunding Campaign
         const issuerAnsName = "test-issuer";
         const issuerInfoHash = "issuer-info-ipfs-hash";
@@ -106,7 +114,8 @@ describe("Asset transferable - test function conditions", function () {
             stablecoin,
             walletApproverService.address,
             issuerInfoHash,
-            issuerFactory
+            issuerFactory,
+            nameRegistry
         );
         const contracts = await deployerServiceUtil.createAssetTransferableCampaign(
             issuer,
@@ -128,6 +137,7 @@ describe("Asset transferable - test function conditions", function () {
             campaignWhitelistRequired,
             campaignInfoHash,
             apxRegistry.address,
+            nameRegistry.address,
             childChainManager,
             assetTransferableFactory,
             cfManagerFactory,
@@ -136,30 +146,6 @@ describe("Asset transferable - test function conditions", function () {
         asset = contracts[0];
         cfManager = contracts[1];
     });
-
-    it(`should verify notLiquidated modifier`, async function () {
-        const modifierMessage = "Asset: Action forbidden, asset liquidated."
-        await liquidateAsset()
-
-        await expect(
-            asset.connect(assetManager).finalizeSale()
-        ).to.be.revertedWith(modifierMessage);
-        await expect(
-            asset.connect(issuerOwner).approveCampaign(cfManager.address)
-        ).to.be.revertedWith(modifierMessage);
-        await expect(
-            asset.connect(issuerOwner).suspendCampaign(cfManager.address)
-        ).to.be.revertedWith(modifierMessage);
-        await expect(
-            asset.connect(assetManager).liquidate()
-        ).to.be.revertedWith(modifierMessage);
-        await expect(
-            asset.connect(assetManager).snapshot()
-        ).to.be.revertedWith(modifierMessage);
-        await expect(
-            asset.connect(assetManager).migrateApxRegistry(cfManager.address)
-        ).to.be.revertedWith(modifierMessage);
-    })
 
     it('should verify ownerOnly modifier', async function () {
         const modifierMessage = "Asset: Only asset creator can make this action."

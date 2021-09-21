@@ -8,7 +8,6 @@ interface IIssuer is IIssuerCommon {
 
     // Write
 
-    function setInfo(string memory info) external;
     function approveWallet(address wallet) external;
     function suspendWallet(address wallet) external;
     function changeOwnership(address newOwner) external;

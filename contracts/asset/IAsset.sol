@@ -14,7 +14,6 @@ interface IAsset is IAssetCommon {
     function unlockTokens(address wallet, uint256 amount) external;
     function setCampaignState(address campaign, bool approved) external;
     function changeOwnership(address newOwner) external;
-    function setInfo(string memory info) external;
     function setWhitelistFlags(bool whitelistRequiredForRevenueClaim, bool whitelistRequiredForLiquidationClaim) external;
     function setIssuerStatus(bool status) external;
     function liquidate() external;

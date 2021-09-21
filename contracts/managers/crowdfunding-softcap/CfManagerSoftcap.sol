@@ -18,9 +18,9 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
     //------------------------
     Structs.CfManagerSoftcapState private state;
     Structs.InfoEntry[] private infoHistory;
-    mapping (address => uint256) public override claims;
-    mapping (address => uint256) public override investments;
-    mapping (address => uint256) public override tokenAmounts;
+    mapping (address => uint256) private claims;
+    mapping (address => uint256) private investments;
+    mapping (address => uint256) private tokenAmounts;
 
     //------------------------
     //  EVENTS
@@ -154,15 +154,15 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
         uint256 floatingTokens = _assetERC20().balanceOf(address(this)) - state.totalClaimableTokens;
         require(floatingTokens > 0, "CfManagerSoftcap: No more tokens available for sale.");
 
-        uint256 tokenAmount = 
+        uint256 tokens = 
             (amount / state.tokenPrice) 
                 * _asset_price_precision()
                 * _asset_decimals_precision() 
                 / _stablecoin_decimals_precision();
-        uint256 tokenValue = _token_value(tokenAmount);
-        require(tokenAmount > 0 && tokenValue > 0, "CfManagerSoftcap: Investment amount too low.");
-        require(floatingTokens >= tokenAmount, "CfManagerSoftcap: Not enough tokens left for this investment amount.");        
-        uint256 totalInvestmentValue = _token_value(tokenAmount + claims[msg.sender]);
+        uint256 tokenValue = _token_value(tokens);
+        require(tokens > 0 && tokenValue > 0, "CfManagerSoftcap: Investment amount too low.");
+        require(floatingTokens >= tokens, "CfManagerSoftcap: Not enough tokens left for this investment amount.");        
+        uint256 totalInvestmentValue = _token_value(tokens + claims[msg.sender]);
         require(
             totalInvestmentValue >= _adjusted_min_investment(floatingTokens),
             "CfManagerSoftcap: Investment amount too low."
@@ -177,31 +177,31 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
         if (claims[msg.sender] == 0) {
             state.totalInvestorsCount += 1;
         }
-        claims[msg.sender] += tokenAmount;
+        claims[msg.sender] += tokens;
         investments[msg.sender] += tokenValue;
-        tokenAmounts[msg.sender] += tokenAmount;
-        state.totalClaimableTokens += tokenAmount;
-        state.totalTokensSold += tokenAmount;
+        tokenAmounts[msg.sender] += tokens;
+        state.totalClaimableTokens += tokens;
+        state.totalTokensSold += tokens;
         state.totalFundsRaised += tokenValue;
-        emit Invest(msg.sender, state.asset, tokenAmount, tokenValue, block.timestamp);
+        emit Invest(msg.sender, state.asset, tokens, tokenValue, block.timestamp);
     }
 
     function cancelInvestment() external notFinalized {
-        uint256 tokenAmount = claims[msg.sender];
+        uint256 tokens = claims[msg.sender];
         uint256 tokenValue = investments[msg.sender];
         require(
-            tokenAmount > 0 && tokenValue > 0,
+            tokens > 0 && tokenValue > 0,
             "CfManagerSoftcap: No tokens owned."
         );
         state.totalInvestorsCount -= 1;
         claims[msg.sender] = 0;
         investments[msg.sender] = 0;
         tokenAmounts[msg.sender] = 0;
-        state.totalClaimableTokens -= tokenAmount;
-        state.totalTokensSold -= tokenAmount;
+        state.totalClaimableTokens -= tokens;
+        state.totalTokensSold -= tokens;
         state.totalFundsRaised -= tokenValue;
         _stablecoin().safeTransfer(msg.sender, tokenValue);
-        emit CancelInvestment(msg.sender, state.asset, tokenAmount, tokenValue, block.timestamp);
+        emit CancelInvestment(msg.sender, state.asset, tokens, tokenValue, block.timestamp);
     }
 
     function claim(address investor) external finalized {
@@ -268,6 +268,10 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
         );
     }
 
+    function investmentAmount(address investor) external view override returns (uint256) { return investments[investor]; }
+    function tokenAmount(address investor) external view override returns (uint256) { return tokenAmounts[investor]; }
+    function claimedAmount(address investor) external view override returns (uint256) { return claims[investor]; }
+
     function setInfo(string memory info) external override ownerOnly {
         infoHistory.push(Structs.InfoEntry(
             info,
@@ -319,8 +323,8 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
         return 10 ** IToken(_issuer().getState().stablecoin).decimals();
     }
 
-    function _token_value(uint256 tokenAmount) private view returns (uint256) {
-        return tokenAmount
+    function _token_value(uint256 tokens) private view returns (uint256) {
+        return tokens
                     * state.tokenPrice
                     * _stablecoin_decimals_precision()
                     / (_asset_decimals_precision() * _asset_price_precision());

@@ -24,6 +24,11 @@ contract Structs {
         address issuer;
     }
 
+    struct AssetCommonStateWithName {
+        Structs.AssetCommonState asset;
+        string mappedName;
+    }
+
     struct CampaignCommonState {
         string flavor;
         string version;
@@ -39,6 +44,18 @@ contract Structs {
         uint256 tokensSold;
     }
 
+    struct CampaignCommonStateWithName {
+        CampaignCommonState campaign;
+        string mappedName;
+    }
+
+    struct CampaignCommonStateWithNameAndInvestment {
+        CampaignCommonState campaign;
+        string mappedName;
+        uint256 tokenAmount;
+        uint256 tokenValue;
+    }
+
     struct IssuerCommonStateWithName {
         string flavor;
         string version;
@@ -47,38 +64,7 @@ contract Structs {
         string info;
         string mappedName;
     }
-
-    struct AssetCommonStateWithName {
-        string flavor;
-        string version;
-        address contractAddress;
-        address owner;
-        string info;
-        string name;
-        string symbol;
-        uint256 totalSupply;
-        uint256 decimals;
-        address issuer;
-        string mappedName;
-    }
-
-    struct CamapignCommonStateWithName {
-        string flavor;
-        string version;
-        address contractAddress;
-        address owner;
-        string info;
-        address asset;
-        uint256 softCap;
-        bool finalized;
-        bool canceled;
-        uint256 pricePerToken;
-        uint256 pricePrecision;
-        uint256 fundsRaised;
-        uint256 tokensSold;
-        string mappedName;
-    }
-
+    
     struct TokenSaleInfo {
         address cfManager;
         uint256 tokenAmount;

@@ -85,12 +85,24 @@ contract NameRegistry is INameRegistry {
         return issuerNameToAddressMap[name];
     }
 
+    function getIssuerName(address issuer) external view override returns (string memory) {
+        return issuerAddressToNameMap[issuer];
+    }
+
     function getAsset(string memory name) external override view returns (address) {
         return assetNameToAddressMap[name];
     }
 
+    function getAssetName(address asset) external view override returns (string memory) {
+        return assetAddressToNameMap[asset];
+    }
+
     function getCampaign(string memory name) external override view returns (address) {
         return campaignNameToAddressMap[name];
+    }
+
+    function getCampaignName(address campaign) external view override returns (string memory) {
+        return campaignAddressToNameMap[campaign];
     }
 
     //------------------------

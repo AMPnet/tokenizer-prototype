@@ -13,7 +13,10 @@ interface INameRegistry {
 
     // READ
     function getIssuer(string memory name) external view returns (address);
+    function getIssuerName(address issuer) external view returns (string memory);
     function getAsset(string memory name) external view returns (address);
+    function getAssetName(address asset) external view returns (string memory);
     function getCampaign(string memory name) external view returns (address);
-
+    function getCampaignName(address campaign) external view returns (string memory);
+    
 }
