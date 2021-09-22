@@ -147,6 +147,30 @@ describe("Asset transferable - test function conditions", function () {
         cfManager = contracts[1];
     });
 
+    it(`should verify notLiquidated modifier`, async function () {
+        const modifierMessage = "Asset: Action forbidden, asset liquidated."
+        await liquidateAsset()
+
+        await expect(
+            asset.connect(assetManager).finalizeSale()
+        ).to.be.revertedWith(modifierMessage);
+        await expect(
+            asset.connect(issuerOwner).approveCampaign(cfManager.address)
+        ).to.be.revertedWith(modifierMessage);
+        await expect(
+            asset.connect(issuerOwner).suspendCampaign(cfManager.address)
+        ).to.be.revertedWith(modifierMessage);
+        await expect(
+            asset.connect(assetManager).liquidate()
+        ).to.be.revertedWith(modifierMessage);
+        await expect(
+            asset.connect(assetManager).snapshot()
+        ).to.be.revertedWith(modifierMessage);
+        await expect(
+            asset.connect(assetManager).migrateApxRegistry(cfManager.address)
+        ).to.be.revertedWith(modifierMessage);
+    })
+
     it('should verify ownerOnly modifier', async function () {
         const modifierMessage = "Asset: Only asset creator can make this action."
         const address = await jane.getAddress()
