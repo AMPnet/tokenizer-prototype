@@ -1,8 +1,10 @@
+// @ts-ignore
 import { ethers } from "hardhat";
 import { expect } from "chai";
 import * as helpers from "../../util/helpers";
 import {TestData} from "../TestData";
 import {BigNumber} from "ethers";
+import {PayoutManager} from "../../typechain";
 
 describe("Full test", function () {
 
@@ -174,12 +176,34 @@ describe("Full test", function () {
       expect(fetchedChildChainManager).to.be.equal(newChildChainManager);
 
       //// Fetch crowdfunding campaign state
-      const fetchedCampaignState = await helpers.getCrowdfundingCampaignState(testData.cfManager);
-      console.log("fetched crowdfunding campaign state", fetchedCampaignState);
+      // const fetchedCampaignState = await helpers.getCrowdfundingCampaignState(testData.cfManager);
+      const state = await testData.cfManager.getState()
+      console.log("fetched crowdfunding campaign state", state);
+      expect(state.issuer).to.be.equal(testData.issuer.address)
+      expect(state.owner).to.be.equal(await testData.issuerOwner.getAddress())
+      expect(state.contractAddress).to.be.equal(testData.cfManager.address)
+      expect(state.asset).to.be.equal(testData.asset.address)
+      expect(state.canceled).to.be.false
+      expect(state.finalized).to.be.true
+      expect(state.whitelistRequired).to.be.true
+      expect(state.info).to.be.equal(testData.campaignInfoHash)
+      const totalInvestment = janeInvestmentWei.add(aliceInvestmentWei)
+      expect(state.totalFundsRaised, "totalFundsRaised").to.be.equal(totalInvestment)
+      expect(state.totalTokensSold, "totalTokensSold").to.be.equal(totalInvestment)
+      expect(state.tokenPrice, "tokenPrice").to.be.equal(testData.campaignInitialPricePerToken)
+      expect(state.minInvestment, "minInvestment").to.be.equal(ethers.utils.parseEther(testData.campaignMinInvestment.toString()))
+      expect(state.maxInvestment, "maxInvestment").to.be.equal(ethers.utils.parseEther(testData.campaignMaxInvestment.toString()))
+      expect(state.softCap, "softCap").to.be.equal(ethers.utils.parseEther(testData.campaignSoftCap.toString()))
+      expect(state.totalInvestorsCount, "totalInvestorsCount").to.be.equal(2)
+      expect(state.totalClaimsCount, "totalClaimsCount").to.be.equal(2)
+      expect(state.totalClaimableTokens, "totalClaimableTokens").to.be.equal(0)
+      expect(state.totalTokensBalance, "totalTokensBalance").to.be.equal(0)
 
       //// Fetch payout manager state
-      const fetchedPayoutManagerState = await helpers.getPayoutManagerState(payoutManager);
-      console.log("fetched payout manager state", fetchedPayoutManagerState);
+      const payoutManagerState = await (payoutManager as PayoutManager).getState();
+      expect(payoutManagerState.totalPayoutsCreated, "totalPayoutsCreated").to.be.equal(1);
+      expect(payoutManagerState.totalPayoutsAmount, "totalPayoutsAmount").to.be.equal(revenueAmountWei);
+      console.log("fetched payout manager state", payoutManagerState);
 
       //// Fetch all the Issuer instances ever deployed
       const fetchedIssuerInstances = await helpers.fetchIssuerInstances(testData.issuerFactory);

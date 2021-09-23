@@ -8,3 +8,5 @@ artifacts
 .env
 
 .idea
+
+typechain

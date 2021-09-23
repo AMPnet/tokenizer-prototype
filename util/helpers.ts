@@ -11,7 +11,7 @@ export async function deployStablecoin(deployer: Signer, supply: string, confirm
   return stablecoin;
 }
 
-export async function deployApxRegistry(deployer: Signer, masterOwner: String, assetManager: String, priceManager: String, confirmations: number = 1): Promise<Contract> {
+export async function deployApxRegistry(deployer: Signer, masterOwner: string, assetManager: string, priceManager: string, confirmations: number = 1): Promise<Contract> {
   const ApxRegistry = await ethers.getContractFactory("ApxAssetsRegistry", deployer);
   const apxRegistry = await ApxRegistry.deploy(masterOwner, assetManager, priceManager);
   await ethers.provider.waitForTransaction(apxRegistry.deployTransaction.hash, confirmations)
@@ -19,9 +19,9 @@ export async function deployApxRegistry(deployer: Signer, masterOwner: String, a
   return apxRegistry;
 }
 
-export async function deployNameRegistry(deployer: Signer, masterOwner: String, factories: String[], confirmations: number = 1): Promise<Contract> {
+export async function deployNameRegistry(deployer: Signer, masterOwner: string, factories: string[], confirmations: number = 1): Promise<Contract> {
   const NameRegistry = await ethers.getContractFactory("NameRegistry", deployer);
-  const isWhitelisted: Boolean[] = factories.map(_ => true);
+  const isWhitelisted: boolean[] = factories.map(_ => true);
   const nameRegistry = await NameRegistry.deploy(masterOwner, factories, isWhitelisted);
   await ethers.provider.waitForTransaction(nameRegistry.deployTransaction.hash, confirmations)
   console.log(`\nNameRegistry deployed\n\tAt address: ${nameRegistry.address}`);

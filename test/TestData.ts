@@ -3,6 +3,7 @@ import {ethers} from "hardhat";
 import {Contract, Signer} from "ethers";
 import * as helpers from "../util/helpers";
 import * as deployerServiceUtil from "../util/deployer-service";
+import {CfManagerSoftcap} from "../typechain";
 
 export class TestData {
 
@@ -37,12 +38,25 @@ export class TestData {
     stablecoin: Contract;
     issuer: Contract;
     asset: Contract;
-    cfManager: Contract;
+    cfManager: CfManagerSoftcap;
 
     //////// CONST ////////
     assetName = "Test Asset";
     assetTicker = "TSTA";
-    childChainManager: String;
+    assetAnsName = "test-asset";
+    assetInfoHash = "asset-info-ipfs-hash";
+    assetWhitelistRequiredForRevenueClaim = true;
+    assetWhitelistRequiredForLiquidationClaim = true;
+    assetTokenSupply = 300000;              // 300k tokens total supply
+    campaignInitialPricePerToken = 10000;   // 1$ per token
+    maxTokensToBeSold = 200000;             // 200k tokens to be sold at most (200k $$$ to be raised at most)
+    campaignSoftCap = 100000;               // minimum $100k funds raised has to be reached for campaign to succeed
+    campaignMinInvestment = 10000;          // $10k min investment per user
+    campaignMaxInvestment = 400000;         // $200k max investment per user
+    campaignWhitelistRequired = true;       // only whitelisted wallets can invest
+    campaignAnsName = "test-campaign";
+    campaignInfoHash = "campaign-info-ipfs-hash";
+    childChainManager: string;
 
     async deploy() {
         const accounts: Signer[] = await ethers.getSigners();
@@ -101,22 +115,22 @@ export class TestData {
         const contracts = await deployerServiceUtil.createAssetTransferableCampaign(
             this.issuer,
             issuerOwnerAddress,
-            assetAnsName,
-            assetTokenSupply,
-            assetWhitelistRequiredForRevenueClaim,
-            assetWhitelistRequiredForLiquidationClaim,
+            this.assetAnsName,
+            this.assetTokenSupply,
+            this.assetWhitelistRequiredForRevenueClaim,
+            this.assetWhitelistRequiredForLiquidationClaim,
             this.assetName,
             this.assetTicker,
-            assetInfoHash,
+            this.assetInfoHash,
             issuerOwnerAddress,
-            campaignAnsName,
-            campaignInitialPricePerToken,
-            campaignSoftCap,
-            campaignMinInvestment,
-            campaignMaxInvestment,
-            maxTokensToBeSold,
-            campaignWhitelistRequired,
-            campaignInfoHash,
+            this.campaignAnsName,
+            this.campaignInitialPricePerToken,
+            this.campaignSoftCap,
+            this.campaignMinInvestment,
+            this.campaignMaxInvestment,
+            this.maxTokensToBeSold,
+            this.campaignWhitelistRequired,
+            this.campaignInfoHash,
             this.apxRegistry.address,
             this.nameRegistry.address,
             this.childChainManager,
@@ -125,7 +139,7 @@ export class TestData {
             this.deployerService
         );
         this.asset = contracts[0];
-        this.cfManager = contracts[1];
+        this.cfManager = contracts[1] as CfManagerSoftcap;
     }
 
     async deployIssuerAssetClassicCampaign() {
@@ -136,22 +150,22 @@ export class TestData {
         const contracts = await deployerServiceUtil.createAssetCampaign(
             this.issuer,
             issuerOwnerAddress,
-            assetAnsName,
-            assetTokenSupply,
-            assetWhitelistRequiredForRevenueClaim,
-            assetWhitelistRequiredForLiquidationClaim,
+            this.assetAnsName,
+            this.assetTokenSupply,
+            this.assetWhitelistRequiredForRevenueClaim,
+            this.assetWhitelistRequiredForLiquidationClaim,
             this.assetName,
             this.assetTicker,
-            assetInfoHash,
+            this.assetInfoHash,
             issuerOwnerAddress,
-            campaignAnsName,
-            campaignInitialPricePerToken,
-            campaignSoftCap,
-            campaignMinInvestment,
-            campaignMaxInvestment,
-            maxTokensToBeSold,
-            campaignWhitelistRequired,
-            campaignInfoHash,
+            this.campaignAnsName,
+            this.campaignInitialPricePerToken,
+            this.campaignSoftCap,
+            this.campaignMinInvestment,
+            this.campaignMaxInvestment,
+            this.maxTokensToBeSold,
+            this.campaignWhitelistRequired,
+            this.campaignInfoHash,
             this.apxRegistry.address,
             this.nameRegistry.address,
             this.assetFactory,
@@ -159,7 +173,7 @@ export class TestData {
             this.deployerService
         );
         this.asset = contracts[0];
-        this.cfManager = contracts[1];
+        this.cfManager = contracts[1] as CfManagerSoftcap;
     }
 
     async deployIssuer() {
@@ -177,17 +191,3 @@ export class TestData {
         );
     }
 }
-
-const assetAnsName = "test-asset";
-const assetInfoHash = "asset-info-ipfs-hash";
-const assetWhitelistRequiredForRevenueClaim = true;
-const assetWhitelistRequiredForLiquidationClaim = true;
-const assetTokenSupply = 300000;              // 300k tokens total supply
-const campaignInitialPricePerToken = 10000;   // 1$ per token
-const maxTokensToBeSold = 200000;             // 200k tokens to be sold at most (200k $$$ to be raised at most)
-const campaignSoftCap = 100000;               // minimum $100k funds raised has to be reached for campaign to succeed
-const campaignMinInvestment = 10000;          // $10k min investment per user
-const campaignMaxInvestment = 400000;         // $200k max investment per user
-const campaignWhitelistRequired = true;       // only whitelisted wallets can invest
-const campaignAnsName = "test-campaign";
-const campaignInfoHash = "campaign-info-ipfs-hash";
