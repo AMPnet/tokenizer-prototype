@@ -10,7 +10,7 @@
   "scripts": {
     "lint": "npx hardhat check",
     "test": "npx hardhat test",
-    "postinstall":"typechain"
+    "postinstall": "typechain"
   },
   "repository": {
     "type": "git",
