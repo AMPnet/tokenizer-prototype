@@ -76,5 +76,9 @@ module.exports = {
       }
     }
   },
-  networks: networks()
+  networks: networks(),
+  typechain: {
+    target: 'ethers-v5',
+    alwaysGenerateOverloads: false
+  }
 };
