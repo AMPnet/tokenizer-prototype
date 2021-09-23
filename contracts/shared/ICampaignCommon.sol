@@ -5,6 +5,7 @@ import "./IVersioned.sol";
 import "./Structs.sol";
 
 interface ICampaignCommon is IVersioned {
+
     // WRITE
     function setInfo(string memory info) external;
     
@@ -13,4 +14,5 @@ interface ICampaignCommon is IVersioned {
     function investmentAmount(address investor) external view returns (uint256);
     function tokenAmount(address investor) external view returns (uint256);
     function claimedAmount(address investor) external view returns (uint256);
+
 }

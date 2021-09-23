@@ -24,6 +24,8 @@ export APX_REGISTRY=
 export APX_REGISTRY_MASTER_OWNER=                                                                      # provide this param if APX_REGISTRY field empty
 export APX_REGISTRY_ASSET_MANAGER=                                                                     # provide this param if APX_REGISTRY field empty
 export APX_REGISTRY_PRICE_MANAGER=                                                                     # provide this param if APX_REGISTRY field empty
+export NAME_REGISTRY_OWNER=
+export NAME_REGISTRY=
 export DEPLOYER=
 export QUERY_SERVICE=
 

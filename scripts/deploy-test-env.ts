@@ -24,6 +24,7 @@ async function main() {
             process.env.APX_REGISTRY_ASSET_MANAGER,
             process.env.APX_REGISTRY_PRICE_MANAGER
         );
+
     const issuerFactory: Contract = (process.env.ISSUER_FACTORY) ?
         await ethers.getContractAt("IssuerFactory", process.env.ISSUER_FACTORY) :
         await helpers.deployIssuerFactory(deployer);
@@ -44,6 +45,16 @@ async function main() {
         await ethers.getContractAt("PayoutManagerFactory", process.env.PAYOUT_MANAGER_FACTORY) :
         await helpers.deployPayoutManagerFactory(deployer);
 
+    const nameRegistry: Contract = (process.env.NAME_REGISTRY) ?
+        await ethers.getContractAt("NameRegistry", process.env.NAME_REGISTRY) :
+        await helpers.deployNameRegistry(deployer, process.env.NAME_REGISTRY_OWNER, [
+            issuerFactory.address,
+            assetFactory.address,
+            assetTransferableFactory.address,
+            cfManagerFactory.address,
+            payoutManagerFactory.address
+        ]);
+    
     const walletApproverService: Contract = (process.env.WALLET_APPROVER) ?
         await ethers.getContractAt("WalletApproverService", process.env.WALLET_APPROVER) :
         await helpers.deployWalletApproverService(deployer, process.env.WALLET_APPROVER_MASTER_OWNER, "0.001");

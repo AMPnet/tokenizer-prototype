@@ -18,7 +18,7 @@ contract QueryService {
         address issuer = nameRegistry.getIssuer(issuerName);
         return getCampaignsForIssuer(issuer, factories, nameRegistry);
     }
-    
+
     function getCampaignsForIssuer(
         address issuer,
         address[] memory factories,
