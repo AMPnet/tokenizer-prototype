@@ -9,7 +9,8 @@
   ],
   "scripts": {
     "lint": "npx hardhat check",
-    "test": "npx hardhat test"
+    "test": "npx hardhat test",
+    "postinstall":"typechain"
   },
   "repository": {
     "type": "git",
@@ -45,6 +46,5 @@
   },
   "dependencies": {
     "@openzeppelin/contracts": "^4.0.0"
-  },
-  "postinstall":"typechain"
+  }
 }
