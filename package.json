@@ -9,7 +9,8 @@
   ],
   "scripts": {
     "lint": "npx hardhat check",
-    "test": "npx hardhat test"
+    "test": "npx hardhat test",
+    "compile": "npx hardhat compile"
   },
   "repository": {
     "type": "git",
