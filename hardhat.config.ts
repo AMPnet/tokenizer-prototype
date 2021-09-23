@@ -1,9 +1,8 @@
 import { task } from "hardhat/config";
+import '@nomiclabs/hardhat-ethers';
 import "@nomiclabs/hardhat-waffle";
 import "@nomiclabs/hardhat-solhint";
-import '@nomiclabs/hardhat-ethers'
-import '@nomiclabs/hardhat-waffle'
-import '@typechain/hardhat'
+import '@typechain/hardhat';
 import "hardhat-gas-reporter";
 import "hardhat-contract-sizer";
 import * as dotenv from 'dotenv';
