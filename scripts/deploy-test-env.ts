@@ -41,9 +41,9 @@ async function main() {
         await ethers.getContractAt("CfManagerSoftcapFactory", process.env.CF_MANAGER_FACTORY) :
         await helpers.deployCfManagerFactory(deployer);
 
-    const payoutManagerFactory: Contract = (process.env.PAYOUT_MANAGER_FACTORY) ?
-        await ethers.getContractAt("PayoutManagerFactory", process.env.PAYOUT_MANAGER_FACTORY) :
-        await helpers.deployPayoutManagerFactory(deployer);
+    const snapshotDistributorFactory: Contract = (process.env.SNAPSHOT_DISTRIBUTOR_FACTORY) ?
+        await ethers.getContractAt("SnapshotDistributorFactory", process.env.SNAPSHOT_DISTRIBUTOR_FACTORY) :
+        await helpers.deploySnapshotDistributorFactory(deployer);
 
     const nameRegistry: Contract = (process.env.NAME_REGISTRY) ?
         await ethers.getContractAt("NameRegistry", process.env.NAME_REGISTRY) :
@@ -52,7 +52,7 @@ async function main() {
             assetFactory.address,
             assetTransferableFactory.address,
             cfManagerFactory.address,
-            payoutManagerFactory.address
+            snapshotDistributorFactory.address
         ]);
     
     const walletApproverService: Contract = (process.env.WALLET_APPROVER) ?

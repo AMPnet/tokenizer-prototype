@@ -11,6 +11,11 @@ contract Structs {
         string info;
     }
 
+    struct IssuerCommonStateWithName {
+        IssuerCommonState issuer;
+        string mappedName;
+    }
+
     struct AssetCommonState {
         string flavor;
         string version;
@@ -25,7 +30,7 @@ contract Structs {
     }
 
     struct AssetCommonStateWithName {
-        Structs.AssetCommonState asset;
+        AssetCommonState asset;
         string mappedName;
     }
 
@@ -56,15 +61,22 @@ contract Structs {
         uint256 tokenValue;
     }
 
-    struct IssuerCommonStateWithName {
+    struct SnapshotDistributorCommonStateWithName {
+        SnapshotDistributorCommonState distributor;
+        string mappedName;
+    }
+
+    struct SnapshotDistributorCommonState {
         string flavor;
         string version;
         address contractAddress;
         address owner;
         string info;
-        string mappedName;
+        address asset;
+        uint256 totalPayoutsCreated;
+        uint256 totalPayoutsAmount;
     }
-    
+
     struct TokenSaleInfo {
         address cfManager;
         uint256 tokenAmount;
@@ -236,20 +248,10 @@ contract Structs {
         string info;
     }
 
-    struct PayoutManagerState {
-        string flavor;
-        string version;
-        address contractAddress;
-        address owner;
-        address asset;
-        uint256 totalPayoutsCreated;
-        uint256 totalPayoutsAmount;
-        string info;
-    }
-
     struct Payout {
         uint256 snapshotId;
         string description;
+        address token;
         uint256 amount;
         uint256 totalReleased;
         uint256 totalClaimsCount;

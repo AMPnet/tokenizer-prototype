@@ -8,7 +8,7 @@ import "../registry/INameRegistry.sol";
 contract IssuerFactory is IIssuerFactory {
 
     string constant public FLAVOR = "IssuerV1";
-    string constant public VERSION = "1.0.13";
+    string constant public VERSION = "1.0.14";
 
     address[] public instances;
 

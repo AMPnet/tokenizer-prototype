@@ -4,11 +4,126 @@ pragma solidity ^0.8.0;
 import "../shared/Structs.sol";
 import "../shared/ICampaignFactoryCommon.sol";
 import "../shared/IAssetFactoryCommon.sol";
+import "../shared/IIssuerFactoryCommon.sol";
 import "../shared/ICampaignCommon.sol";
+import "../shared/ISnapshotDistributorCommon.sol";
 import "../shared/IAssetCommon.sol";
+import "../shared/IIssuerCommon.sol";
+import "../shared/IVersioned.sol";
 import "../registry/INameRegistry.sol";
 
-contract QueryService {
+contract QueryService is IVersioned {
+
+    string constant public FLAVOR = "QueryServiceV1";
+    string constant public VERSION = "1.0.14";
+
+    function flavor() external pure override returns (string memory) { return FLAVOR; }
+    function version() external pure override returns (string memory) { return VERSION; } 
+
+    function getIssuers(
+        address[] memory factories,
+        INameRegistry nameRegistry
+    ) public view returns (Structs.IssuerCommonStateWithName[] memory) {
+        if (factories.length == 0) { return new Structs.IssuerCommonStateWithName[](0); }
+        
+        uint256 totalItems = 0;
+        uint256[] memory instanceCountPerFactory = new uint256[](factories.length);
+        for (uint256 i = 0; i < factories.length; i++) {
+            uint256 count = IIssuerFactoryCommon(factories[i]).getInstances().length;
+            totalItems += count;
+            instanceCountPerFactory[i] = count;
+        }
+        if (totalItems == 0) { return new Structs.IssuerCommonStateWithName[](0); }
+        
+        Structs.IssuerCommonStateWithName[] memory response = new Structs.IssuerCommonStateWithName[](totalItems);
+        uint256 position = 0;
+        for (uint256 i = 0; i < factories.length; i++) {
+            if (instanceCountPerFactory[i] == 0) continue;
+            address[] memory instances = IIssuerFactoryCommon(factories[i]).getInstances();
+            for (uint256 j = 0; j < instanceCountPerFactory[i]; j++) {
+                IIssuerCommon issuerInterface = IIssuerCommon(instances[j]);
+                response[position] = Structs.IssuerCommonStateWithName(
+                    issuerInterface.commonState(),
+                    nameRegistry.getIssuerName(instances[j])
+                );
+                position++;
+            }
+        }
+
+        return response;
+    }
+
+    function getIssuerForName(
+        string memory issuerName,
+        INameRegistry nameRegistry
+    ) public view returns (Structs.IssuerCommonStateWithName memory) {
+        address issuer = nameRegistry.getIssuer(issuerName);
+        return getIssuer(issuer, nameRegistry);
+    }
+
+    function getIssuer(
+        address issuer,
+        INameRegistry nameRegistry
+    ) public view returns (Structs.IssuerCommonStateWithName memory) {
+        return Structs.IssuerCommonStateWithName(
+            IIssuerCommon(issuer).commonState(),
+            nameRegistry.getIssuerName(issuer)
+        );
+    }
+
+    function getAssetForName(
+        string memory assetName,
+        INameRegistry nameRegistry
+    ) public view returns (Structs.AssetCommonStateWithName memory) {
+        address asset = nameRegistry.getAsset(assetName);
+        return getAsset(asset, nameRegistry);
+    }
+
+    function getAsset(
+        address asset,
+        INameRegistry nameRegistry
+    ) public view returns (Structs.AssetCommonStateWithName memory) {
+        return Structs.AssetCommonStateWithName(
+            IAssetCommon(asset).commonState(),
+            nameRegistry.getAssetName(asset)
+        );
+    }
+
+    function getCampaignForName(
+        string memory campaignName,
+        INameRegistry nameRegistry
+    ) public view returns (Structs.CampaignCommonStateWithName memory) {
+        address campaign = nameRegistry.getCampaign(campaignName);
+        return getCampaign(campaign, nameRegistry);
+    }
+
+    function getCampaign(
+        address campaign,
+        INameRegistry nameRegistry
+    ) public view returns (Structs.CampaignCommonStateWithName memory) {
+        return Structs.CampaignCommonStateWithName(
+            ICampaignCommon(campaign).commonState(),
+            nameRegistry.getCampaignName(campaign)
+        );
+    }
+
+    function getSnapshotDistributorForName(
+        string memory distributorName,
+        INameRegistry nameRegistry
+    ) public view returns (Structs.SnapshotDistributorCommonStateWithName memory) {
+        address distributor = nameRegistry.getSnapshotDistributor(distributorName);
+        return getSnapshotDistributor(distributor, nameRegistry);
+    }
+
+    function getSnapshotDistributor(
+        address distributor,
+        INameRegistry nameRegistry
+    ) public view returns (Structs.SnapshotDistributorCommonStateWithName memory) {
+        return Structs.SnapshotDistributorCommonStateWithName(
+            ISnapshotDistributorCommon(distributor).commonState(),
+            nameRegistry.getSnapshotDistributorName(distributor)
+        );
+    }
 
     function getCampaignsForIssuerName(
         string memory issuerName,
@@ -190,7 +305,7 @@ contract QueryService {
         return response;
     }
 
-    function getAssetForIssuerName(
+    function getAssetsForIssuerName(
         string memory issuerName,
         address[] memory factories,
         INameRegistry nameRegistry

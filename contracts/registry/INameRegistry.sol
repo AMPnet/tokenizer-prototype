@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-interface INameRegistry {
+import "../shared/IVersioned.sol";
+
+interface INameRegistry is IVersioned {
     
     // WRITE
     function transferOwnership(address newOwner) external;
@@ -9,7 +11,7 @@ interface INameRegistry {
     function mapIssuer(string memory name, address instance) external;
     function mapAsset(string memory name, address instance) external;
     function mapCampaign(string memory name, address instance) external;
-
+    function mapSnapshotDistributor(string memory name, address instance) external;
 
     // READ
     function getIssuer(string memory name) external view returns (address);
@@ -18,5 +20,7 @@ interface INameRegistry {
     function getAssetName(address asset) external view returns (string memory);
     function getCampaign(string memory name) external view returns (address);
     function getCampaignName(address campaign) external view returns (string memory);
-    
+    function getSnapshotDistributor(string memory name) external view returns (address);
+    function getSnapshotDistributorName(address distributor) external view returns (string memory);
+
 }

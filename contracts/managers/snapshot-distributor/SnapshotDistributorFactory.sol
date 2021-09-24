@@ -1,20 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "./IPayoutManagerFactory.sol";
-import "./PayoutManager.sol";
+import "./ISnapshotDistributorFactory.sol";
+import "./SnapshotDistributor.sol";
 import "../../issuer/IIssuer.sol";
 import "../../shared/IAssetCommon.sol";
 import "../../registry/INameRegistry.sol";
 
-contract PayoutManagerFactory is IPayoutManagerFactory {
+contract SnapshotDistributorFactory is ISnapshotDistributorFactory {
 
-    string constant public FLAVOR = "PayoutManagerV1";
-    string constant public VERSION = "1.0.13";
+    string constant public FLAVOR = "SnapshotDistributorV1";
+    string constant public VERSION = "1.0.14";
 
-    event PayoutManagerCreated(
+    event SnapshotDistributorCreated(
         address indexed creator,
-        address payoutManager,
+        address distributor,
         address asset,
         uint256 timestamp
     );
@@ -31,15 +31,18 @@ contract PayoutManagerFactory is IPayoutManagerFactory {
         address nameRegistry
     ) public override returns (address) {
         INameRegistry registry = INameRegistry(nameRegistry);
-        // TODO: check for registry if manager exists
-        address payoutManager = address(new PayoutManager(FLAVOR, VERSION, owner, assetAddress, info));
+        require(
+            registry.getSnapshotDistributor(mappedName) == address(0),
+            "SnapshotDistributorFactory: distributor with this name already exists"
+        );
+        address snapshotDistributor = address(new SnapshotDistributor(FLAVOR, VERSION, owner, assetAddress, info));
         address issuer = IAssetCommon(assetAddress).commonState().issuer;
-        instances.push(payoutManager);
-        instancesPerIssuer[issuer].push(payoutManager);
-        instancesPerAsset[assetAddress].push(payoutManager);
-        // TODO: map manager
-        emit PayoutManagerCreated(owner, payoutManager, assetAddress, block.timestamp);
-        return payoutManager;
+        instances.push(snapshotDistributor);
+        instancesPerIssuer[issuer].push(snapshotDistributor);
+        instancesPerAsset[assetAddress].push(snapshotDistributor);
+        registry.mapSnapshotDistributor(mappedName, snapshotDistributor);
+        emit SnapshotDistributorCreated(owner, snapshotDistributor, assetAddress, block.timestamp);
+        return snapshotDistributor;
     }
 
     function getInstances() external override view returns (address[] memory) { return instances; }

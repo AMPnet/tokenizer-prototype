@@ -13,7 +13,7 @@ describe("Asset transferable - test function conditions", function () {
     let assetFactory: Contract;
     let assetTransferableFactory: Contract;
     let cfManagerFactory: Contract;
-    let payoutManagerFactory: Contract;
+    let snapshotDistributorFactory: Contract;
 
     //////// SERVICES ////////
     let walletApproverService: Contract;
@@ -62,7 +62,7 @@ describe("Asset transferable - test function conditions", function () {
         assetFactory = factories[1];
         assetTransferableFactory = factories[2];
         cfManagerFactory = factories[3];
-        payoutManagerFactory = factories[4];
+        snapshotDistributorFactory = factories[4];
 
         apxRegistry = await helpers.deployApxRegistry(
             deployer, 
@@ -87,11 +87,11 @@ describe("Asset transferable - test function conditions", function () {
         queryService = services[2];
 
         //// Set the config for Issuer, Asset and Crowdfunding Campaign
-        const issuerAnsName = "test-issuer";
+        const issuerMappedName = "test-issuer";
         const issuerInfoHash = "issuer-info-ipfs-hash";
         const issuerOwnerAddress = await issuerOwner.getAddress();
         const assetName = "Test Asset";
-        const assetAnsName = "test-asset";
+        const assetMappedName = "test-asset";
         const assetTicker = "TSTA";
         const assetInfoHash = "asset-info-ipfs-hash";
         const assetWhitelistRequiredForRevenueClaim = true;
@@ -103,14 +103,14 @@ describe("Asset transferable - test function conditions", function () {
         const campaignMinInvestment = 10000;          // $10k min investment per user
         const campaignMaxInvestment = 400000;         // $200k max investment per user
         const campaignWhitelistRequired = true;       // only whitelisted wallets can invest
-        const campaignAnsName = "test-campaign";
+        const campaignMappedName = "test-campaign";
         const campaignInfoHash = "campaign-info-ipfs-hash";
         const childChainManager = ethers.Wallet.createRandom().address;
 
         //// Deploy the contracts with the provided config
         issuer = await helpers.createIssuer(
             issuerOwnerAddress,
-            issuerAnsName,
+            issuerMappedName,
             stablecoin,
             walletApproverService.address,
             issuerInfoHash,
@@ -120,7 +120,7 @@ describe("Asset transferable - test function conditions", function () {
         const contracts = await deployerServiceUtil.createAssetTransferableCampaign(
             issuer,
             issuerOwnerAddress,
-            assetAnsName,
+            assetMappedName,
             assetTokenSupply,
             assetWhitelistRequiredForRevenueClaim,
             assetWhitelistRequiredForLiquidationClaim,
@@ -128,7 +128,7 @@ describe("Asset transferable - test function conditions", function () {
             assetTicker,
             assetInfoHash,
             issuerOwnerAddress,
-            campaignAnsName,
+            campaignMappedName,
             campaignInitialPricePerToken,
             campaignSoftCap,
             campaignMinInvestment,

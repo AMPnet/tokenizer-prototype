@@ -11,7 +11,7 @@ describe("Full test", function () {
   let assetFactory: Contract;
   let assetTransferableFactory: Contract;
   let cfManagerFactory: Contract;
-  let payoutManagerFactory: Contract;
+  let snapshotDistributorFactory: Contract;
 
   //////// SERVICES ////////
   let walletApproverService: Contract;
@@ -60,7 +60,7 @@ describe("Full test", function () {
     assetFactory = factories[1];
     assetTransferableFactory = factories[2];
     cfManagerFactory = factories[3];
-    payoutManagerFactory = factories[4];
+    snapshotDistributorFactory = factories[4];
 
     apxRegistry = await helpers.deployApxRegistry(
       deployer, 
@@ -95,11 +95,11 @@ describe("Full test", function () {
     `,
     async function () {
       //// Set the config for Issuer, Asset and Crowdfunding Campaign
-      const issuerAnsName = "test-issuer";
+      const issuerMappedName = "test-issuer";
       const issuerInfoHash = "issuer-info-ipfs-hash";
       const issuerOwnerAddress = await issuerOwner.getAddress();
       const assetName = "Test Asset";
-      const assetAnsName = "test-asset";
+      const assetMappedName = "test-asset";
       const assetTicker = "TSTA";
       const assetInfoHash = "asset-info-ipfs-hash";
       const assetWhitelistRequiredForRevenueClaim = true;
@@ -111,14 +111,14 @@ describe("Full test", function () {
       const campaignMinInvestment = 10000;          // $10k min investment per user
       const campaignMaxInvestment = 400000;         // $200k max investment per user
       const campaignWhitelistRequired = true;       // only whitelisted wallets can invest
-      const campaignAnsName = "test-campaign";
+      const campaignMappedName = "test-campaign";
       const campaignInfoHash = "campaign-info-ipfs-hash";
       const childChainManager = ethers.Wallet.createRandom().address;
 
       //// Deploy the contracts with the provided config
       issuer = await helpers.createIssuer(
         issuerOwnerAddress,
-        issuerAnsName,
+        issuerMappedName,
         stablecoin,
         walletApproverService.address,
         issuerInfoHash,
@@ -128,7 +128,7 @@ describe("Full test", function () {
       const contracts = await deployerServiceUtil.createAssetCampaign(
         issuer,
         issuerOwnerAddress,
-        assetAnsName,
+        assetMappedName,
         assetTokenSupply,
         assetWhitelistRequiredForRevenueClaim,
         assetWhitelistRequiredForLiquidationClaim,
@@ -136,7 +136,7 @@ describe("Full test", function () {
         assetTicker,
         assetInfoHash,
         issuerOwnerAddress,
-        campaignAnsName,
+        campaignMappedName,
         campaignInitialPricePerToken,
         campaignSoftCap,
         campaignMinInvestment,
@@ -183,47 +183,47 @@ describe("Full test", function () {
       // Jane has to claim tokens after the campaign has been closed successfully
       await cfManager.connect(jane).claim(janeAddress);
 
-      //// Owner creates payout manager, updates info once
-      const payoutManagerAnsName = "payout-manager";
-      const payoutManagerInfoHash = "payout-manager-info-hash";
-      const updatedPayoutManagerInfoHash = "updated-payout-manager-info-hash";
-      const payoutManager = await helpers.createPayoutManager(
+      //// Owner creates snapshot distributor, updates info once
+      const snapshotDistributorMappedName = "payout-manager";
+      const snapshotDistributorInfoHash = "payout-manager-info-hash";
+      const updatedSnapshotDistributorInfoHash = "updated-payout-manager-info-hash";
+      const snapshotDistributor = await helpers.createSnapshotDistributor(
         issuerOwnerAddress,
-        payoutManagerAnsName,
+        snapshotDistributorMappedName,
         asset,
-        payoutManagerInfoHash,
-        payoutManagerFactory,
+        snapshotDistributorInfoHash,
+        snapshotDistributorFactory,
         nameRegistry
       );
-      await helpers.setInfo(issuerOwner, payoutManager, updatedPayoutManagerInfoHash);
+      await helpers.setInfo(issuerOwner, snapshotDistributor, updatedSnapshotDistributorInfoHash);
 
-      //// Distribute $100k revenue to the token holders using the payout manager from the step before
+      //// Distribute $100k revenue to the token holders using the snapshot distributor from the step before
       const payoutDescription = "WindFarm Mexico Q3/2021 revenue";
       const revenueAmount = 300000;
       const revenueAmountWei = ethers.utils.parseEther(revenueAmount.toString());
       const issuerAddress = await issuerOwner.getAddress();
       await stablecoin.transfer(issuerAddress, revenueAmountWei);
       console.log("issuer balance before share payout: ", ethers.utils.formatEther(await stablecoin.balanceOf(issuerAddress)));
-      await helpers.createPayout(issuerOwner, payoutManager, stablecoin, revenueAmount, payoutDescription)
+      await helpers.createPayout(issuerOwner, snapshotDistributor, stablecoin, revenueAmount, payoutDescription)
       console.log("issuer balance after share payout: ", ethers.utils.formatEther(await stablecoin.balanceOf(issuerAddress)));
 
-      //// Alice claims her revenue share by calling previously created PayoutManager contract and providing the payoutId param (0 in this case)
-      //// PayoutManager address has to be known upfront (can be found for one asset by scanning PayoutManagerCreated event for asset address)
+      //// Alice claims her revenue share by calling previously created SnapshotDistributor contract and providing the payoutId param (0 in this case)
+      //// SnapshotDistributor address has to be known upfront (can be found for one asset by scanning SnapshotDistributorCreated event for asset address)
       const snapshotId = 1;
       const aliceBalanceBeforePayout = await stablecoin.balanceOf(aliceAddress);
       expect(aliceBalanceBeforePayout).to.be.equal(0);
       const aliceRevenueShareWei = ethers.utils.parseEther("100000");    // (1/3) of the total revenue payed out
-      await helpers.claimRevenue(alice, payoutManager, snapshotId)
+      await helpers.claimRevenue(alice, snapshotDistributor, snapshotId)
       const aliceBalanceAfterPayout = await stablecoin.balanceOf(aliceAddress);
       expect(aliceBalanceAfterPayout).to.be.equal(aliceRevenueShareWei); // alice claims (1/3) of total revenue
       console.log("Alice total balance", await stablecoin.balanceOf(aliceAddress));
 
-      //// Jane claims her revenue share by calling previously created PayoutManager contract and providing the payoutId param (0 in this case)
-      //// PayoutManager address has to be known upfront (can be found for one asset by scanning PayoutManagerCreated event for asset address)
+      //// Jane claims her revenue share by calling previously created SnapshotDistributor contract and providing the payoutId param (0 in this case)
+      //// SnapshotDistributor address has to be known upfront (can be found for one asset by scanning SnapshotDistributorCreated event for asset address)
       const janeBalanceBeforePayout = await stablecoin.balanceOf(janeAddress);
       expect(janeBalanceBeforePayout).to.be.equal(0);
       const janeRevenueShareWei = ethers.utils.parseEther("100000");    // (1/3) of the total revenue payed out
-      await helpers.claimRevenue(jane, payoutManager, snapshotId);
+      await helpers.claimRevenue(jane, snapshotDistributor, snapshotId);
       const janeBalanceAfterPayout = await stablecoin.balanceOf(janeAddress);
       expect(janeBalanceAfterPayout).to.be.equal(janeRevenueShareWei); // jane claims (1/3) of total revenue
       console.log("Jane total balance", await stablecoin.balanceOf(janeAddress));
@@ -307,9 +307,9 @@ describe("Full test", function () {
       const fetchedCampaignState = await helpers.getCrowdfundingCampaignState(cfManager);
       console.log("fetched crowdfunding campaign state", fetchedCampaignState);
 
-      //// Fetch payout manager state
-      const fetchedPayoutManagerState = await helpers.getPayoutManagerState(payoutManager);
-      console.log("fetched payout manager state", fetchedPayoutManagerState);
+      //// Fetch snapshot distributor state
+      const fetchedSnapshotDistributorState = await helpers.getSnapshotDistributorState(snapshotDistributor);
+      console.log("fetched snapshot distributor state", fetchedSnapshotDistributorState);
 
       //// Fetch all the Issuer instances ever deployed
       const fetchedIssuerInstances = await helpers.fetchIssuerInstances(issuerFactory);
@@ -335,17 +335,17 @@ describe("Full test", function () {
       const fetchedCampaignInstancesForAseet = await helpers.fetchCrowdfundingInstancesForAsset(cfManagerFactory, asset);
       console.log("fetched campaign instances for asset", fetchedCampaignInstancesForAseet);
       
-      //// Fetch all the Payout Managers ever deployed
-      const fetchedPayoutManagerInstances = await helpers.fetchPayoutManagerInstances(payoutManagerFactory);
-      console.log("fetched payout manager instances", fetchedPayoutManagerInstances);
+      //// Fetch all the Snapshot Distributors ever deployed
+      const fetchedSnapshotDistributorInstances = await helpers.fetchSnapshotDistributorInstances(snapshotDistributorFactory);
+      console.log("fetched snapshot distributor instances", fetchedSnapshotDistributorInstances);
 
-      //// Fetch all the Payout Managers for one Issuer
-      const fetchedPayoutManagerInstancesForIssuer = await helpers.fetchPayoutManagerInstancesForIssuer(payoutManagerFactory, issuer);
-      console.log("fetched payout manager instances for issuer", fetchedPayoutManagerInstancesForIssuer);
+      //// Fetch all the Snapshot Distributor for one Issuer
+      const fetchedSnapshotDistributorInstancesForIssuer = await helpers.fetchSnapshotDistributorInstancesForIssuer(snapshotDistributorFactory, issuer);
+      console.log("fetched snapshot distributor instances for issuer", fetchedSnapshotDistributorInstancesForIssuer);
 
-      //// Fetch all the Payout Managers for one Asset
-      const fetchedPayoutManagerInstancesForAsset = await helpers.fetchPayoutManagerInstancesForAsset(payoutManagerFactory, asset);
-      console.log("fetched payout manager instances for asset", fetchedPayoutManagerInstancesForAsset);
+      //// Fetch all the Snapshot Distributor for one Asset
+      const fetchedSnapshotDistributorInstancesForAsset = await helpers.fetchSnapshotDistributorInstancesForAsset(snapshotDistributorFactory, asset);
+      console.log("fetched snapshot distributor instances for asset", fetchedSnapshotDistributorInstancesForAsset);
   
       //// Fetch Issuer instance by id
       const fetchedIssuerById = await helpers.fetchIssuerStateById(issuerFactory, 0);
@@ -359,16 +359,16 @@ describe("Full test", function () {
       const fetchedCampaignById = await helpers.fetchCampaignStateById(cfManagerFactory, 0);
       console.log("fetched campaign for id=0", fetchedCampaignById);
 
-      //// Fetch Payout manager instance by id
-      const fetchedPayoutManagerById = await helpers.fetchPayoutManagerStateById(payoutManagerFactory, 0);
-      console.log("fetched payout manager for id=0", fetchedPayoutManagerById);
+      //// Fetch Snapshot distributor instance by id
+      const fetchedSnapshotDistributorById = await helpers.fetchSnapshotDistributorStateById(snapshotDistributorFactory, 0);
+      console.log("fetched snapshot distributor for id=0", fetchedSnapshotDistributorById);
 
       //// Fetch alice tx history
-      const aliceTxHistory = await helpers.fetchTxHistory(aliceAddress, issuer, cfManagerFactory, assetFactory, payoutManagerFactory);
+      const aliceTxHistory = await helpers.fetchTxHistory(aliceAddress, issuer, cfManagerFactory, assetFactory, snapshotDistributorFactory);
       console.log("Alice tx history", aliceTxHistory);
 
       //// Fetch jane tx history
-      const janeTxHistory = await helpers.fetchTxHistory(janeAddress, issuer, cfManagerFactory, assetFactory, payoutManagerFactory);
+      const janeTxHistory = await helpers.fetchTxHistory(janeAddress, issuer, cfManagerFactory, assetFactory, snapshotDistributorFactory);
       console.log("Alice tx history", janeTxHistory);
 
       //// Fetch issuer approved wallets

@@ -3,21 +3,17 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-
-import "../../issuer/IIssuer.sol";
-import "../../asset/IAsset.sol";
-import "../payout/IPayoutManager.sol";
+import "./ISnapshotDistributor.sol";
 import "./IERC20Snapshot.sol";
 import "../../shared/Structs.sol";
-import "../../shared/IAssetCommon.sol";
 
-contract PayoutManager is IPayoutManager {
+contract SnapshotDistributor is ISnapshotDistributor {
     using SafeERC20 for IERC20;
 
     //------------------------
     //  STATE
     //------------------------
-    Structs.PayoutManagerState private state;
+    Structs.SnapshotDistributorCommonState private state;
     Structs.InfoEntry[] private infoHistory;
     Structs.Payout[] private payouts;
     mapping (uint256 => mapping(address => bool)) public ignoredWalletsMapPerPayout;
@@ -41,17 +37,16 @@ contract PayoutManager is IPayoutManager {
         address assetAddress,
         string memory info
     ) {
-        require(owner != address(0), "PayoutManager: invalid owner");
-        require(assetAddress != address(0), "PayoutManager: invalid asset address");
-        address assetFactory = IAssetCommon(assetAddress).commonState().issuer;
-        state = Structs.PayoutManagerState(
+        require(owner != address(0), "SnapshotDistributor: invalid owner");
+        require(assetAddress != address(0), "SnapshotDistributor: invalid asset address");
+        state = Structs.SnapshotDistributorCommonState(
             contractFlavor,
             contractVersion,
             address(this),
             owner,
+            info,
             assetAddress,
-            0, 0,
-            info
+            0, 0
         );
     }
 
@@ -66,14 +61,20 @@ contract PayoutManager is IPayoutManager {
     //------------------------
     //  STATE CHANGE FUNCTIONS
     //------------------------
-    function createPayout(string memory description, uint256 amount, address[] memory ignored) external onlyOwner {
-        require(amount > 0, "PayoutManager: invalid payout amount provided");
-        _stablecoin().transferFrom(msg.sender, address(this), amount);
-        uint256 snapshotId = IAsset(state.asset).snapshot();
+    function createPayout(
+        string memory description,
+        address token,
+        uint256 amount,
+        address[] memory ignored
+    ) external onlyOwner {
+        require(amount > 0, "SnapshotDistributor: invalid payout amount provided");
+        IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
+        uint256 snapshotId = IERC20Snapshot(state.asset).snapshot();
         uint256 payoutId = payouts.length;
         Structs.Payout storage payout = payouts.push();
         payout.snapshotId = snapshotId;
         payout.description = description;
+        payout.token = token;
         payout.amount = amount;
         payout.ignoredWallets = ignored;
         payout.ignoredWallets.push(state.asset);
@@ -85,9 +86,9 @@ contract PayoutManager is IPayoutManager {
         emit CreatePayout(msg.sender, state.asset, payoutId, amount, block.timestamp);
     }
 
-    //------------------------
-    //  IPayoutManager IMPL
-    //------------------------
+    //----------------------------------
+    //  ISnapshotDistributorCommon IMPL
+    //----------------------------------
     function setInfo(string memory info) external override onlyOwner {
         infoHistory.push(Structs.InfoEntry(
             info,
@@ -99,38 +100,50 @@ contract PayoutManager is IPayoutManager {
 
     function release(address account, uint256 snapshotId) external override {
         uint256 payoutId = snapshotToPayout[snapshotId];
-        require(!ignoredWalletsMapPerPayout[payoutId][account], "PayoutManager: Account has no shares.");
-        require(releaseMapPerPayout[payoutId][account] == 0, "PayoutManager: Account has already released funds");
+        require(!ignoredWalletsMapPerPayout[payoutId][account], "SnapshotDistributor: Account has no shares.");
+        require(releaseMapPerPayout[payoutId][account] == 0, "SnapshotDistributor: Account has already released funds");
         Structs.Payout storage payout = payouts[payoutId];
         uint256 sharesAtSnapshot = _shares_at(account, snapshotId);
-        require(sharesAtSnapshot > 0, "Account has no shares.");
+        require(sharesAtSnapshot > 0, "SnapshotDistributor: Account has no shares.");
         uint256 nonIgnorableShares = _supply_at(snapshotId) - payout.ignoredAmount;
         uint256 payment = payout.amount * sharesAtSnapshot / nonIgnorableShares;
-        require(payment != 0, "Account is not due payment.");
+        require(payment != 0, "SnapshotDistributor: Account is not due payment.");
         releaseMapPerPayout[payoutId][account] = payment;
         payout.totalReleased += payment;
-        _stablecoin().safeTransfer(account, payment);
+        IERC20(payout.token).safeTransfer(account, payment);
         emit Release(account, address(state.asset), payoutId, payment, block.timestamp);
     }
-    
-    function totalReleased(uint256 snapshotId) external view override returns (uint256) {
-        return payouts[snapshotToPayout[snapshotId]].totalReleased;
+
+    function flavor() external view override returns (string memory) {
+        return state.flavor;
+    }
+
+    function version() external view override returns (string memory) {
+        return state.version;
+    }
+
+    function commonState() external view override returns (Structs.SnapshotDistributorCommonState memory) {
+        return state;
     }
 
     function shares(address account, uint256 snapshotId) external view override returns (uint256) {
         return _shares_at(account, snapshotId);
     }
-
+    
     function released(address account, uint256 snapshotId) external view override returns (uint256) {
         return releaseMapPerPayout[snapshotToPayout[snapshotId]][account];
     }
 
-    function getInfoHistory() external view override returns (Structs.InfoEntry[] memory) {
-        return infoHistory;
+    function totalReleased(uint256 snapshotId) external view override returns (uint256) {
+        return payouts[snapshotToPayout[snapshotId]].totalReleased;
     }
 
-    function getState() external view override returns (Structs.PayoutManagerState memory) {
-        return state;
+    //------------------------
+    //  GETTERS
+    //------------------------
+
+    function getInfoHistory() external view override returns (Structs.InfoEntry[] memory) {
+        return infoHistory;
     }
 
     function getPayouts() external view override returns (Structs.Payout[] memory) {
@@ -156,18 +169,6 @@ contract PayoutManager is IPayoutManager {
 
     function _supply_at(uint256 snapshotId) internal view returns (uint256) {
         return IERC20Snapshot(state.asset).totalSupplyAt(snapshotId);
-    }
-
-    function _stablecoin() private view returns (IERC20) {
-        return IERC20(_issuer().getState().stablecoin);
-    }
-
-    function _asset() private view returns (IAssetCommon) {
-        return IAssetCommon(state.asset);
-    }
-
-    function _issuer() private view returns (IIssuer) {
-        return IIssuer(_asset().commonState().issuer);
     }
 
 }

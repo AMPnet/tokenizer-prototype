@@ -2,8 +2,15 @@
 pragma solidity ^0.8.0;
 
 import "../issuer/IIssuer.sol";
+import "../shared/IVersioned.sol";
 
-contract WalletApproverService {
+contract WalletApproverService is IVersioned {
+
+    string constant public FLAVOR = "WalletApproverServiceV1";
+    string constant public VERSION = "1.0.14";
+
+    function flavor() external pure override returns (string memory) { return FLAVOR; }
+    function version() external pure override returns (string memory) { return VERSION; } 
 
     //------------------------
     //  STATE

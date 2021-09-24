@@ -9,6 +9,9 @@ import "../shared/Structs.sol";
 
 contract ApxAssetsRegistry is IApxAssetsRegistry {
 
+    string constant public FLAVOR = "ApxAssetsRegistryV1";
+    string constant public VERSION = "1.0.14";
+
     //------------------------
     //  STATE
     //------------------------
@@ -155,6 +158,10 @@ contract ApxAssetsRegistry is IApxAssetsRegistry {
     //---------------------------------
     //  IApxAssetsRegistry IMPL - Read
     //---------------------------------
+    function flavor() external pure override returns (string memory) { return FLAVOR; }
+    
+    function version() external pure override returns (string memory) { return VERSION; }
+    
     function getMirrored(address asset) external view override returns (Structs.AssetRecord memory) {
         return assets[asset];
     }

@@ -11,8 +11,12 @@ import "../issuer/IIssuerFactory.sol";
 import "../managers/crowdfunding-softcap/ICfManagerSoftcap.sol";
 import "../managers/crowdfunding-softcap/ICfManagerSoftcapFactory.sol";
 import "../tokens/erc20/IToken.sol";
+import "../shared/IVersioned.sol";
 
-contract DeployerService {
+contract DeployerService is IVersioned {
+
+    string constant public FLAVOR = "DeployerServiceV1";
+    string constant public VERSION = "1.0.14";
 
     event DeployIssuerAssetCampaign(
         address caller,
@@ -152,6 +156,9 @@ contract DeployerService {
         address nameRegistry;
         address childChainManager;
     }
+
+    function flavor() external pure override returns (string memory) { return FLAVOR; }
+    function version() external pure override returns (string memory) { return VERSION; } 
  
     function deployIssuerAssetCampaign(DeployIssuerAssetCampaignRequest memory request) external {
         // Deploy contracts

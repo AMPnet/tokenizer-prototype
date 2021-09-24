@@ -5,6 +5,9 @@ import "./INameRegistry.sol";
 
 contract NameRegistry is INameRegistry {
 
+    string constant public FLAVOR = "NameRegistryV1";
+    string constant public VERSION = "1.0.14";
+
     //------------------------
     //  STATE
     //------------------------
@@ -16,6 +19,8 @@ contract NameRegistry is INameRegistry {
     mapping (address => string) private assetAddressToNameMap;
     mapping (string => address) private campaignNameToAddressMap;
     mapping (address => string) private campaignAddressToNameMap;
+    mapping (string => address) private snapshotDistributorNameToAddressMap;
+    mapping (address => string) private snapshotDistributorAddressToNameMap;
 
     //------------------------
     //  EVENTS
@@ -25,6 +30,7 @@ contract NameRegistry is INameRegistry {
     event MapIssuer(address indexed caller, string name, address instance, uint256 timestamp);
     event MapAsset(address indexed caller, string name, address instance, uint256 timestamp);
     event MapCampaign(address indexed caller, string name, address instance, uint256 timestamp);
+    event MapSnapshotDistributor(address indexed caller, string name, address instance, uint256 timestamp);
 
     //------------------------
     //  CONSTRUCTOR
@@ -78,9 +84,19 @@ contract NameRegistry is INameRegistry {
         emit MapCampaign(msg.sender, name, instance, block.timestamp);
     }
 
+    function mapSnapshotDistributor(string memory name, address instance) external override whitelistedFactoryOnly {
+        snapshotDistributorNameToAddressMap[name] = instance;
+        snapshotDistributorAddressToNameMap[instance] = name;
+        emit MapSnapshotDistributor(msg.sender, name, instance, block.timestamp);
+    }
+
     //-----------------------------
     //  INameRegistry IMPL - READ
     //-----------------------------
+    function flavor() external pure override returns (string memory) { return FLAVOR; }
+    
+    function version() external pure override returns (string memory) { return VERSION; }
+    
     function getIssuer(string memory name) external override view returns (address) {
         return issuerNameToAddressMap[name];
     }
@@ -103,6 +119,14 @@ contract NameRegistry is INameRegistry {
 
     function getCampaignName(address campaign) external view override returns (string memory) {
         return campaignAddressToNameMap[campaign];
+    }
+
+    function getSnapshotDistributor(string memory name) external view override returns (address) {
+        return snapshotDistributorNameToAddressMap[name];
+    }
+
+    function getSnapshotDistributorName(address distributor) external view override returns (string memory) {
+            return snapshotDistributorAddressToNameMap[distributor];
     }
 
     //------------------------
