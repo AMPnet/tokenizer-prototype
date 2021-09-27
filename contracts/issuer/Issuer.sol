@@ -119,6 +119,8 @@ contract Issuer is IIssuer {
             state.version,
             state.contractAddress,
             state.owner,
+            state.stablecoin,
+            state.walletApprover,
             state.info
         );
     }

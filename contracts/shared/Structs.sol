@@ -8,6 +8,8 @@ contract Structs {
         string version;
         address contractAddress;
         address owner;
+        address stablecoin;
+        address walletApprover;
         string info;
     }
 
@@ -41,6 +43,7 @@ contract Structs {
         address owner;
         string info;
         address asset;
+        address stablecoin;
         uint256 softCap;
         bool finalized;
         bool canceled;
@@ -232,6 +235,7 @@ contract Structs {
         address owner;
         address asset;
         address issuer;
+        address stablecoin;
         uint256 tokenPrice;
         uint256 softCap;
         uint256 minInvestment;

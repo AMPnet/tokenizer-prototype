@@ -3,12 +3,11 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "../../asset/IAsset.sol";
-import "../../issuer/IIssuer.sol";
-import "../../tokens/erc20/IToken.sol";
 import "../crowdfunding-softcap/ICfManagerSoftcap.sol";
-import "../../shared/Structs.sol";
+import "../../tokens/erc20/IToken.sol";
 import "../../shared/IAssetCommon.sol";
+import "../../shared/IIssuerCommon.sol";
+import "../../shared/Structs.sol";
 
 contract CfManagerSoftcap is ICfManagerSoftcap {
     using SafeERC20 for IERC20;
@@ -78,14 +77,15 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
         require(tokenPrice > 0, "CfManagerSoftcap: Initial price per token must be greater than 0.");
         require(maxInvestment >= minInvestment, "CfManagerSoftcap: Max has to be bigger than min investment.");
         require(maxInvestment > 0, "CfManagerSoftcap: Max investment has to be bigger than 0.");
-        address issuer = address(IAssetCommon(asset).commonState().issuer);
+        IIssuerCommon issuer = IIssuerCommon(IAssetCommon(asset).commonState().issuer);
         state = Structs.CfManagerSoftcapState(
             contractFlavor,
             contractVersion,
             address(this),
             owner,
             asset,
-            issuer,
+            address(issuer),
+            issuer.commonState().stablecoin,
             tokenPrice,
             softCap,
             minInvestment,
@@ -149,7 +149,7 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
     // STATE CHANGE FUNCTIONS
     //------------------------
     function invest(uint256 amount) external active notFinalized isWhitelisted {
-        require(amount > 0, "Investment amount has to be greater than 0.");
+        require(amount > 0, "CfManagerSoftcap: Investment amount has to be greater than 0.");
 
         uint256 floatingTokens = _assetERC20().balanceOf(address(this)) - state.totalClaimableTokens;
         require(floatingTokens > 0, "CfManagerSoftcap: No more tokens available for sale.");
@@ -230,17 +230,15 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
         uint256 tokensSold = state.totalTokensSold;
         uint256 tokensRefund = assetERC20.balanceOf(address(this)) - tokensSold;
         IAssetCommon(state.asset).finalizeSale();
-        stablecoin.safeTransfer(msg.sender, fundsRaised);
-        assetERC20.safeTransfer(msg.sender, tokensRefund);
+        if (fundsRaised > 0) { stablecoin.safeTransfer(msg.sender, fundsRaised); }
+        if (tokensRefund > 0) { assetERC20.safeTransfer(msg.sender, tokensRefund); }
         emit Finalize(msg.sender, state.asset, fundsRaised, tokensSold, tokensRefund, block.timestamp);
     }
 
     function cancelCampaign() external ownerOnly active notFinalized {
         state.canceled = true;
         uint256 tokenBalance = _assetERC20().balanceOf(address(this));
-        if(tokenBalance > 0) {
-            _assetERC20().safeTransfer(msg.sender, tokenBalance);
-        }
+        if(tokenBalance > 0) { _assetERC20().safeTransfer(msg.sender, tokenBalance); }
         emit CancelCampaign(msg.sender, state.asset, tokenBalance, block.timestamp);
     }
 
@@ -259,6 +257,7 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
             state.owner,
             state.info,
             state.asset,
+            state.stablecoin,
             state.softCap,
             state.finalized,
             state.canceled,
@@ -300,11 +299,7 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
     //  HELPERS
     //------------------------
     function _stablecoin() private view returns (IERC20) {
-        return IERC20(_issuer().getState().stablecoin);
-    }
-
-    function _issuer() private view returns (IIssuer) {
-        return IIssuer(state.issuer);
+        return IERC20(state.stablecoin);
     }
 
     function _assetERC20() private view returns (IERC20) {
@@ -320,7 +315,7 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
     }
 
     function _stablecoin_decimals_precision() private view returns (uint256) {
-        return 10 ** IToken(_issuer().getState().stablecoin).decimals();
+        return 10 ** IToken(state.stablecoin).decimals();
     }
 
     function _token_value(uint256 tokens) private view returns (uint256) {
@@ -331,7 +326,7 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
     }
 
     function _walletApproved(address wallet) private view returns (bool) {
-        return _issuer().isWalletApproved(wallet);
+        return IIssuerCommon(state.issuer).isWalletApproved(wallet);
     }
 
     function _adjusted_min_investment(uint256 remainingTokens) private view returns (uint256) {

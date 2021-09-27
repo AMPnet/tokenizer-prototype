@@ -342,8 +342,8 @@ contract QueryService is IVersioned {
                     assetInterface.commonState(),
                     nameRegistry.getAssetName(instances[j])
                 );
+                position++;
             }
-            position++;
         }
 
         return response; 

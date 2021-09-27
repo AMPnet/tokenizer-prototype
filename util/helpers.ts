@@ -49,25 +49,28 @@ export async function deployServices(deployer: Signer, masterWalletApprover: str
 export async function deployWalletApproverService(
   deployer: Signer,
   masterWalletApprover: string,
-  rewardPerApproval: string
+  rewardPerApproval: string,
+  confirmations: number = 1
 ): Promise<Contract> {
   const WalletApproverService = await ethers.getContractFactory("WalletApproverService", deployer);
   const rewardPerApprovalWei = ethers.utils.parseEther(rewardPerApproval);
   const walletApproverService = await WalletApproverService.deploy(
     masterWalletApprover, [ ], rewardPerApprovalWei
   );
+  await ethers.provider.waitForTransaction(walletApproverService.deployTransaction.hash, confirmations)
   console.log(`\nWallet approver service deployed\n\tAt address: ${walletApproverService.address}\n\tReward per approval: ${rewardPerApproval} ETH`);
   return walletApproverService;
 }
 
-export async function deployDeployerService(deployer: Signer): Promise<Contract> {
+export async function deployDeployerService(deployer: Signer, confirmations: number = 1): Promise<Contract> {
   const DeployerService = await ethers.getContractFactory("DeployerService", deployer);
   const deployerService = await DeployerService.deploy();
+  await ethers.provider.waitForTransaction(deployerService.deployTransaction.hash, confirmations)
   console.log(`\nDeployer service deployed\n\tAt address: ${deployerService.address}`);
   return deployerService;
 }
 
-export async function deployQueryService(deployer: Signer): Promise<Contract> {
+export async function deployQueryService(deployer: Signer, confirmations: number = 1): Promise<Contract> {
   const QueryService = await ethers.getContractFactory("QueryService", deployer);
   const queryService = await QueryService.deploy();
   console.log(`\nQuery service deployed\n\tAt address: ${queryService.address}`);

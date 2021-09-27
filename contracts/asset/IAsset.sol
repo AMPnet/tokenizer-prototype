@@ -4,14 +4,13 @@ pragma solidity ^0.8.0;
 import "../tokens/erc20/IToken.sol";
 import "../shared/Structs.sol";
 import "../shared/IAssetCommon.sol";
+import "../shared/IApxAsset.sol";
 
-interface IAsset is IAssetCommon {
+interface IAsset is IAssetCommon, IApxAsset {
 
     // Write
     
     function freezeTransfer() external;
-    function lockTokens(uint256 amount) external;
-    function unlockTokens(address wallet, uint256 amount) external;
     function setCampaignState(address campaign, bool approved) external;
     function changeOwnership(address newOwner) external;
     function setWhitelistFlags(bool whitelistRequiredForRevenueClaim, bool whitelistRequiredForLiquidationClaim) external;
@@ -19,7 +18,6 @@ interface IAsset is IAssetCommon {
     function liquidate() external;
     function claimLiquidationShare(address investor) external;
     function snapshot() external returns (uint256);
-    function migrateApxRegistry(address newRegistry) external;
 
     // Read
 

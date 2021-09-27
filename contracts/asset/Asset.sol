@@ -2,14 +2,14 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "../tokens/erc20/ERC20.sol";
-import "../tokens/erc20/ERC20Snapshot.sol";
 import "./IAsset.sol";
-import "../issuer/IIssuer.sol";
-import "../managers/crowdfunding-softcap/ICfManagerSoftcap.sol";
 import "../apx-protocol/IMirroredToken.sol";
 import "../apx-protocol/IApxAssetsRegistry.sol";
 import "../tokens/erc20/IToken.sol";
+import "../tokens/erc20/ERC20.sol";
+import "../tokens/erc20/ERC20Snapshot.sol";
+import "../shared/IIssuerCommon.sol";
+import "../shared/ICampaignCommon.sol";
 import "../shared/Structs.sol";
 
 contract Asset is IAsset, ERC20Snapshot {
@@ -53,7 +53,7 @@ contract Asset is IAsset, ERC20Snapshot {
             params.info,
             block.timestamp
         ));
-        bool assetApprovedByIssuer = (IIssuer(params.issuer).getState().owner == params.owner);
+        bool assetApprovedByIssuer = (IIssuerCommon(params.issuer).commonState().owner == params.owner);
         address contractAddress = address(this);
         state = Structs.AssetState(
             params.flavor,
@@ -89,7 +89,7 @@ contract Asset is IAsset, ERC20Snapshot {
     }
 
     modifier transferAllowed(address from, address to) {
-        IIssuer issuer = _issuer();
+        IIssuerCommon issuer = _issuer();
         require(
             state.transferable ||
             (from == address(this) && issuer.isWalletApproved(to)) ||
@@ -146,7 +146,7 @@ contract Asset is IAsset, ERC20Snapshot {
 
     function changeOwnership(address newOwner) external override ownerOnly {
         state.owner = newOwner;
-        if (newOwner == _issuer().getState().owner) { state.assetApprovedByIssuer = true; }
+        if (newOwner == _issuer().commonState().owner) { state.assetApprovedByIssuer = true; }
     }
 
     function setInfo(string memory info) external override ownerOnly {
@@ -168,7 +168,7 @@ contract Asset is IAsset, ERC20Snapshot {
     
     function setIssuerStatus(bool status) external override {
         require(
-            msg.sender == IIssuer(state.issuer).getState().owner,
+            msg.sender == _issuer().commonState().owner,
             "Asset: Only issuer owner can make this action." 
         );
         state.assetApprovedByIssuer = status;
@@ -178,11 +178,11 @@ contract Asset is IAsset, ERC20Snapshot {
         require(!state.liquidated, "Asset: Action forbidden, asset liquidated.");
         address campaign = msg.sender;
         require(_campaignWhitelisted(campaign), "Asset: Campaign not approved.");
-        Structs.CfManagerSoftcapState memory campaignState = ICfManagerSoftcap(campaign).getState();
+        Structs.CampaignCommonState memory campaignState = ICampaignCommon(campaign).commonState();
         require(campaignState.finalized, "Asset: Campaign not finalized");
-        uint256 tokenValue = campaignState.totalFundsRaised;
-        uint256 tokenAmount = campaignState.totalTokensSold;
-        uint256 tokenPrice = campaignState.tokenPrice;
+        uint256 tokenValue = campaignState.fundsRaised;
+        uint256 tokenAmount = campaignState.tokensSold;
+        uint256 tokenPrice = campaignState.pricePerToken;
         require(
             tokenAmount > 0 && balanceOf(campaign) >= tokenAmount,
             "Asset: Campaign has signalled the sale finalization but campaign tokens are not present"
@@ -332,8 +332,8 @@ contract Asset is IAsset, ERC20Snapshot {
     //------------------------
     //  Helpers
     //------------------------
-    function _issuer() private view returns (IIssuer) {
-        return IIssuer(state.issuer);
+    function _issuer() private view returns (IIssuerCommon) {
+        return IIssuerCommon(state.issuer);
     }
 
     function _stablecoin() private view returns (IERC20) {
@@ -341,11 +341,11 @@ contract Asset is IAsset, ERC20Snapshot {
     }
 
     function _stablecoin_address() private view returns (address) {
-        return _issuer().getState().stablecoin;
+        return _issuer().commonState().stablecoin;
     }
 
     function _campaignWhitelisted(address campaignAddress) private view returns (bool) {
-        if (ICfManagerSoftcap(campaignAddress).getState().owner == state.owner) {
+        if (ICampaignCommon(campaignAddress).commonState().owner == state.owner) {
             return true;
         }
         Structs.WalletRecord memory campaignRecord = approvedCampaignsMap[campaignAddress];
