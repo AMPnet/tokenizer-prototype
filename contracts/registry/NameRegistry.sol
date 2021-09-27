@@ -6,7 +6,7 @@ import "./INameRegistry.sol";
 contract NameRegistry is INameRegistry {
 
     string constant public FLAVOR = "NameRegistryV1";
-    string constant public VERSION = "1.0.14";
+    string constant public VERSION = "1.0.15";
 
     //------------------------
     //  STATE

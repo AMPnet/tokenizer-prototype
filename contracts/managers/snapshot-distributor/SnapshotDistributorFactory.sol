@@ -10,7 +10,7 @@ import "../../registry/INameRegistry.sol";
 contract SnapshotDistributorFactory is ISnapshotDistributorFactory {
 
     string constant public FLAVOR = "SnapshotDistributorV1";
-    string constant public VERSION = "1.0.14";
+    string constant public VERSION = "1.0.15";
 
     event SnapshotDistributorCreated(
         address indexed creator,

@@ -10,7 +10,7 @@ import "../shared/IApxAsset.sol";
 contract ApxAssetsRegistry is IApxAssetsRegistry {
 
     string constant public FLAVOR = "ApxAssetsRegistryV1";
-    string constant public VERSION = "1.0.14";
+    string constant public VERSION = "1.0.15";
 
     //------------------------
     //  STATE
