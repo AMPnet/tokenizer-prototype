@@ -21,11 +21,11 @@ export CF_MANAGER_FACTORY=
 export CF_MANAGER_VESTING_FACTORY=
 export SNAPSHOT_DISTRIBUTOR_FACTORY=
 export WALLET_APPROVER=
-export WALLET_APPROVER_MASTER_OWNER=                        # provide this param if WALLET_APPROVER field empty
+export WALLET_APPROVER_MASTER_OWNER=                # provide this param if WALLET_APPROVER field empty
 export APX_REGISTRY=  
-export APX_REGISTRY_MASTER_OWNER=                                                                      # provide this param if APX_REGISTRY field empty
-export APX_REGISTRY_ASSET_MANAGER=                                                                     # provide this param if APX_REGISTRY field empty
-export APX_REGISTRY_PRICE_MANAGER=                                                                     # provide this param if APX_REGISTRY field empty
+export APX_REGISTRY_MASTER_OWNER=                   # provide this param if APX_REGISTRY field empty
+export APX_REGISTRY_ASSET_MANAGER=                  # provide this param if APX_REGISTRY field empty
+export APX_REGISTRY_PRICE_MANAGER=                  # provide this param if APX_REGISTRY field empty
 export NAME_REGISTRY_OWNER=
 export NAME_REGISTRY=
 export DEPLOYER=
@@ -44,12 +44,21 @@ export ISSUER_IPFS=                                         # defaults to "issue
 export ASSET=0x0000000000000000000000000000000000000000
 # > Or create a new one with the following properties
 export ASSET_NAME=                                          # defaults to "Test Asset"
-export ASSET_MAPPED_NAME=                                      # defaults to "test-asset"
+export ASSET_MAPPED_NAME=                                   # defaults to "test-asset"
 export ASSET_SYMBOL=                                        # defaults to "$TSTA"
 export ASSET_IPFS=                                          # defaults to "asset-info-ipfs-hash"
 export ASSET_SUPPLY=                                        # defaults to 1M tokens
 export ASSET_OWNER=                                         # defaults to $ISSUER_OWNER value
 export ASSET_TRANSFER_WHITELIST_REQUIRED=                   # defaults to false
+
+######################################## Mirrored token definition ########################################
+# > Load existing MirroredToken at given address
+export MIRRORED_TOKEN=
+# > Or create a new one with the following properties
+export MIRRORED_TOKEN_NAME=                         # provide this param if MIRRORED_TOKEN field empty
+export MIRRORED_TOKEN_SYMBOL=                       # provide this param if MIRRORED_TOKEN field empty
+export MIRRORED_TOKEN_ORIGINAL=                     # provide this param if MIRRORED_TOKEN field empty
+export MIRRORED_TOKEN_CHILD_CHAIN_MANAGER=          # provide this param if MIRRORED_TOKEN field empty
 
 ########################################### Campaign definition ###########################################
 # > Load existing Campaign at given address

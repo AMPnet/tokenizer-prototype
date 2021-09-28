@@ -19,6 +19,14 @@ export async function deployApxRegistry(deployer: Signer, masterOwner: String, a
   return apxRegistry;
 }
 
+export async function deployMirroredToken(deployer: Signer, name: String, symbol: String, originalToken: String, childChainManager: String, confirmations: number = 1): Promise<Contract> {
+  const MirroredToken = await ethers.getContractFactory("MirroredToken", deployer);
+  const mirroredToken = await MirroredToken.deploy(name, symbol, originalToken, childChainManager);
+  await ethers.provider.waitForTransaction(mirroredToken.deployTransaction.hash, confirmations)
+  console.log(`\nMirroredToken deployed\n\tAt address: ${mirroredToken.address}`);
+  return mirroredToken;
+}
+
 export async function deployNameRegistry(deployer: Signer, masterOwner: String, factories: String[], confirmations: number = 1): Promise<Contract> {
   const NameRegistry = await ethers.getContractFactory("NameRegistry", deployer);
   const isWhitelisted: Boolean[] = factories.map(_ => true);

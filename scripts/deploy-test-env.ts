@@ -25,6 +25,16 @@ async function main() {
             process.env.APX_REGISTRY_PRICE_MANAGER
         );
 
+    const mirroredToken: Contract = (process.env.MIRRORED_TOKEN) ?
+        await ethers.getContractAt("MirroredToken", process.env.MIRRORED_TOKEN) :
+        await helpers.deployMirroredToken(
+            deployer,
+            process.env.MIRRORED_TOKEN_NAME,
+            process.env.MIRRORED_TOKEN_SYMBOL,
+            process.env.MIRRORED_TOKEN_ORIGINAL,
+            process.env.MIRRORED_TOKEN_CHILD_CHAIN_MANAGER
+        );
+
     const issuerFactory: Contract = (process.env.ISSUER_FACTORY) ?
         await ethers.getContractAt("IssuerFactory", process.env.ISSUER_FACTORY) :
         await helpers.deployIssuerFactory(deployer);
