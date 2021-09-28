@@ -148,7 +148,7 @@ describe("Asset transferable - test function conditions", function () {
     });
 
     it(`should verify notLiquidated modifier`, async function () {
-        const modifierMessage = "Asset: Action forbidden, asset liquidated."
+        const modifierMessage = "AssetTransferable: Action forbidden, asset liquidated."
         await liquidateAsset()
 
         await expect(
@@ -172,7 +172,7 @@ describe("Asset transferable - test function conditions", function () {
     })
 
     it('should verify ownerOnly modifier', async function () {
-        const modifierMessage = "Asset: Only asset creator can make this action."
+        const modifierMessage = "AssetTransferable: Only asset creator can make this action."
         const address = await jane.getAddress()
 
         await expect(
@@ -204,7 +204,7 @@ describe("Asset transferable - test function conditions", function () {
     it('should verify that only issuer owner can set issuer status', async function () {
         await expect(
             asset.connect(assetManager).setIssuerStatus(false)
-        ).to.be.revertedWith("Asset: Only issuer owner can make this action.")
+        ).to.be.revertedWith("AssetTransferable: Only issuer owner can make this action.")
         const issuerStatus = await asset.connect(issuerOwner).getState()
         const newIssuerStatus = !issuerStatus.assetApprovedByIssuer
         await asset.connect(issuerOwner).setIssuerStatus(newIssuerStatus)
@@ -215,14 +215,14 @@ describe("Asset transferable - test function conditions", function () {
     it('should fail to claim liquidation share on not liquidated asset', async function () {
         await expect(
             asset.connect(alice).claimLiquidationShare(await alice.getAddress())
-        ).to.be.revertedWith("Asset: not liquidated")
+        ).to.be.revertedWith("AssetTransferable: not liquidated")
     })
 
     it('should fail to claim liquidation share on not whitelisted address', async function () {
         await liquidateAsset()
         await expect(
             asset.connect(alice).claimLiquidationShare(await alice.getAddress())
-        ).to.be.revertedWith("Asset: wallet must be whitelisted before claiming liquidation share.")
+        ).to.be.revertedWith("AssetTransferable: wallet must be whitelisted before claiming liquidation share.")
     })
 
     it('should fail to claim zero liquidation funds', async function () {
@@ -230,7 +230,7 @@ describe("Asset transferable - test function conditions", function () {
         await liquidateAsset()
         await expect(
             asset.connect(alice).claimLiquidationShare(await alice.getAddress())
-        ).to.be.revertedWith("Asset: no tokens approved for claiming liquidation share")
+        ).to.be.revertedWith("AssetTransferable: no tokens approved for claiming liquidation share")
     })
 
     it('should verify that only apxRegistry can change apxRegistry address', async function () {
@@ -256,7 +256,7 @@ describe("Asset transferable - test function conditions", function () {
         // use smodit to mock owner
         await expect(
             asset.connect(alice).finalizeSale()
-        ).to.be.revertedWith("Asset: Campaign not approved.")
+        ).to.be.revertedWith("AssetTransferable: Campaign not approved.")
     })
 
     it.skip('should fail to finalize already finalized campaign', async function () {
@@ -264,14 +264,14 @@ describe("Asset transferable - test function conditions", function () {
         await asset.connect(issuerOwner).finalizeSale()
         await expect(
             asset.connect(issuerOwner).finalizeSale()
-        ).to.be.revertedWith("Asset: Campaign not finalized")
+        ).to.be.revertedWith("AssetTransferable: Campaign not finalized")
     })
 
     it.skip('should fail to claim zero liquidation funds', async function () {
         // this case is not possible, not sure how to assert that it cannot happen
         await expect(
             asset.connect(alice).claimLiquidationShare(await alice.getAddress())
-        ).to.be.revertedWith("Asset: no liquidation funds to claim")
+        ).to.be.revertedWith("AssetTransferable: no liquidation funds to claim")
     })
 
     async function liquidateAsset() {
