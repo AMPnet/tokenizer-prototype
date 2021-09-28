@@ -11,7 +11,6 @@ interface IAssetTransferable is IAssetCommon {
     function approveCampaign(address campaign) external;
     function suspendCampaign(address campaign) external;
     function changeOwnership(address newOwner) external;
-    function setInfo(string memory info) external;
     function setWhitelistRequiredForRevenueClaim(bool whitelistRequired) external;
     function setWhitelistRequiredForLiquidationClaim(bool whitelistRequired) external;
     function setIssuerStatus(bool status) external;

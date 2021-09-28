@@ -11,8 +11,12 @@ import "../issuer/IIssuerFactory.sol";
 import "../managers/crowdfunding-softcap/ICfManagerSoftcap.sol";
 import "../managers/crowdfunding-softcap/ICfManagerSoftcapFactory.sol";
 import "../tokens/erc20/IToken.sol";
+import "../shared/IVersioned.sol";
 
-contract DeployerService {
+contract DeployerService is IVersioned {
+
+    string constant public FLAVOR = "DeployerServiceV1";
+    string constant public VERSION = "1.0.15";
 
     event DeployIssuerAssetCampaign(
         address caller,
@@ -46,12 +50,12 @@ contract DeployerService {
         IAssetFactory assetFactory;
         ICfManagerSoftcapFactory cfManagerSoftcapFactory;
         address issuerOwner;
-        string issuerAnsName;
+        string issuerMappedName;
         address issuerStablecoin;
         address issuerWalletApprover;
         string issuerInfo;
         address assetOwner;
-        string assetAnsName;
+        string assetMappedName;
         uint256 assetInitialTokenSupply;
         bool assetWhitelistRequiredForRevenueClaim;
         bool assetWhitelistRequiredForLiquidationClaim;
@@ -59,7 +63,7 @@ contract DeployerService {
         string assetSymbol;
         string assetInfo;
         address cfManagerOwner;
-        string cfManagerAnsName;
+        string cfManagerMappedName;
         uint256 cfManagerPricePerToken;
         uint256 cfManagerSoftcap;
         uint256 cfManagerSoftcapMinInvestment;
@@ -68,6 +72,7 @@ contract DeployerService {
         bool cfManagerWhitelistRequired;
         string cfManagerInfo;
         address apxRegistry;
+        address nameRegistry;
     }
 
     struct DeployAssetCampaignRequest {
@@ -75,7 +80,7 @@ contract DeployerService {
         ICfManagerSoftcapFactory cfManagerSoftcapFactory;
         address issuer;
         address assetOwner;
-        string assetAnsName;
+        string assetMappedName;
         uint256 assetInitialTokenSupply;
         bool assetWhitelistRequiredForRevenueClaim;
         bool assetWhitelistRequiredForLiquidationClaim;
@@ -83,7 +88,7 @@ contract DeployerService {
         string assetSymbol;
         string assetInfo;
         address cfManagerOwner;
-        string cfManagerAnsName;
+        string cfManagerMappedName;
         uint256 cfManagerPricePerToken;
         uint256 cfManagerSoftcap;
         uint256 cfManagerSoftcapMinInvestment;
@@ -92,6 +97,7 @@ contract DeployerService {
         bool cfManagerWhitelistRequired;
         string cfManagerInfo;
         address apxRegistry;
+        address nameRegistry;
     }
 
     struct DeployIssuerAssetTransferableCampaignRequest {
@@ -99,12 +105,12 @@ contract DeployerService {
         IAssetTransferableFactory assetTransferableFactory;
         ICfManagerSoftcapFactory cfManagerSoftcapFactory;
         address issuerOwner;
-        string issuerAnsName;
+        string issuerMappedName;
         address issuerStablecoin;
         address issuerWalletApprover;
         string issuerInfo;
         address assetOwner;
-        string assetAnsName;
+        string assetMappedName;
         uint256 assetInitialTokenSupply;
         bool assetWhitelistRequiredForRevenueClaim;
         bool assetWhitelistRequiredForLiquidationClaim;
@@ -112,7 +118,7 @@ contract DeployerService {
         string assetSymbol;
         string assetInfo;
         address cfManagerOwner;
-        string cfManagerAnsName;
+        string cfManagerMappedName;
         uint256 cfManagerPricePerToken;
         uint256 cfManagerSoftcap;
         uint256 cfManagerSoftcapMinInvestment;
@@ -121,6 +127,7 @@ contract DeployerService {
         bool cfManagerWhitelistRequired;
         string cfManagerInfo;
         address apxRegistry;
+        address nameRegistry;
         address childChainManager;
     }
 
@@ -129,7 +136,7 @@ contract DeployerService {
         ICfManagerSoftcapFactory cfManagerSoftcapFactory;
         address issuer;
         address assetOwner;
-        string assetAnsName;
+        string assetMappedName;
         uint256 assetInitialTokenSupply;
         bool assetWhitelistRequiredForRevenueClaim;
         bool assetWhitelistRequiredForLiquidationClaim;
@@ -137,7 +144,7 @@ contract DeployerService {
         string assetSymbol;
         string assetInfo;
         address cfManagerOwner;
-        string cfManagerAnsName;
+        string cfManagerMappedName;
         uint256 cfManagerPricePerToken;
         uint256 cfManagerSoftcap;
         uint256 cfManagerSoftcapMinInvestment;
@@ -146,24 +153,30 @@ contract DeployerService {
         bool cfManagerWhitelistRequired;
         string cfManagerInfo;
         address apxRegistry;
+        address nameRegistry;
         address childChainManager;
     }
+
+    function flavor() external pure override returns (string memory) { return FLAVOR; }
+    function version() external pure override returns (string memory) { return VERSION; } 
  
     function deployIssuerAssetCampaign(DeployIssuerAssetCampaignRequest memory request) external {
         // Deploy contracts
         IIssuer issuer = IIssuer(request.issuerFactory.create(
             address(this),
-            request.issuerAnsName,
+            request.issuerMappedName,
             request.issuerStablecoin,
             address(this),
-            request.issuerInfo
+            request.issuerInfo,
+            request.nameRegistry
         ));
         IAsset asset = IAsset(request.assetFactory.create(
             Structs.AssetFactoryParams(
                 address(this),
                 address(issuer),
                 request.apxRegistry,
-                request.assetAnsName,
+                request.nameRegistry,
+                request.assetMappedName,
                 request.assetInitialTokenSupply,
                 true,
                 request.assetWhitelistRequiredForRevenueClaim,
@@ -175,14 +188,15 @@ contract DeployerService {
         ));
         ICfManagerSoftcap campaign = ICfManagerSoftcap(request.cfManagerSoftcapFactory.create(
             address(this),
-            request.cfManagerAnsName,
+            request.cfManagerMappedName,
             address(asset),
             request.cfManagerPricePerToken,
             request.cfManagerSoftcap,
             request.cfManagerSoftcapMinInvestment,
             request.cfManagerSoftcapMaxInvestment,
             request.cfManagerWhitelistRequired,
-            request.cfManagerInfo
+            request.cfManagerInfo,
+            request.nameRegistry
         ));
 
         // Whitelist owners
@@ -213,7 +227,8 @@ contract DeployerService {
                 address(this),
                 request.issuer,
                 request.apxRegistry,
-                request.assetAnsName,
+                request.nameRegistry,
+                request.assetMappedName,
                 request.assetInitialTokenSupply,
                 true,
                 request.assetWhitelistRequiredForRevenueClaim,
@@ -225,14 +240,15 @@ contract DeployerService {
         ));
         ICfManagerSoftcap campaign = ICfManagerSoftcap(request.cfManagerSoftcapFactory.create(
             address(this),
-            request.cfManagerAnsName,
+            request.cfManagerMappedName,
             address(asset),
             request.cfManagerPricePerToken,
             request.cfManagerSoftcap,
             request.cfManagerSoftcapMinInvestment,
             request.cfManagerSoftcapMaxInvestment,
             request.cfManagerWhitelistRequired,
-            request.cfManagerInfo
+            request.cfManagerInfo,
+            request.nameRegistry
         ));
 
         // Transfer tokens to sell to the campaign, transfer the rest to the asset owner's wallet
@@ -256,10 +272,11 @@ contract DeployerService {
         // Deploy contracts
         IIssuer issuer = IIssuer(request.issuerFactory.create(
             address(this),
-            request.issuerAnsName,
+            request.issuerMappedName,
             request.issuerStablecoin,
             address(this),
-            request.issuerInfo
+            request.issuerInfo,
+            request.nameRegistry
         ));
         IAssetTransferable asset = IAssetTransferable(
             request.assetTransferableFactory.create(
@@ -267,7 +284,8 @@ contract DeployerService {
                     address(this),
                     address(issuer),
                     request.apxRegistry,
-                    request.assetAnsName,
+                    request.assetMappedName,
+                    request.nameRegistry,
                     request.assetInitialTokenSupply,
                     request.assetWhitelistRequiredForRevenueClaim,
                     request.assetWhitelistRequiredForLiquidationClaim,
@@ -281,14 +299,15 @@ contract DeployerService {
 
         ICfManagerSoftcap campaign = ICfManagerSoftcap(request.cfManagerSoftcapFactory.create(
             address(this),
-            request.cfManagerAnsName,
+            request.cfManagerMappedName,
             address(asset),
             request.cfManagerPricePerToken,
             request.cfManagerSoftcap,
             request.cfManagerSoftcapMinInvestment,
             request.cfManagerSoftcapMaxInvestment,
             request.cfManagerWhitelistRequired,
-            request.cfManagerInfo
+            request.cfManagerInfo,
+            request.nameRegistry
         ));
 
         // Whitelist issuer owner
@@ -324,7 +343,8 @@ contract DeployerService {
                     address(this),
                     request.issuer,
                     request.apxRegistry,
-                    request.assetAnsName,
+                    request.assetMappedName,
+                    request.nameRegistry,
                     request.assetInitialTokenSupply,
                     request.assetWhitelistRequiredForRevenueClaim,
                     request.assetWhitelistRequiredForLiquidationClaim,
@@ -336,14 +356,15 @@ contract DeployerService {
         ));
         ICfManagerSoftcap campaign = ICfManagerSoftcap(request.cfManagerSoftcapFactory.create(
             address(this),
-            request.cfManagerAnsName,
+            request.cfManagerMappedName,
             address(asset),
             request.cfManagerPricePerToken,
             request.cfManagerSoftcap,
             request.cfManagerSoftcapMinInvestment,
             request.cfManagerSoftcapMaxInvestment,
             request.cfManagerWhitelistRequired,
-            request.cfManagerInfo
+            request.cfManagerInfo,
+            request.nameRegistry
         ));
 
         // Transfer tokens to sell to the campaign, transfer the rest to the asset owner's wallet

@@ -3,6 +3,83 @@ pragma solidity ^0.8.0;
 
 contract Structs {
 
+    struct IssuerCommonState {
+        string flavor;
+        string version;
+        address contractAddress;
+        address owner;
+        address stablecoin;
+        address walletApprover;
+        string info;
+    }
+
+    struct IssuerCommonStateWithName {
+        IssuerCommonState issuer;
+        string mappedName;
+    }
+
+    struct AssetCommonState {
+        string flavor;
+        string version;
+        address contractAddress;
+        address owner;
+        string info;
+        string name;
+        string symbol;
+        uint256 totalSupply;
+        uint256 decimals;
+        address issuer;
+    }
+
+    struct AssetCommonStateWithName {
+        AssetCommonState asset;
+        string mappedName;
+    }
+
+    struct CampaignCommonState {
+        string flavor;
+        string version;
+        address contractAddress;
+        address owner;
+        string info;
+        address asset;
+        address stablecoin;
+        uint256 softCap;
+        bool finalized;
+        bool canceled;
+        uint256 pricePerToken;
+        uint256 fundsRaised;
+        uint256 tokensSold;
+    }
+
+    struct CampaignCommonStateWithName {
+        CampaignCommonState campaign;
+        string mappedName;
+    }
+
+    struct CampaignCommonStateWithNameAndInvestment {
+        CampaignCommonState campaign;
+        string mappedName;
+        uint256 tokenAmount;
+        uint256 tokenValue;
+    }
+
+    struct SnapshotDistributorCommonStateWithName {
+        SnapshotDistributorCommonState distributor;
+        string mappedName;
+    }
+
+    struct SnapshotDistributorCommonState {
+        string flavor;
+        string version;
+        address contractAddress;
+        address owner;
+        string info;
+        address asset;
+        uint256 totalPayoutsCreated;
+        uint256 totalPayoutsAmount;
+    }
+
     struct TokenSaleInfo {
         address cfManager;
         uint256 tokenAmount;
@@ -31,11 +108,23 @@ contract Structs {
         address provider;
     }
 
+    struct AssetSimpleFactoryParams {
+        address creator;
+        address issuer;
+        string mappedName;
+        address nameRegistry;
+        uint256 initialTokenSupply;
+        string name;
+        string symbol;
+        string info;
+    }
+
     struct AssetTransferableFactoryParams {
         address creator;
         address issuer;
         address apxRegistry;
-        string ansName;
+        string mappedName;
+        address nameRegistry;
         uint256 initialTokenSupply;
         bool whitelistRequiredForRevenueClaim;
         bool whitelistRequiredForLiquidationClaim;
@@ -49,7 +138,8 @@ contract Structs {
         address creator;
         address issuer;
         address apxRegistry;
-        string ansName;
+        address nameRegistry;
+        string mappedName;
         uint256 initialTokenSupply;
         bool transferable;
         bool whitelistRequiredForRevenueClaim;
@@ -58,14 +148,24 @@ contract Structs {
         string symbol;
         string info;
     }
-    
+
+    struct AssetSimpleConstructorParams {
+        string flavor;
+        string version;
+        address owner;
+        address issuer;
+        uint256 initialTokenSupply;
+        string name;
+        string symbol;
+        string info;
+    }
+
     struct AssetConstructorParams {
-        uint256 id;
+        string flavor;
+        string version;
         address owner;
         address issuer;
         address apxRegistry;
-        string ansName;
-        uint256 ansId;
         uint256 initialTokenSupply;
         bool transferable;
         bool whitelistRequiredForRevenueClaim;
@@ -76,12 +176,11 @@ contract Structs {
     }
 
     struct AssetTransferableConstructorParams {
-        uint256 id;
+        string flavor;
+        string version;
         address owner;
         address issuer;
         address apxRegistry;
-        string ansName;
-        uint256 ansId;
         uint256 initialTokenSupply;
         bool whitelistRequiredForRevenueClaim;
         bool whitelistRequiredForLiquidationClaim;
@@ -91,12 +190,26 @@ contract Structs {
         address childChainManager;
     }
 
-    struct AssetState {
-        uint256 id;
+    struct AssetSimpleState {
+        string flavor;
+        string version;
         address contractAddress;
-        string ansName;
-        uint256 ansId;
-        address createdBy;
+        address owner;
+        string info;
+        string name;
+        string symbol;
+        uint256 totalSupply;
+        uint256 decimals;
+        address issuer;
+        bool assetApprovedByIssuer;
+        uint256 totalAmountRaised;
+        uint256 totalTokensSold;
+    }
+
+    struct AssetState {
+        string flavor;
+        string version;
+        address contractAddress;
         address owner;
         uint256 initialTokenSupply;
         bool transferable;
@@ -120,11 +233,9 @@ contract Structs {
     }
 
     struct AssetTransferableState {
-        uint256 id;
+        string flavor;
+        string version;
         address contractAddress;
-        string ansName;
-        uint256 ansId;
-        address createdBy;
         address owner;
         uint256 initialTokenSupply;
         bool whitelistRequiredForRevenueClaim;
@@ -146,10 +257,9 @@ contract Structs {
     }
 
     struct IssuerState {
-        uint256 id;
+        string flavor;
+        string version;
         address contractAddress;
-        string ansName;
-        address createdBy;
         address owner;
         address stablecoin;
         address walletApprover;
@@ -157,22 +267,20 @@ contract Structs {
     }
 
     struct CfManagerSoftcapState {
-        uint256 id;
+        string flavor;
+        string version;
         address contractAddress;
-        string ansName;
-        uint256 ansId;
-        address createdBy;
         address owner;
         address asset;
-        address assetFactory;
         address issuer;
+        address stablecoin;
         uint256 tokenPrice;
         uint256 softCap;
         uint256 minInvestment;
         uint256 maxInvestment;
         bool whitelistRequired;
         bool finalized;
-        bool cancelled;
+        bool canceled;
         uint256 totalClaimableTokens;
         uint256 totalInvestorsCount;
         uint256 totalClaimsCount;
@@ -182,23 +290,39 @@ contract Structs {
         string info;
     }
 
-    struct PayoutManagerState {
-        uint256 id;
+    struct CfManagerSoftcapVestingState {
+        string flavor;
+        string version;
         address contractAddress;
-        string ansName;
-        uint256 ansId;
-        address createdBy;
         address owner;
         address asset;
-        address assetFactory;
-        uint256 totalPayoutsCreated;
-        uint256 totalPayoutsAmount;
+        address issuer;
+        address stablecoin;
+        uint256 tokenPrice;
+        uint256 softCap;
+        uint256 minInvestment;
+        uint256 maxInvestment;
+        bool whitelistRequired;
+        bool finalized;
+        bool canceled;
+        uint256 totalClaimableTokens;
+        uint256 totalInvestorsCount;
+        uint256 totalFundsRaised;
+        uint256 totalTokensSold;
+        uint256 totalTokensBalance;
         string info;
+        bool vestingStarted;
+        uint256 start;
+        uint256 cliff;
+        uint256 duration;
+        bool revocable;
+        bool revoked;
     }
 
     struct Payout {
         uint256 snapshotId;
         string description;
+        address token;
         uint256 amount;
         uint256 totalReleased;
         uint256 totalClaimsCount;

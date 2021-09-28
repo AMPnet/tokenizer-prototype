@@ -13,15 +13,16 @@ describe("Asset transferable - test function conditions", function () {
     let assetFactory: Contract;
     let assetTransferableFactory: Contract;
     let cfManagerFactory: Contract;
-    let payoutManagerFactory: Contract;
+    let snapshotDistributorFactory: Contract;
 
     //////// SERVICES ////////
     let walletApproverService: Contract;
     let deployerService: Contract;
     let queryService: Contract;
 
-    ////////// APX //////////
+    ////////// REGISTRIES //////////
     let apxRegistry: Contract;
+    let nameRegistry: Contract;
 
     //////// SIGNERS ////////
     let deployer: Signer;
@@ -42,7 +43,7 @@ describe("Asset transferable - test function conditions", function () {
 
     beforeEach(async function () {
         const accounts: Signer[] = await ethers.getSigners();
-
+        
         deployer        = accounts[0];
         assetManager    = accounts[1];
         priceManager    = accounts[2];
@@ -55,19 +56,25 @@ describe("Asset transferable - test function conditions", function () {
         mark            = accounts[8];
 
         stablecoin = await helpers.deployStablecoin(deployer, "1000000000000");
-        apxRegistry = await helpers.deployApxRegistry(
-            deployer,
-            await deployer.getAddress(),
-            await assetManager.getAddress(),
-            await priceManager.getAddress()
-        );
-
+        
         const factories = await helpers.deployFactories(deployer);
         issuerFactory = factories[0];
         assetFactory = factories[1];
         assetTransferableFactory = factories[2];
         cfManagerFactory = factories[3];
-        payoutManagerFactory = factories[4];
+        snapshotDistributorFactory = factories[4];
+
+        apxRegistry = await helpers.deployApxRegistry(
+            deployer, 
+            await deployer.getAddress(), 
+            await assetManager.getAddress(), 
+            await priceManager.getAddress()
+        );
+        nameRegistry = await helpers.deployNameRegistry(
+            deployer,
+            await deployer.getAddress(),
+            factories.map(factory => factory.address)
+        );
 
         const walletApproverAddress = await walletApprover.getAddress();
         const services = await helpers.deployServices(
@@ -78,12 +85,13 @@ describe("Asset transferable - test function conditions", function () {
         walletApproverService = services[0];
         deployerService = services[1];
         queryService = services[2];
+
         //// Set the config for Issuer, Asset and Crowdfunding Campaign
-        const issuerAnsName = "test-issuer";
+        const issuerMappedName = "test-issuer";
         const issuerInfoHash = "issuer-info-ipfs-hash";
         const issuerOwnerAddress = await issuerOwner.getAddress();
         const assetName = "Test Asset";
-        const assetAnsName = "test-asset";
+        const assetMappedName = "test-asset";
         const assetTicker = "TSTA";
         const assetInfoHash = "asset-info-ipfs-hash";
         const assetWhitelistRequiredForRevenueClaim = true;
@@ -95,23 +103,24 @@ describe("Asset transferable - test function conditions", function () {
         const campaignMinInvestment = 10000;          // $10k min investment per user
         const campaignMaxInvestment = 400000;         // $200k max investment per user
         const campaignWhitelistRequired = true;       // only whitelisted wallets can invest
-        const campaignAnsName = "test-campaign";
+        const campaignMappedName = "test-campaign";
         const campaignInfoHash = "campaign-info-ipfs-hash";
         const childChainManager = ethers.Wallet.createRandom().address;
 
         //// Deploy the contracts with the provided config
         issuer = await helpers.createIssuer(
             issuerOwnerAddress,
-            issuerAnsName,
+            issuerMappedName,
             stablecoin,
             walletApproverService.address,
             issuerInfoHash,
-            issuerFactory
+            issuerFactory,
+            nameRegistry
         );
         const contracts = await deployerServiceUtil.createAssetTransferableCampaign(
             issuer,
             issuerOwnerAddress,
-            assetAnsName,
+            assetMappedName,
             assetTokenSupply,
             assetWhitelistRequiredForRevenueClaim,
             assetWhitelistRequiredForLiquidationClaim,
@@ -119,7 +128,7 @@ describe("Asset transferable - test function conditions", function () {
             assetTicker,
             assetInfoHash,
             issuerOwnerAddress,
-            campaignAnsName,
+            campaignMappedName,
             campaignInitialPricePerToken,
             campaignSoftCap,
             campaignMinInvestment,
@@ -128,6 +137,7 @@ describe("Asset transferable - test function conditions", function () {
             campaignWhitelistRequired,
             campaignInfoHash,
             apxRegistry.address,
+            nameRegistry.address,
             childChainManager,
             assetTransferableFactory,
             cfManagerFactory,
@@ -138,7 +148,7 @@ describe("Asset transferable - test function conditions", function () {
     });
 
     it(`should verify notLiquidated modifier`, async function () {
-        const modifierMessage = "Asset: Action forbidden, asset liquidated."
+        const modifierMessage = "AssetTransferable: Action forbidden, asset liquidated."
         await liquidateAsset()
 
         await expect(
@@ -162,7 +172,7 @@ describe("Asset transferable - test function conditions", function () {
     })
 
     it('should verify ownerOnly modifier', async function () {
-        const modifierMessage = "Asset: Only asset creator can make this action."
+        const modifierMessage = "AssetTransferable: Only asset creator can make this action."
         const address = await jane.getAddress()
 
         await expect(
@@ -194,7 +204,7 @@ describe("Asset transferable - test function conditions", function () {
     it('should verify that only issuer owner can set issuer status', async function () {
         await expect(
             asset.connect(assetManager).setIssuerStatus(false)
-        ).to.be.revertedWith("Asset: Only issuer owner can make this action.")
+        ).to.be.revertedWith("AssetTransferable: Only issuer owner can make this action.")
         const issuerStatus = await asset.connect(issuerOwner).getState()
         const newIssuerStatus = !issuerStatus.assetApprovedByIssuer
         await asset.connect(issuerOwner).setIssuerStatus(newIssuerStatus)
@@ -205,14 +215,14 @@ describe("Asset transferable - test function conditions", function () {
     it('should fail to claim liquidation share on not liquidated asset', async function () {
         await expect(
             asset.connect(alice).claimLiquidationShare(await alice.getAddress())
-        ).to.be.revertedWith("Asset: not liquidated")
+        ).to.be.revertedWith("AssetTransferable: not liquidated")
     })
 
     it('should fail to claim liquidation share on not whitelisted address', async function () {
         await liquidateAsset()
         await expect(
             asset.connect(alice).claimLiquidationShare(await alice.getAddress())
-        ).to.be.revertedWith("Asset: wallet must be whitelisted before claiming liquidation share.")
+        ).to.be.revertedWith("AssetTransferable: wallet must be whitelisted before claiming liquidation share.")
     })
 
     it('should fail to claim zero liquidation funds', async function () {
@@ -220,7 +230,7 @@ describe("Asset transferable - test function conditions", function () {
         await liquidateAsset()
         await expect(
             asset.connect(alice).claimLiquidationShare(await alice.getAddress())
-        ).to.be.revertedWith("Asset: no tokens approved for claiming liquidation share")
+        ).to.be.revertedWith("AssetTransferable: no tokens approved for claiming liquidation share")
     })
 
     it('should verify that only apxRegistry can change apxRegistry address', async function () {
@@ -246,7 +256,7 @@ describe("Asset transferable - test function conditions", function () {
         // use smodit to mock owner
         await expect(
             asset.connect(alice).finalizeSale()
-        ).to.be.revertedWith("Asset: Campaign not approved.")
+        ).to.be.revertedWith("AssetTransferable: Campaign not approved.")
     })
 
     it.skip('should fail to finalize already finalized campaign', async function () {
@@ -254,14 +264,14 @@ describe("Asset transferable - test function conditions", function () {
         await asset.connect(issuerOwner).finalizeSale()
         await expect(
             asset.connect(issuerOwner).finalizeSale()
-        ).to.be.revertedWith("Asset: Campaign not finalized")
+        ).to.be.revertedWith("AssetTransferable: Campaign not finalized")
     })
 
     it.skip('should fail to claim zero liquidation funds', async function () {
         // this case is not possible, not sure how to assert that it cannot happen
         await expect(
             asset.connect(alice).claimLiquidationShare(await alice.getAddress())
-        ).to.be.revertedWith("Asset: no liquidation funds to claim")
+        ).to.be.revertedWith("AssetTransferable: no liquidation funds to claim")
     })
 
     async function liquidateAsset() {

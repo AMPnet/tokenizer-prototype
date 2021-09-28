@@ -12,6 +12,9 @@ import "../tokens/matic/IChildToken.sol";
 contract MirroredToken is IMirroredToken, IChildToken, ERC20Snapshot {
     using SafeERC20 for IERC20;
 
+    string constant public FLAVOR = "MirroredTokenV1";
+    string constant public VERSION = "1.0.15";
+
     //------------------------
     //  STATE
     //------------------------
@@ -62,13 +65,17 @@ contract MirroredToken is IMirroredToken, IChildToken, ERC20Snapshot {
 
     function setChildChainManager(address newManager) external override {
         require(
-            msg.sender == originalToken.getOwner(),
+            msg.sender == originalToken.commonState().owner,
             "MirroredToken: Only original token owner can call this function."
         );
         address oldManager = childChainManager;
         childChainManager = newManager;
         emit SetChildChainManager(msg.sender, oldManager, newManager, block.timestamp);
     }
+    
+    function flavor() external pure override returns (string memory) { return FLAVOR; }
+    
+    function version() external pure override returns (string memory) { return VERSION; }
 
     //------------------------------
     //  IChildToken IMPL

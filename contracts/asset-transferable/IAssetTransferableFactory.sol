@@ -2,15 +2,10 @@
 pragma solidity ^0.8.0;
 
 import "../shared/Structs.sol";
+import "../shared/IAssetFactoryCommon.sol";
 
-interface IAssetTransferableFactory {
+interface IAssetTransferableFactory is IAssetFactoryCommon {
 
     function create(Structs.AssetTransferableFactoryParams memory params) external returns (address);
-    
-    function getInstances() external view returns (address[] memory);
-    
-    function getInstancesForIssuer(address issuer) external view returns (address[] memory);
-
-    function namespace(address issuer, string memory ansName) external view returns (address);
     
 }

@@ -2,47 +2,34 @@
 pragma solidity ^0.8.0;
 
 import "./IAssetTransferableFactory.sol";
-import "./AssetTransferable.sol";
+import "../deployers/IAssetTransferableDeployer.sol";
 import "../shared/Structs.sol";
+import "../registry/INameRegistry.sol";
 
 contract AssetTransferableFactory is IAssetTransferableFactory {
-    
-    event AssetTransferableCreated(address indexed creator, address asset, uint256 id, uint256 timestamp);
 
+    string constant public FLAVOR = "AssetTransferableV1";
+    string constant public VERSION = "1.0.15";
+    
+    address public deployer;
     address[] public instances;
     mapping (address => address[]) instancesPerIssuer;
-    mapping (address => mapping (string => address)) public override namespace;
+
+    event AssetTransferableCreated(address indexed creator, address asset, uint256 timestamp);
+
+    constructor(address _deployer) { deployer = _deployer; }
 
     function create(Structs.AssetTransferableFactoryParams memory params) public override returns (address) {
+        INameRegistry nameRegistry = INameRegistry(params.nameRegistry);
         require(
-            namespace[params.issuer][params.ansName] == address(0),
+            nameRegistry.getAsset(params.mappedName) == address(0),
             "AssetTransferableFactory: asset with this name already exists"
         );
-        uint256 id = instances.length;
-        uint256 ansId = instancesPerIssuer[params.issuer].length;
-        address asset = 
-            address(
-                new AssetTransferable(
-                    Structs.AssetTransferableConstructorParams(
-                        id,
-                        params.creator,
-                        params.issuer,
-                        params.apxRegistry,
-                        params.ansName,
-                        ansId,
-                        params.initialTokenSupply,
-                        params.whitelistRequiredForRevenueClaim,
-                        params.whitelistRequiredForLiquidationClaim,
-                        params.name,
-                        params.symbol,
-                        params.info,
-                        params.childChainManager
-                    )
-        ));
+        address asset = IAssetTransferableDeployer(deployer).create(FLAVOR, VERSION, params);
         instances.push(asset);
         instancesPerIssuer[params.issuer].push(asset);
-        namespace[params.issuer][params.ansName] = asset;
-        emit AssetTransferableCreated(params.creator, asset, id, block.timestamp);
+        nameRegistry.mapAsset(params.mappedName, asset);
+        emit AssetTransferableCreated(params.creator, asset, block.timestamp);
         return asset;
     }
 

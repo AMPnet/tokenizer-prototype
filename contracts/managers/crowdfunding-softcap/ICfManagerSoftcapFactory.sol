@@ -1,20 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-interface ICfManagerSoftcapFactory {
+import "../../shared/ICampaignFactoryCommon.sol";
+
+interface ICfManagerSoftcapFactory is ICampaignFactoryCommon {
     function create(
         address owner,
-        string memory ansName,
+        string memory mappedName,
         address assetAddress,
         uint256 initialPricePerToken,
         uint256 softCap,
         uint256 minInvestment,
         uint256 maxInvestment,
         bool whitelistRequired,
-        string memory info
+        string memory info,
+        address nameRegistry
     ) external returns (address);
-    function getInstances() external view returns (address[] memory);
-    function getInstancesForAsset(address asset) external view returns (address[] memory);
-    function getInstancesForIssuer(address issuer) external view returns (address[] memory);
-    function namespace(address issuer, string memory ansName) external view returns (address);
 }
