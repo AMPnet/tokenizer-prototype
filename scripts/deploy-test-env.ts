@@ -37,9 +37,17 @@ async function main() {
         await ethers.getContractAt("AssetTransferableFactory", process.env.ASSET_TRANSFERABLE_FACTORY) :
         await helpers.deployAssetTransferableFactory(deployer);
 
+    const assetSimpleFactory: Contract = (process.env.ASSET_SIMPLE_FACTORY) ?
+        await ethers.getContractAt("AssetSimpleFactory", process.env.ASSET_SIMPLE_FACTORY) :
+        await helpers.deployAssetSimpleFactory(deployer);
+
     const cfManagerFactory: Contract = (process.env.CF_MANAGER_FACTORY) ?
         await ethers.getContractAt("CfManagerSoftcapFactory", process.env.CF_MANAGER_FACTORY) :
         await helpers.deployCfManagerFactory(deployer);
+
+    const cfManagerVestingFactory: Contract = (process.env.CF_MANAGER_VESTING_FACTORY) ?
+        await ethers.getContractAt("CfManagerSoftcapVestingFactory", process.env.CF_MANAGER_VESTING_FACTORY) :
+        await helpers.deployCfManagerVestingFactory(deployer);
 
     const snapshotDistributorFactory: Contract = (process.env.SNAPSHOT_DISTRIBUTOR_FACTORY) ?
         await ethers.getContractAt("SnapshotDistributorFactory", process.env.SNAPSHOT_DISTRIBUTOR_FACTORY) :

@@ -95,6 +95,14 @@ export async function deployAssetFactory(deployer: Signer, confirmations: number
   return assetFactory;
 }
 
+export async function deployAssetSimpleFactory(deployer: Signer, confirmations: number = 1): Promise<Contract> {
+  const AssetFactory = await ethers.getContractFactory("AssetSimpleFactory", deployer);
+  const assetFactory = await AssetFactory.deploy();
+  await ethers.provider.waitForTransaction(assetFactory.deployTransaction.hash, confirmations)
+  console.log(`\nAssetSimpleFactory deployed\n\tAt address: ${assetFactory.address}`);
+  return assetFactory;
+}
+
 export async function deployAssetTransferableFactory(deployer: Signer, confirmations: number = 1): Promise<Contract> {
   const AssetTransferableDeployer = await ethers.getContractFactory("AssetTransferableDeployer", deployer);
   const assetTransferableDeployer = await AssetTransferableDeployer.deploy();
@@ -110,6 +118,14 @@ export async function deployCfManagerFactory(deployer: Signer, confirmations: nu
   const cfManagerFactory = await CfManagerFactory.deploy();
   await ethers.provider.waitForTransaction(cfManagerFactory.deployTransaction.hash, confirmations)
   console.log(`\nCfManagerFactory deployed\n\tAt address: ${cfManagerFactory.address}`);
+  return cfManagerFactory;
+}
+
+export async function deployCfManagerVestingFactory(deployer: Signer, confirmations: number = 1): Promise<Contract> {
+  const CfManagerVestingFactory = await ethers.getContractFactory("CfManagerSoftcapVestingFactory", deployer);
+  const cfManagerFactory = await CfManagerVestingFactory.deploy();
+  await ethers.provider.waitForTransaction(cfManagerFactory.deployTransaction.hash, confirmations)
+  console.log(`\nCfManagerVestingFactory deployed\n\tAt address: ${cfManagerFactory.address}`);
   return cfManagerFactory;
 }
 

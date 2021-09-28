@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "../asset/IAssetFactory.sol";
+import "./IAssetFactory.sol";
 import "../deployers/IAssetDeployer.sol";
 import "../shared/Structs.sol";
 import "../registry/INameRegistry.sol";

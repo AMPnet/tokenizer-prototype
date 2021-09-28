@@ -108,6 +108,17 @@ contract Structs {
         address provider;
     }
 
+    struct AssetSimpleFactoryParams {
+        address creator;
+        address issuer;
+        string mappedName;
+        address nameRegistry;
+        uint256 initialTokenSupply;
+        string name;
+        string symbol;
+        string info;
+    }
+
     struct AssetTransferableFactoryParams {
         address creator;
         address issuer;
@@ -137,7 +148,18 @@ contract Structs {
         string symbol;
         string info;
     }
-    
+
+    struct AssetSimpleConstructorParams {
+        string flavor;
+        string version;
+        address owner;
+        address issuer;
+        uint256 initialTokenSupply;
+        string name;
+        string symbol;
+        string info;
+    }
+
     struct AssetConstructorParams {
         string flavor;
         string version;
@@ -166,6 +188,22 @@ contract Structs {
         string symbol;
         string info;
         address childChainManager;
+    }
+
+    struct AssetSimpleState {
+        string flavor;
+        string version;
+        address contractAddress;
+        address owner;
+        string info;
+        string name;
+        string symbol;
+        uint256 totalSupply;
+        uint256 decimals;
+        address issuer;
+        bool assetApprovedByIssuer;
+        uint256 totalAmountRaised;
+        uint256 totalTokensSold;
     }
 
     struct AssetState {
@@ -250,6 +288,35 @@ contract Structs {
         uint256 totalTokensSold;
         uint256 totalTokensBalance;
         string info;
+    }
+
+    struct CfManagerSoftcapVestingState {
+        string flavor;
+        string version;
+        address contractAddress;
+        address owner;
+        address asset;
+        address issuer;
+        address stablecoin;
+        uint256 tokenPrice;
+        uint256 softCap;
+        uint256 minInvestment;
+        uint256 maxInvestment;
+        bool whitelistRequired;
+        bool finalized;
+        bool canceled;
+        uint256 totalClaimableTokens;
+        uint256 totalInvestorsCount;
+        uint256 totalFundsRaised;
+        uint256 totalTokensSold;
+        uint256 totalTokensBalance;
+        string info;
+        bool vestingStarted;
+        uint256 start;
+        uint256 cliff;
+        uint256 duration;
+        bool revocable;
+        bool revoked;
     }
 
     struct Payout {
