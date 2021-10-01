@@ -9,7 +9,7 @@ import "../registry/INameRegistry.sol";
 contract AssetSimpleFactory is IAssetSimpleFactory {
     
     string constant public FLAVOR = "AssetSimpleV1";
-    string constant public VERSION = "1.0.16";
+    string constant public VERSION = "1.0.17";
 
     address[] public instances;
     mapping (address => address[]) instancesPerIssuer;

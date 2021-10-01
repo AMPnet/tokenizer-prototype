@@ -9,7 +9,7 @@ import "../../registry/INameRegistry.sol";
 contract CfManagerSoftcapVestingFactory is ICfManagerSoftcapVestingFactory {
     
     string constant public FLAVOR = "CfManagerSoftcapVestingV1";
-    string constant public VERSION = "1.0.16";
+    string constant public VERSION = "1.0.17";
     
     address[] public instances;
     mapping (address => address[]) instancesPerIssuer;
