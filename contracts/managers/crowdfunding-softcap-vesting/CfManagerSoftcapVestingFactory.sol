@@ -37,7 +37,7 @@ contract CfManagerSoftcapVestingFactory is ICfManagerSoftcapVestingFactory {
         INameRegistry registry = INameRegistry(nameRegistry);
         require(
             registry.getCampaign(mappedName) == address(0),
-            "CfManagerSoftcapFactory: campaign with this name already exists"
+            "CfManagerSoftcapVestingFactory: campaign with this name already exists"
         );
         address cfManagerSoftcap = address(new CfManagerSoftcapVesting(
             FLAVOR,
