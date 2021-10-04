@@ -16,7 +16,7 @@ import "../tokens/erc20/IToken.sol";
 contract QueryService is IVersioned {
 
     string constant public FLAVOR = "QueryServiceV1";
-    string constant public VERSION = "1.0.15";
+    string constant public VERSION = "1.0.18";
 
     function flavor() external pure override returns (string memory) { return FLAVOR; }
     function version() external pure override returns (string memory) { return VERSION; } 
