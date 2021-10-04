@@ -3,11 +3,14 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./IApxAssetsRegistry.sol";
-import "../asset/IAsset.sol";
 import "../tokens/erc20/IToken.sol";
 import "../shared/Structs.sol";
+import "../shared/IApxAsset.sol";
 
 contract ApxAssetsRegistry is IApxAssetsRegistry {
+
+    string constant public FLAVOR = "ApxAssetsRegistryV1";
+    string constant public VERSION = "1.0.15";
 
     //------------------------
     //  STATE
@@ -129,9 +132,9 @@ contract ApxAssetsRegistry is IApxAssetsRegistry {
         uint256 capturedSupply
     ) external override onlyPriceManagerOrMasterOwner assetExists(asset) {
         require(assets[asset].state, "ApxAssetsRegistry: Can update price for approved assets only.");
-        require(price > 0, "MirroredToken: price has to be > 0;");
-        require(expiry > 0, "MirroredToken: expiry has to be > 0;");
-        require(capturedSupply == IToken(asset).totalSupply(), "MirroredToken: inconsistent asset supply.");
+        require(price > 0, "ApxAssetsRegistry: price has to be > 0;");
+        require(expiry > 0, "ApxAssetsRegistry: expiry has to be > 0;");
+        require(capturedSupply == IToken(asset).totalSupply(), "ApxAssetsRegistry: inconsistent asset supply.");
         assets[asset].price = price;
         assets[asset].priceUpdatedAt = block.timestamp;
         assets[asset].priceValidUntil = block.timestamp + expiry;
@@ -148,13 +151,17 @@ contract ApxAssetsRegistry is IApxAssetsRegistry {
             IApxAssetsRegistry(newAssetsRegistry).getMirroredFromOriginal(originalAsset).mirroredToken,
             "ApxAssetsRegistry: Mirrored tokens in the new and old registry differ."
         );
-        IAsset(originalAsset).migrateApxRegistry(newAssetsRegistry);
+        IApxAsset(originalAsset).migrateApxRegistry(newAssetsRegistry);
         emit Migrate(msg.sender, newAssetsRegistry, originalAsset, block.timestamp);
     }
 
     //---------------------------------
     //  IApxAssetsRegistry IMPL - Read
     //---------------------------------
+    function flavor() external pure override returns (string memory) { return FLAVOR; }
+    
+    function version() external pure override returns (string memory) { return VERSION; }
+    
     function getMirrored(address asset) external view override returns (Structs.AssetRecord memory) {
         return assets[asset];
     }

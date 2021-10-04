@@ -2,8 +2,9 @@
 pragma solidity ^0.8.0;
 
 import "../shared/Structs.sol";
+import "../shared/IVersioned.sol";
 
-interface IApxAssetsRegistry {
+interface IApxAssetsRegistry is IVersioned {
 
     // WRITE
     function transferMasterOwnerRole(address newMasterOwner) external;

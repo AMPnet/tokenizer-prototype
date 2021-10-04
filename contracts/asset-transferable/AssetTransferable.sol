@@ -2,14 +2,14 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "./IAssetTransferable.sol";
+import "../apx-protocol/IApxAssetsRegistry.sol";
 import "../tokens/erc20/ERC20.sol";
 import "../tokens/erc20/ERC20Snapshot.sol";
 import "../tokens/matic/IChildToken.sol";
-import "./IAssetTransferable.sol";
-import "../issuer/IIssuer.sol";
-import "../managers/crowdfunding-softcap/ICfManagerSoftcap.sol";
 import "../tokens/erc20/IToken.sol";
-import "../apx-protocol/IApxAssetsRegistry.sol";
+import "../shared/IIssuerCommon.sol";
+import "../shared/ICampaignCommon.sol";
 import "../shared/Structs.sol";
 
 contract AssetTransferable is IAssetTransferable, IChildToken, ERC20Snapshot {
@@ -52,15 +52,15 @@ contract AssetTransferable is IAssetTransferable, IChildToken, ERC20Snapshot {
     constructor(
         Structs.AssetTransferableConstructorParams memory params
     ) ERC20(params.name, params.symbol) {
-        require(params.owner != address(0), "Asset: Invalid owner provided");
-        require(params.issuer != address(0), "Asset: Invalid issuer provided");
-        require(params.initialTokenSupply > 0, "Asset: Initial token supply can't be 0");
-        require(params.childChainManager != address(0), "MirroredToken: invalid child chain manager address");
+        require(params.owner != address(0), "AssetTransferable: Invalid owner provided");
+        require(params.issuer != address(0), "AssetTransferable: Invalid issuer provided");
+        require(params.initialTokenSupply > 0, "AssetTransferable: Initial token supply can't be 0");
+        require(params.childChainManager != address(0), "AssetTransferable: invalid child chain manager address");
         infoHistory.push(Structs.InfoEntry(
             params.info,
             block.timestamp
         ));
-        bool assetApprovedByIssuer = (IIssuer(params.issuer).getState().owner == params.owner);
+        bool assetApprovedByIssuer = (IIssuerCommon(params.issuer).commonState().owner == params.owner);
         address contractAddress = address(this);
         state = Structs.AssetTransferableState(
             params.flavor,
@@ -90,19 +90,19 @@ contract AssetTransferable is IAssetTransferable, IChildToken, ERC20Snapshot {
     modifier ownerOnly() {
         require(
             msg.sender == state.owner,
-            "Asset: Only asset creator can make this action."
+            "AssetTransferable: Only asset creator can make this action."
         );
         _;
     }
 
     modifier notLiquidated() {
-        require(!state.liquidated, "Asset: Action forbidden, asset liquidated.");
+        require(!state.liquidated, "AssetTransferable: Action forbidden, asset liquidated.");
         _;
     }
 
-    //------------------------
-    //  IAsset IMPL - Write
-    //------------------------
+    //----------------------------------
+    //  IAssetTransferable IMPL - Write
+    //----------------------------------
     function approveCampaign(address campaign) external override ownerOnly notLiquidated {
         _setCampaignState(campaign, true);
         emit CampaignWhitelist(msg.sender, campaign, true, block.timestamp);
@@ -139,8 +139,8 @@ contract AssetTransferable is IAssetTransferable, IChildToken, ERC20Snapshot {
 
     function setIssuerStatus(bool status) external override {
         require(
-            msg.sender == IIssuer(state.issuer).getState().owner,
-            "Asset: Only issuer owner can make this action." 
+            msg.sender == _issuer().commonState().owner,
+            "AssetTransferable: Only issuer owner can make this action." 
         );
         state.assetApprovedByIssuer = status;
         emit SetIssuerStatus(msg.sender, status, block.timestamp);
@@ -148,19 +148,19 @@ contract AssetTransferable is IAssetTransferable, IChildToken, ERC20Snapshot {
     
     function finalizeSale() external override notLiquidated {
         address campaign = msg.sender;
-        require(_campaignWhitelisted(campaign), "Asset: Campaign not approved.");
-        Structs.CfManagerSoftcapState memory campaignState = ICfManagerSoftcap(campaign).getState();
-        require(campaignState.finalized, "Asset: Campaign not finalized");
-        uint256 tokenValue = campaignState.totalFundsRaised;
-        uint256 tokenAmount = campaignState.totalTokensSold;
-        uint256 tokenPrice = campaignState.tokenPrice;
+        require(_campaignWhitelisted(campaign), "AssetTransferable: Campaign not approved.");
+        Structs.CampaignCommonState memory campaignState = ICampaignCommon(campaign).commonState();
+        require(campaignState.finalized, "AssetTransferable: Campaign not finalized");
+        uint256 tokenValue = campaignState.fundsRaised;
+        uint256 tokenAmount = campaignState.tokensSold;
+        uint256 tokenPrice = campaignState.pricePerToken;
         require(
             tokenAmount > 0 && balanceOf(campaign) >= tokenAmount,
-            "Asset: Campaign has signalled the sale finalization but campaign tokens are not present"
+            "AssetTransferable: Campaign has signalled the sale finalization but campaign tokens are not present"
         );
         require(
             tokenValue > 0 && _stablecoin().balanceOf(campaign) >= tokenValue,
-            "Asset: Campaign has signalled the sale finalization but raised funds are not present"
+            "AssetTransferable: Campaign has signalled the sale finalization but raised funds are not present"
         );
         state.totalAmountRaised += tokenValue;
         state.totalTokensSold += tokenAmount;
@@ -206,16 +206,16 @@ contract AssetTransferable is IAssetTransferable, IChildToken, ERC20Snapshot {
     }
 
     function claimLiquidationShare(address investor) external override {
-        require(state.liquidated, "Asset: not liquidated");
+        require(state.liquidated, "AssetTransferable: not liquidated");
         require(
             !state.whitelistRequiredForLiquidationClaim ||
             _issuer().isWalletApproved(investor),
-            "Asset: wallet must be whitelisted before claiming liquidation share."
+            "AssetTransferable: wallet must be whitelisted before claiming liquidation share."
         );
         uint256 approvedAmount = allowance(investor, address(this));
-        require(approvedAmount > 0, "Asset: no tokens approved for claiming liquidation share");
+        require(approvedAmount > 0, "AssetTransferable: no tokens approved for claiming liquidation share");
         uint256 liquidationFundsShare = approvedAmount * state.liquidationFundsTotal / totalSupply();
-        require(liquidationFundsShare > 0, "Asset: no liquidation funds to claim");
+        require(liquidationFundsShare > 0, "AssetTransferable: no liquidation funds to claim");
         liquidationClaimsMap[investor] += liquidationFundsShare;
         state.liquidationFundsClaimed += liquidationFundsShare;
         _stablecoin().safeTransfer(investor, liquidationFundsShare);
@@ -238,9 +238,9 @@ contract AssetTransferable is IAssetTransferable, IChildToken, ERC20Snapshot {
         emit SetChildChainManager(msg.sender, oldManager, newManager, block.timestamp);
     }
 
-    //------------------------
-    //  IAsset IMPL - Read
-    //------------------------
+    //---------------------------------
+    //  IAssetTransferable IMPL - Read
+    //---------------------------------
     function flavor() external view override returns (string memory) { return state.flavor; }
 
     function version() external view override returns (string memory) { return state.version; }
@@ -308,11 +308,11 @@ contract AssetTransferable is IAssetTransferable, IChildToken, ERC20Snapshot {
     }
 
     function _stablecoin_address() private view returns (address) {
-        return _issuer().getState().stablecoin;
+        return _issuer().commonState().stablecoin;
     }
 
-    function _issuer() private view returns (IIssuer) {
-        return IIssuer(state.issuer);
+    function _issuer() private view returns (IIssuerCommon) {
+        return IIssuerCommon(state.issuer);
     }
 
     function _setCampaignState(address wallet, bool whitelisted) private {
@@ -325,7 +325,7 @@ contract AssetTransferable is IAssetTransferable, IChildToken, ERC20Snapshot {
     }
 
     function _campaignWhitelisted(address wallet) private view returns (bool) {
-        if (ICfManagerSoftcap(wallet).getState().owner == state.owner) {
+        if (ICampaignCommon(wallet).commonState().owner == state.owner) {
             return true;
         }
         return _campaignExists(wallet) && approvedCampaigns[approvedCampaignsMap[wallet]].whitelisted;

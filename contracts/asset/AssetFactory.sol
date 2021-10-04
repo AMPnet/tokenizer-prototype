@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "../asset/IAssetFactory.sol";
+import "./IAssetFactory.sol";
 import "../deployers/IAssetDeployer.sol";
 import "../shared/Structs.sol";
 import "../registry/INameRegistry.sol";
@@ -9,7 +9,7 @@ import "../registry/INameRegistry.sol";
 contract AssetFactory is IAssetFactory {
 
     string constant public FLAVOR = "AssetV1";
-    string constant public VERSION = "1.0.13";
+    string constant public VERSION = "1.0.15";
 
     address public deployer;
     address[] public instances;

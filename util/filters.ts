@@ -98,15 +98,15 @@ export async function getCrowdfundingCampaignTransactions(wallet: string, issuer
     return transactions;
 }
 
-export async function getPayoutManagerTransactions(wallet: string, issuer: Contract, payoutManagerFactory: Contract): Promise<Array<Transaction>> {
+export async function getSnapshotDistributorTransactions(wallet: string, issuer: Contract, snapshotDistributorFactory: Contract): Promise<Array<Transaction>> {
     const transactions = [];
-    const payoutManagerInstanceAddresses = await payoutManagerFactory.getInstancesForIssuer(issuer.address);
-    const payoutManagerInstancesPromisifed: [Promise<Contract>] = payoutManagerInstanceAddresses.map(async (address: string) => {
-      return ethers.getContractAt("PayoutManager", address);
+    const snapshotDistributorInstanceAddresses = await snapshotDistributorFactory.getInstancesForIssuer(issuer.address);
+    const snapshotDistributorInstancesPromisifed: [Promise<Contract>] = snapshotDistributorInstanceAddresses.map(async (address: string) => {
+      return ethers.getContractAt("SnapshotDistributor", address);
     });
-    const payoutManagerInstances = await Promise.all(payoutManagerInstancesPromisifed);
-    const payoutManagerInstancesScanActions = payoutManagerInstances.map(async (payoutManager: Contract) => {
-        const filterRevenueShare = await payoutManager.queryFilter(payoutManager.filters.Release(wallet));
+    const snapshotDistributorInstances = await Promise.all(snapshotDistributorInstancesPromisifed);
+    const snapshotDistributorInstancesScanActions = snapshotDistributorInstances.map(async (snapshotDistributor: Contract) => {
+        const filterRevenueShare = await snapshotDistributor.queryFilter(snapshotDistributor.filters.Release(wallet));
         if (filterRevenueShare) {
           for (const event of filterRevenueShare) {
             transactions.push({
@@ -121,7 +121,7 @@ export async function getPayoutManagerTransactions(wallet: string, issuer: Contr
           }
         }
     });
-    await Promise.all(payoutManagerInstancesScanActions);
+    await Promise.all(snapshotDistributorInstancesScanActions);
     return transactions;
 }
 

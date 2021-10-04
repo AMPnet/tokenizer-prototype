@@ -1,9 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "../issuer/IIssuer.sol";
+import "../shared/IIssuerCommon.sol";
+import "../shared/IVersioned.sol";
 
-contract WalletApproverService {
+contract WalletApproverService is IVersioned {
+
+    string constant public FLAVOR = "WalletApproverServiceV1";
+    string constant public VERSION = "1.0.15";
+
+    function flavor() external pure override returns (string memory) { return FLAVOR; }
+    function version() external pure override returns (string memory) { return VERSION; } 
 
     //------------------------
     //  STATE
@@ -44,13 +51,13 @@ contract WalletApproverService {
         _;
     }
 
-    modifier isAllowedToApproveForIssuer(IIssuer issuer) {
+    modifier isAllowedToApproveForIssuer(IIssuerCommon issuer) {
         require(
             msg.sender == masterOwner || allowedApprovers[msg.sender],
             "WalletApproverService: approver not in allowed approvers;"
         );
         require(
-            issuer.getState().walletApprover == address(this),
+            issuer.commonState().walletApprover == address(this),
             "WalletApproverService: not allowed to approve for issuer;"
         );
         _;
@@ -63,7 +70,7 @@ contract WalletApproverService {
         allowedApprovers[approver] = approved;
         emit UpdateApproverStatus(msg.sender, approver, approved, block.timestamp);
     }
-
+    
     function transferMasterOwnerRights(address newMasterOwner) external isMasterOwner {
         allowedApprovers[msg.sender] = false;
         allowedApprovers[newMasterOwner] = true;
@@ -78,7 +85,7 @@ contract WalletApproverService {
     }
 
     function approveWallets(
-        IIssuer issuer,
+        IIssuerCommon issuer,
         address payable [] memory wallets
     ) external isAllowedToApproveForIssuer(issuer) {
         for (uint i=0; i<wallets.length; i++) {
@@ -87,7 +94,7 @@ contract WalletApproverService {
     }
 
     function approveWallet(
-        IIssuer issuer,
+        IIssuerCommon issuer,
         address payable wallet
     ) public isAllowedToApproveForIssuer(issuer) {
         if (rewardPerApprove > 0 && address(this).balance >= rewardPerApprove && wallet.balance == 0) {
@@ -99,7 +106,7 @@ contract WalletApproverService {
     }
 
     function suspendWallets(
-        IIssuer issuer,
+        IIssuerCommon issuer,
         address[] memory wallets
     ) external isAllowedToApproveForIssuer(issuer) {
         for (uint i=0; i<wallets.length; i++) {
@@ -108,11 +115,15 @@ contract WalletApproverService {
     }
 
     function suspendWallet(
-        IIssuer issuer,
+        IIssuerCommon issuer,
         address wallet
     ) public isAllowedToApproveForIssuer(issuer) {
         issuer.suspendWallet(wallet);
         emit SuspendWallet(msg.sender, wallet, block.timestamp);
+    }
+
+    function changeWalletApprover(IIssuerCommon issuer, address newWalletApprover) external isMasterOwner {
+        issuer.changeWalletApprover(newWalletApprover);
     }
 
     //------------------------

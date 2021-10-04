@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-interface IIssuerFactory {
+import "../shared/IIssuerFactoryCommon.sol";
+
+interface IIssuerFactory is IIssuerFactoryCommon {
     
     function create(
         address _owner,
@@ -12,5 +14,4 @@ interface IIssuerFactory {
         address _nameRegistry
     ) external returns (address);
 
-    function getInstances() external view returns (address[] memory);
 }

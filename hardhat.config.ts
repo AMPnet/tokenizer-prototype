@@ -58,7 +58,7 @@ function networks() {
        accounts: {
          mnemonic: process.env.SEED_PHRASE
        },
-       gasPrice: 50000000000
+       gasPrice: 100000000000
     }
   }
  }

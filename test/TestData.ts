@@ -12,7 +12,7 @@ export class TestData {
     assetFactory: Contract;
     assetTransferableFactory: Contract;
     cfManagerFactory: Contract;
-    payoutManagerFactory: Contract;
+    snapshotDistributorFactory: Contract;
 
     //////// SERVICES ////////
     walletApproverService: Contract;
@@ -79,7 +79,7 @@ export class TestData {
         this.assetFactory = factories[1];
         this.assetTransferableFactory = factories[2];
         this.cfManagerFactory = factories[3];
-        this.payoutManagerFactory = factories[4];
+        this.snapshotDistributorFactory = factories[4];
 
         this.apxRegistry = await helpers.deployApxRegistry(
             this.deployer,
