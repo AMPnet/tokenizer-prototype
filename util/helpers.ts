@@ -3,7 +3,7 @@ import { Contract, Signer } from "ethers";
 import * as filters from "./filters";
 
 const config = {
-  confirmationsForDeploy: 2
+  confirmationsForDeploy: 1
 }
 
 export async function deployStablecoin(deployer: Signer, supply: string, confirmations: number = config.confirmationsForDeploy): Promise<Contract> {
