@@ -53,7 +53,7 @@ export ASSET_TRANSFER_WHITELIST_REQUIRED=                   # defaults to false
 
 ######################################## Mirrored token definition ########################################
 # > Load existing MirroredToken at given address
-export MIRRORED_TOKEN=
+export MIRRORED_TOKEN=0x0000000000000000000000000000000000000000
 # > Or create a new one with the following properties
 export MIRRORED_TOKEN_NAME=                         # provide this param if MIRRORED_TOKEN field empty
 export MIRRORED_TOKEN_SYMBOL=                       # provide this param if MIRRORED_TOKEN field empty

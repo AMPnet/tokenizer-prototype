@@ -2,7 +2,11 @@ import { ethers } from "hardhat";
 import { Contract, Signer } from "ethers";
 import * as filters from "./filters";
 
-export async function deployStablecoin(deployer: Signer, supply: string, confirmations: number = 1): Promise<Contract> {
+const config = {
+  confirmationsForDeploy: 2
+}
+
+export async function deployStablecoin(deployer: Signer, supply: string, confirmations: number = config.confirmationsForDeploy): Promise<Contract> {
   const supplyWei = ethers.utils.parseEther(supply);
   const USDC = await ethers.getContractFactory("USDC", deployer);
   const stablecoin = await USDC.deploy(supplyWei);
@@ -11,7 +15,7 @@ export async function deployStablecoin(deployer: Signer, supply: string, confirm
   return stablecoin;
 }
 
-export async function deployApxRegistry(deployer: Signer, masterOwner: String, assetManager: String, priceManager: String, confirmations: number = 1): Promise<Contract> {
+export async function deployApxRegistry(deployer: Signer, masterOwner: String, assetManager: String, priceManager: String, confirmations: number = config.confirmationsForDeploy): Promise<Contract> {
   const ApxRegistry = await ethers.getContractFactory("ApxAssetsRegistry", deployer);
   const apxRegistry = await ApxRegistry.deploy(masterOwner, assetManager, priceManager);
   await ethers.provider.waitForTransaction(apxRegistry.deployTransaction.hash, confirmations)
@@ -19,7 +23,7 @@ export async function deployApxRegistry(deployer: Signer, masterOwner: String, a
   return apxRegistry;
 }
 
-export async function deployMirroredToken(deployer: Signer, name: String, symbol: String, originalToken: String, childChainManager: String, confirmations: number = 1): Promise<Contract> {
+export async function deployMirroredToken(deployer: Signer, name: String, symbol: String, originalToken: String, childChainManager: String, confirmations: number = config.confirmationsForDeploy): Promise<Contract> {
   const MirroredToken = await ethers.getContractFactory("MirroredToken", deployer);
   const mirroredToken = await MirroredToken.deploy(name, symbol, originalToken, childChainManager);
   await ethers.provider.waitForTransaction(mirroredToken.deployTransaction.hash, confirmations)
@@ -27,7 +31,7 @@ export async function deployMirroredToken(deployer: Signer, name: String, symbol
   return mirroredToken;
 }
 
-export async function deployNameRegistry(deployer: Signer, masterOwner: String, factories: String[], confirmations: number = 1): Promise<Contract> {
+export async function deployNameRegistry(deployer: Signer, masterOwner: String, factories: String[], confirmations: number = config.confirmationsForDeploy): Promise<Contract> {
   const NameRegistry = await ethers.getContractFactory("NameRegistry", deployer);
   const isWhitelisted: Boolean[] = factories.map(_ => true);
   const nameRegistry = await NameRegistry.deploy(masterOwner, factories, isWhitelisted);
@@ -58,7 +62,7 @@ export async function deployWalletApproverService(
   deployer: Signer,
   masterWalletApprover: string,
   rewardPerApproval: string,
-  confirmations: number = 1
+  confirmations: number = config.confirmationsForDeploy
 ): Promise<Contract> {
   const WalletApproverService = await ethers.getContractFactory("WalletApproverService", deployer);
   const rewardPerApprovalWei = ethers.utils.parseEther(rewardPerApproval);
@@ -70,7 +74,7 @@ export async function deployWalletApproverService(
   return walletApproverService;
 }
 
-export async function deployDeployerService(deployer: Signer, confirmations: number = 1): Promise<Contract> {
+export async function deployDeployerService(deployer: Signer, confirmations: number = config.confirmationsForDeploy): Promise<Contract> {
   const DeployerService = await ethers.getContractFactory("DeployerService", deployer);
   const deployerService = await DeployerService.deploy();
   await ethers.provider.waitForTransaction(deployerService.deployTransaction.hash, confirmations)
@@ -78,14 +82,14 @@ export async function deployDeployerService(deployer: Signer, confirmations: num
   return deployerService;
 }
 
-export async function deployQueryService(deployer: Signer, confirmations: number = 1): Promise<Contract> {
+export async function deployQueryService(deployer: Signer, confirmations: number = config.confirmationsForDeploy): Promise<Contract> {
   const QueryService = await ethers.getContractFactory("QueryService", deployer);
   const queryService = await QueryService.deploy();
   console.log(`\nQuery service deployed\n\tAt address: ${queryService.address}`);
   return queryService;
 }
 
-export async function deployIssuerFactory(deployer: Signer, confirmations: number = 1): Promise<Contract> {
+export async function deployIssuerFactory(deployer: Signer, confirmations: number = config.confirmationsForDeploy): Promise<Contract> {
   const IssuerFactory = await ethers.getContractFactory("IssuerFactory", deployer);
   const issuerFactory = await IssuerFactory.deploy();
   await ethers.provider.waitForTransaction(issuerFactory.deployTransaction.hash, confirmations)
@@ -93,9 +97,11 @@ export async function deployIssuerFactory(deployer: Signer, confirmations: numbe
   return issuerFactory;
 }
 
-export async function deployAssetFactory(deployer: Signer, confirmations: number = 1): Promise<Contract> {
+export async function deployAssetFactory(deployer: Signer, confirmations: number = config.confirmationsForDeploy): Promise<Contract> {
   const AssetDeployer = await ethers.getContractFactory("AssetDeployer", deployer);
   const assetDeployer = await AssetDeployer.deploy();
+  await ethers.provider.waitForTransaction(assetDeployer.deployTransaction.hash, confirmations)
+  console.log(`\nAssetDeployer deployed\n\tAt address: ${assetDeployer.address}`);
   const AssetFactory = await ethers.getContractFactory("AssetFactory", deployer);
   const assetFactory = await AssetFactory.deploy(assetDeployer.address);
   await ethers.provider.waitForTransaction(assetFactory.deployTransaction.hash, confirmations)
@@ -103,7 +109,7 @@ export async function deployAssetFactory(deployer: Signer, confirmations: number
   return assetFactory;
 }
 
-export async function deployAssetSimpleFactory(deployer: Signer, confirmations: number = 1): Promise<Contract> {
+export async function deployAssetSimpleFactory(deployer: Signer, confirmations: number = config.confirmationsForDeploy): Promise<Contract> {
   const AssetFactory = await ethers.getContractFactory("AssetSimpleFactory", deployer);
   const assetFactory = await AssetFactory.deploy();
   await ethers.provider.waitForTransaction(assetFactory.deployTransaction.hash, confirmations)
@@ -111,9 +117,11 @@ export async function deployAssetSimpleFactory(deployer: Signer, confirmations: 
   return assetFactory;
 }
 
-export async function deployAssetTransferableFactory(deployer: Signer, confirmations: number = 1): Promise<Contract> {
+export async function deployAssetTransferableFactory(deployer: Signer, confirmations: number = config.confirmationsForDeploy): Promise<Contract> {
   const AssetTransferableDeployer = await ethers.getContractFactory("AssetTransferableDeployer", deployer);
   const assetTransferableDeployer = await AssetTransferableDeployer.deploy();
+  await ethers.provider.waitForTransaction(assetTransferableDeployer.deployTransaction.hash, confirmations)
+  console.log(`\nAssetTransferableDeployer deployed\n\tAt address: ${assetTransferableDeployer.address}`);
   const AssetTransferableFactory = await ethers.getContractFactory("AssetTransferableFactory", deployer);
   const assetTransferableFactory = await AssetTransferableFactory.deploy(assetTransferableDeployer.address);
   await ethers.provider.waitForTransaction(assetTransferableFactory.deployTransaction.hash, confirmations)
@@ -121,7 +129,7 @@ export async function deployAssetTransferableFactory(deployer: Signer, confirmat
   return assetTransferableFactory;
 }
 
-export async function deployCfManagerFactory(deployer: Signer, confirmations: number = 1): Promise<Contract> {
+export async function deployCfManagerFactory(deployer: Signer, confirmations: number = config.confirmationsForDeploy): Promise<Contract> {
   const CfManagerFactory = await ethers.getContractFactory("CfManagerSoftcapFactory", deployer);
   const cfManagerFactory = await CfManagerFactory.deploy();
   await ethers.provider.waitForTransaction(cfManagerFactory.deployTransaction.hash, confirmations)
@@ -129,7 +137,7 @@ export async function deployCfManagerFactory(deployer: Signer, confirmations: nu
   return cfManagerFactory;
 }
 
-export async function deployCfManagerVestingFactory(deployer: Signer, confirmations: number = 1): Promise<Contract> {
+export async function deployCfManagerVestingFactory(deployer: Signer, confirmations: number = config.confirmationsForDeploy): Promise<Contract> {
   const CfManagerVestingFactory = await ethers.getContractFactory("CfManagerSoftcapVestingFactory", deployer);
   const cfManagerFactory = await CfManagerVestingFactory.deploy();
   await ethers.provider.waitForTransaction(cfManagerFactory.deployTransaction.hash, confirmations)
@@ -137,7 +145,7 @@ export async function deployCfManagerVestingFactory(deployer: Signer, confirmati
   return cfManagerFactory;
 }
 
-export async function deploySnapshotDistributorFactory(deployer: Signer, confirmations: number = 1): Promise<Contract> {
+export async function deploySnapshotDistributorFactory(deployer: Signer, confirmations: number = config.confirmationsForDeploy): Promise<Contract> {
   const SnapshotDistributorFactory = await ethers.getContractFactory("SnapshotDistributorFactory", deployer);
   const snapshotDistributorFactory = await SnapshotDistributorFactory.deploy();
   await ethers.provider.waitForTransaction(snapshotDistributorFactory.deployTransaction.hash, confirmations)
