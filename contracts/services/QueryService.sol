@@ -359,7 +359,8 @@ contract QueryService is IVersioned {
         return tokenAmount
             * price
             * (10 ** stablecoin.decimals())
-            / ((10 ** IToken(address(token)).decimals()) * token.priceDecimalsPrecision());
+            / token.priceDecimalsPrecision()
+            / (10 ** IToken(address(token)).decimals());
     }
 
 }
