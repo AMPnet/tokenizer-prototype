@@ -61,6 +61,15 @@ function networks() {
        gasPrice: 30000000000
     }
   }
+  if (process.env.AURORA_TESTNET_RPC) {
+    networks["aurora-testnet"] = {
+       url: process.env.AURORA_TESTNET_RPC,
+       accounts: {
+         mnemonic: process.env.SEED_PHRASE
+       },
+       gasPrice: 10000000000
+    }
+  }
  }
  return networks;
 }
