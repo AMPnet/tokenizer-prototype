@@ -92,8 +92,8 @@ describe("Full test", function () {
       const aliceBalanceAfterPayout = await testData.stablecoin.balanceOf(aliceAddress);
       expect(aliceBalanceAfterPayout).to.be.equal(aliceRevenueShareWei); // alice claims (1/3) of total revenue
 
-      //// Jane claims her revenue share by calling previously created PayoutManager contract and providing the payoutId param (0 in this case)
-      //// PayoutManager address has to be known upfront (can be found for one asset by scanning PayoutManagerCreated event for asset address)
+      //// Jane claims her revenue share by calling previously created SnapshotDistributor contract and providing the snapshotId param (0 in this case)
+      //// SnapshotDistributors address has to be known upfront (can be found for one asset by scanning SnapshotDistributorCreated event for asset address)
       const janeBalanceBeforePayout = await testData.stablecoin.balanceOf(janeAddress);
       expect(janeBalanceBeforePayout).to.be.equal(0);
       const janeRevenueShareWei = ethers.utils.parseEther("100000");    // (1/3) of the total revenue payed out
@@ -187,20 +187,20 @@ describe("Full test", function () {
       const fetchedCampaignInstancesForAsset =
           await helpers.fetchCrowdfundingInstancesForAsset(testData.cfManagerFactory, testData.asset);
       console.log("fetched campaign instances for asset", fetchedCampaignInstancesForAsset);
-      
-      //// Fetch all the Payout Managers ever deployed
-      const fetchedPayoutManagerInstances = await helpers.fetchSnapshotDistributorInstances(testData.snapshotDistributorFactory);
-      console.log("fetched payout manager instances", fetchedPayoutManagerInstances);
 
-      //// Fetch all the Payout Managers for one Issuer
-      const fetchedPayoutManagerInstancesForIssuer =
-          await helpers.fetchSnapshotDistributorInstancesForIssuer(testData.snapshotDistributorFactory, testData.issuer);
-      console.log("fetched payout manager instances for issuer", fetchedPayoutManagerInstancesForIssuer);
+     //// Fetch all the SnapshotDistributors ever deployed
+     const fetchedSnapshotDistributorInstances = await helpers.fetchSnapshotDistributorInstances(testData.snapshotDistributorFactory);
+     console.log("fetched SnapshotDistributor instances", fetchedSnapshotDistributorInstances);
 
-      //// Fetch all the Payout Managers for one Asset
-      const fetchedPayoutManagerInstancesForAsset =
-          await helpers.fetchSnapshotDistributorInstancesForAsset(testData.snapshotDistributorFactory, testData.asset);
-      console.log("fetched payout manager instances for asset", fetchedPayoutManagerInstancesForAsset);
+     //// Fetch all the SnapshotDistributors for one Issuer
+     const fetchedSnapshotDistributorInstancesForIssuer =
+         await helpers.fetchSnapshotDistributorInstancesForIssuer(testData.snapshotDistributorFactory, testData.issuer);
+     console.log("fetched SnapshotDistributors instances for issuer", fetchedSnapshotDistributorInstancesForIssuer);
+
+     //// Fetch all the SnapshotDistributors for one Asset
+     const fetchedSnapshotDistributorInstancesForAsset =
+         await helpers.fetchSnapshotDistributorInstancesForAsset(testData.snapshotDistributorFactory, testData.asset);
+     console.log("fetched SnapshotDistributors instances for asset", fetchedSnapshotDistributorInstancesForAsset);
   
       //// Fetch Issuer instance by id
       const fetchedIssuerById = await helpers.fetchIssuerStateById(testData.issuerFactory, 0);
@@ -214,9 +214,10 @@ describe("Full test", function () {
       const fetchedCampaignById = await helpers.fetchCampaignStateById(testData.cfManagerFactory, 0);
       console.log("fetched campaign for id=0", fetchedCampaignById);
 
-      //// Fetch Payout manager instance by id
-      const fetchedPayoutManagerById = await helpers.fetchSnapshotDistributorStateById(testData.snapshotDistributorFactory, 0);
-      console.log("fetched snapshot distributor for id=0", fetchedPayoutManagerById);
+     //// Fetch SnapshotDistributor instance by id
+     const fetchedSnapshotDistributorById =
+         await helpers.fetchSnapshotDistributorStateById(testData.snapshotDistributorFactory, 0);
+     console.log("fetched SnapshotDistributors for id=0", fetchedSnapshotDistributorById);
 
       //// Fetch alice tx history
       const aliceTxHistory = await helpers.fetchTxHistory(

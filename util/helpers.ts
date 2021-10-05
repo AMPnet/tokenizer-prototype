@@ -320,15 +320,6 @@ export async function createCfManager(
 }
 
 /**
-<<<<<<< HEAD
- * Creates payout manager to be used later for distributing revenue to the token holders.
- *
- * @param from Revenue distributor signer object
- * @param asset Asset contract instance whose token holders are to receive payments
- * @param info Payout manager info ipfs-hash
- * @param payoutManagerFactory PayoutManager factory contract (predeployed and sitting at well known address)
- * @returns Contract instance of the deployed payout manager, already connected to the owner's signer object
-=======
  * Creates snapshot distributor to be used later for distributing revenue to the token holders.
  * 
  * @param from Revenue distributor signer object
@@ -336,7 +327,6 @@ export async function createCfManager(
  * @param info SnapshotDistributor info ipfs-hash
  * @param snapshotDistributorFactory SnapshotDistributor factory contract (predeployed and sitting at well known address)
  * @returns Contract instance of the deployed snapshot distributor, already connected to the owner's signer object 
->>>>>>> master
  */
 export async function createSnapshotDistributor(
   owner: String,
@@ -438,17 +428,7 @@ export async function cancelCampaign(owner: Signer, cfManager: Contract) {
  * owned at the moment of the execution of this transaction. If the token ownership structure changes
  * after this transaction has been processed, it will not impact the distribution because the ownership
  * structure snapshot has been made when the revenue was distributed.
-<<<<<<< HEAD
  *
- * Revenue distribution goes through the PayoutManager contract, created by the PayoutManagerFactory.
- * One payout manager can be used for multiple payouts (say yearly shareholder dividend payout).
- *
- * If the PayoutManager contract exists, the actual payout process is made of two steps:
- *  1) approve the payout manager contract to spend revenue amount (in stablecoin)
- *  2) call the createPayout() function on the PayoutManager contract
- *
-=======
- * 
  * Revenue distribution goes through the SnapshotDistributor contract, created by the SnapshotDistributorFactory.
  * One snapshot distributor can be used for multiple payouts (say yearly shareholder dividend payout).
  * 
@@ -456,7 +436,6 @@ export async function cancelCampaign(owner: Signer, cfManager: Contract) {
  *  1) approve the snapshot distributor contract to spend revenue amount (in given stablecoin)
  *  2) call the createPayout() function on the SnapshotDistributor contract
  * 
->>>>>>> master
  * createPayout() function will take the snapshot of the token holders structure and distribute revenue accordingly.
  * createPayout() function also takes the payment description as parameter, if there is any info to be provided for
  *                the payment batch (for example "WindFarm Q3/2021 revenue")
@@ -477,13 +456,8 @@ export async function createPayout(owner: Signer, snapshotDistributor: Contract,
  * Claims revenue for given investor, SnapshotDistributor contract and snapshot id.
  * SnapshotId is important since one SnapshotDistributor contract can handle multiple
  * payouts (say yearly dividend payout). Every time new revenue is transferred to the
-<<<<<<< HEAD
- * manager contract -> new payout is created with id being an auto increment (starts from 1).
- *
-=======
  * manager contract -> new snapshopt id is created with id being an auto increment (starts from 1).
  * 
->>>>>>> master
  * @param investor Investor signer object
  * @param snapshotDistributor Contract instance handling payouts for one Asset
  * @param snapshotId Snapshot id of the payout
@@ -543,13 +517,8 @@ export async function claimLiquidationShare(investor: Signer, asset: Contract) {
 /**
  * Query contract for complete edit history.
  * Every new info update is a new hash stored in the contract state together with the timestamp.
-<<<<<<< HEAD
- *
- * @param contract Must be one of: Issuer, CfManager, Asset, PayoutManager
-=======
  * 
  * @param contract Must be one of: Issuer, CfManager, Asset, SnapshotDistributor
->>>>>>> master
  * @returns Returns array of all the info strings (with timestamps) with the last one being the active info hash.
  */
 export async function getInfoHistory(contract: Contract): Promise<object> {
@@ -634,13 +603,7 @@ export async function getCrowdfundingCampaignState(contract: Contract): Promise<
 }
 
 /**
-<<<<<<< HEAD
- *
- * @param contract PayoutManager contract instance
-=======
- * 
  * @param contract SnapshotDistributor contract instance
->>>>>>> master
  * @returns State object
  *
  * Example response array (ethersjs):
@@ -765,15 +728,9 @@ export async function fetchSnapshotDistributorInstancesForIssuer(snapshotDistrib
 }
 
 /**
-<<<<<<< HEAD
- * @param payoutManagerFactory Predeployed PayoutManager factory instance
- * @param asset Filter payout managers by this asset
- * @returns Array of payout manager states
-=======
  * @param snapshotDistributorFactory Predeployed SnapshotDistributor factory instance
  * @param asset Filter snapshot distributors by this asset
  * @returns Array of snapshot distributors states
->>>>>>> master
  */
 export async function fetchSnapshotDistributorInstancesForAsset(snapshotDistributorFactory: Contract, asset: Contract): Promise<object> {
   const instances = await snapshotDistributorFactory.getInstancesForAsset(asset.address);
@@ -824,15 +781,9 @@ export async function fetchAssetTransferableStateById(assetFactory: Contract, id
 }
 
 /**
-<<<<<<< HEAD
- * @param payoutManagerFactory Predeployed PayoutManager factory
- * @param id PayoutManager id
- * @returns PayoutManager state
-=======
  * @param snapshotDistributor Predeployed SnapshotDistributor factory
  * @param id SnapshotDistributor id
- * @returns SnapshotDistributor state 
->>>>>>> master
+ * @returns SnapshotDistributor state
  */
 export async function fetchSnapshotDistributorStateById(snapshotDistributorFactory: Contract, id: Number): Promise<object> {
   const instanceAddress = await snapshotDistributorFactory.instances(id);
