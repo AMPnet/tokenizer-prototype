@@ -1,6 +1,8 @@
 import { task } from "hardhat/config";
+import '@nomiclabs/hardhat-ethers';
 import "@nomiclabs/hardhat-waffle";
 import "@nomiclabs/hardhat-solhint";
+import '@typechain/hardhat';
 import "hardhat-gas-reporter";
 import "hardhat-contract-sizer";
 import * as dotenv from 'dotenv';
@@ -73,5 +75,9 @@ module.exports = {
       }
     }
   },
-  networks: networks()
+  networks: networks(),
+  typechain: {
+    target: 'ethers-v5',
+    alwaysGenerateOverloads: false
+  }
 };

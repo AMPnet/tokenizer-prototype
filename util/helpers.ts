@@ -1,3 +1,4 @@
+// @ts-ignore
 import { ethers } from "hardhat";
 import { Contract, Signer } from "ethers";
 import * as filters from "./filters";
@@ -15,7 +16,7 @@ export async function deployStablecoin(deployer: Signer, supply: string, confirm
   return stablecoin;
 }
 
-export async function deployApxRegistry(deployer: Signer, masterOwner: String, assetManager: String, priceManager: String, confirmations: number = config.confirmationsForDeploy): Promise<Contract> {
+export async function deployApxRegistry(deployer: Signer, masterOwner: string, assetManager: string, priceManager: string, confirmations: number = config.confirmationsForDeploy): Promise<Contract> {
   const ApxRegistry = await ethers.getContractFactory("ApxAssetsRegistry", deployer);
   const apxRegistry = await ApxRegistry.deploy(masterOwner, assetManager, priceManager);
   await ethers.provider.waitForTransaction(apxRegistry.deployTransaction.hash, confirmations)
@@ -23,7 +24,7 @@ export async function deployApxRegistry(deployer: Signer, masterOwner: String, a
   return apxRegistry;
 }
 
-export async function deployMirroredToken(deployer: Signer, name: String, symbol: String, originalToken: String, childChainManager: String, confirmations: number = config.confirmationsForDeploy): Promise<Contract> {
+export async function deployMirroredToken(deployer: Signer, name: string, symbol: string, originalToken: string, childChainManager: string, confirmations: number = config.confirmationsForDeploy): Promise<Contract> {
   const MirroredToken = await ethers.getContractFactory("MirroredToken", deployer);
   const mirroredToken = await MirroredToken.deploy(name, symbol, originalToken, childChainManager);
   await ethers.provider.waitForTransaction(mirroredToken.deployTransaction.hash, confirmations)
@@ -31,9 +32,9 @@ export async function deployMirroredToken(deployer: Signer, name: String, symbol
   return mirroredToken;
 }
 
-export async function deployNameRegistry(deployer: Signer, masterOwner: String, factories: String[], confirmations: number = config.confirmationsForDeploy): Promise<Contract> {
+export async function deployNameRegistry(deployer: Signer, masterOwner: string, factories: string[], confirmations: number = config.confirmationsForDeploy): Promise<Contract> {
   const NameRegistry = await ethers.getContractFactory("NameRegistry", deployer);
-  const isWhitelisted: Boolean[] = factories.map(_ => true);
+  const isWhitelisted: boolean[] = factories.map(_ => true);
   const nameRegistry = await NameRegistry.deploy(masterOwner, factories, isWhitelisted);
   await ethers.provider.waitForTransaction(nameRegistry.deployTransaction.hash, confirmations)
   console.log(`\nNameRegistry deployed\n\tAt address: ${nameRegistry.address}`);
@@ -159,11 +160,11 @@ export async function deploySnapshotDistributorFactory(deployer: Signer, confirm
  * One investment platform instance (one domain) is mapped to one Issuer instance.
  * This is where the whitelisted addresses are stored. Issuer also holds the address of the
  * stablecoin to be accepted for the investments and revenue share payouts.
- * 
+ *
  * @param from Creator's signer object
  * @param stablecoin Stablecoin contract instance accepted as the payment method for this issuer
  * @param walletApproverAddress Address of the wallet approver (wallet with the rights to whitelist addresses).
- *                              This will be set to our auto-approver-script's wallet if the manager 
+ *                              This will be set to our auto-approver-script's wallet if the manager
  *                              chooses to auto-approve all the wallets with completed kyc.
  * @param info Ipfs hash representing general investment platform instance info (colors, logo url, etc)
  * @param issuerFactory Issuer factory contract (predeployed and sitting at well known address)
@@ -187,14 +188,14 @@ export async function createIssuer(
     nameRegistry.address
   );
   const receipt = await ethers.provider.waitForTransaction(issuerTx.hash);
-  console.log("issuer deployed, scanning for events", receipt)
+  // console.log("issuer deployed, scanning for events", receipt)
   for (const log of receipt.logs) {
     try {
       const parsedLog = issuerFactory.interface.parseLog(log);
-      console.log("parsedLog", parsedLog);
+      // console.log("parsedLog", parsedLog);
       if (parsedLog.name == "IssuerCreated") {
         const ownerAddress = parsedLog.args.creator;
-        console.log("parsed creator", ownerAddress);
+        // console.log("parsed creator", ownerAddress);
         const issuerAddress = parsedLog.args.issuer;
         console.log(`\nIssuer deployed\n\tAt address: ${issuerAddress}\n\tOwner: ${ownerAddress}`);
         return (await ethers.getContractAt("Issuer", issuerAddress));
@@ -205,16 +206,16 @@ export async function createIssuer(
 }
 
 /**
- * Creates an Asset which is basically an ERC-20 token with the possibility 
+ * Creates an Asset which is basically an ERC-20 token with the possibility
  * of taking snapshots to support revenue distribution functionality.
  * An asset has to be created before the crowdfunding campaign with the predefined token supply.
  * The whole supply is automatically owned by the token creator.
- * 
+ *
  * @param from Creator's signer object
  * @param issuer Asset's issuer contract instance
  * @param initialTokenSupply Total number of tokens to be created. Not changeable afterwards.
- * @param whitelistRequiredForTransfer If set to true, tokens will be transferable only between the whitelisted addresses 
- * @param name Asset token name (For example APPLE INC.) 
+ * @param whitelistRequiredForTransfer If set to true, tokens will be transferable only between the whitelisted addresses
+ * @param name Asset token name (For example APPLE INC.)
  * @param symbol Asset token symbol/ticker (For example APPL)
  * @param info Asset info ipfs hash providing more than just a name and the ticker (if necessary)
  * @param assetFactory Asset factory contract (predeployed and sitting at well known address)
@@ -267,10 +268,10 @@ export async function createAsset(
  * For the crowdfunding campaign to be considered active, the creator has to transfer tokens
  * to be sold to the address of this contract, and then call the approveCampaign() function on the
  * Issuer contract.
- * 
+ *
  * @param from Creator's signer object
  * @param asset Asset contract instance whose tokens are to be sold through this crowdfunding campaign
- * @param initialPricePerToken Price per token (in stablecoin) 
+ * @param initialPricePerToken Price per token (in stablecoin)
  * @param softCap Minimum funds to be raised (in stablecoin) for the campaigng to succeed
  * @param whitelistRequired Set to true to allow only whitelisted (kyc) wallets to invest.
  * @param info Campaign info ipfs hash describing this campaign.
@@ -355,11 +356,11 @@ export async function createSnapshotDistributor(
 /**
  * Invests some amount of the stablecoin.
  * The stablecoin to be used was fetched earlier by reading the asset's issuer configuration.
- * 
+ *
  * Two transactions involved here:
  *  1) Approve CfManager to spend your funds
  *  2) Call the invest() function on the CfManager
- * 
+ *
  * @param investor Investor signer object
  * @param cfManager CfManager contract instance
  * @param stablecoin Stablecoin contract instance to be used for payment
@@ -376,7 +377,7 @@ export async function invest(investor: Signer, cfManager: Contract, stablecoin: 
  * all of the invested funds to the investor's wallet. Can only be called by the
  * investor who has placed an investment in the campaign, and the campaign was not yet
  * finalized.
- * 
+ *
  * @param investor Investor signer object
  * @param cfManager CfManager contract instance
  */
@@ -388,7 +389,7 @@ export async function cancelInvest(investor: Signer, cfManager: Contract) {
  * Transfers claimable tokens to the investors wallet.
  * Can only be called if the investor has actually invested in the campaign
  * and only after the campaign owner has finalized the campaign.
- * 
+ *
  * @param investor Investor signer object
  * @param cfManager CfManager contract instance
  */
@@ -402,8 +403,8 @@ export async function claimInvestment(investor: Signer, cfManager: Contract) {
  * Can only be called by the campaign owner if the soft cap has been reached.
  * This transaction will transfer all of the funds raised to the owner's wallet.
  * If some of the tokens were not sold they are also returned to the owner's wallet
- * in the same transaction. 
- * 
+ * in the same transaction.
+ *
  * @param owner CfManager owner signer object
  * @param cfManager CfManager contract instance
  */
@@ -414,7 +415,7 @@ export async function finalizeCampaign(owner: Signer, cfManager: Contract) {
 /**
  * Cancels active crowdfunding campaign.
  * Can only be cancelled by the campaign owner, if it was not finalized before.
- * 
+ *
  * @param owner CfManager contract owner signer object
  * @param cfManager CfManager contract instance
  */
@@ -423,11 +424,11 @@ export async function cancelCampaign(owner: Signer, cfManager: Contract) {
 }
 
 /**
- * Distributes revenue to the token holders, proportional to the amount of the tokens 
+ * Distributes revenue to the token holders, proportional to the amount of the tokens
  * owned at the moment of the execution of this transaction. If the token ownership structure changes
  * after this transaction has been processed, it will not impact the distribution because the ownership
  * structure snapshot has been made when the revenue was distributed.
- * 
+ *
  * Revenue distribution goes through the SnapshotDistributor contract, created by the SnapshotDistributorFactory.
  * One snapshot distributor can be used for multiple payouts (say yearly shareholder dividend payout).
  * 
@@ -436,9 +437,9 @@ export async function cancelCampaign(owner: Signer, cfManager: Contract) {
  *  2) call the createPayout() function on the SnapshotDistributor contract
  * 
  * createPayout() function will take the snapshot of the token holders structure and distribute revenue accordingly.
- * createPayout() function also takes the payment description as parameter, if there is any info to be provided for 
+ * createPayout() function also takes the payment description as parameter, if there is any info to be provided for
  *                the payment batch (for example "WindFarm Q3/2021 revenue")
- * 
+ *
  * @param owner Payment creator signer object
  * @param snapshotDistributor SnapshotDistributor contract instance used for handling the payouts. Has to be created before calling this function.
  * @param stablecoin Stablecoin contract instance to be used as the payment method
@@ -469,7 +470,7 @@ export async function claimRevenue(investor: Signer, snapshotDistributor: Contra
 /**
  * Will update info hash on the target object.
  * Can only be called by the contract owner.
- * 
+ *
  * @param owner Contract owner signer object
  * @param contract Must be one of: Issuer, CfManager, Asset, AssetTransferable, SnapshotDistributor
  */
@@ -525,12 +526,12 @@ export async function getInfoHistory(contract: Contract): Promise<object> {
 }
 
 /**
- * 
+ *
  * @param contract Issuer contract instance
  * @returns State object
- * 
+ *
  * Example response array (ethersjs):
- * 
+ *
  *   [
  *    id: BigNumber { _hex: '0x00', _isBigNumber: true },
  *    owner: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
@@ -544,12 +545,12 @@ export async function getIssuerState(contract: Contract): Promise<String> {
 }
 
 /**
- * 
+ *
  * @param contract Asset contract instance
  * @returns State object
- * 
+ *
  * Example response array (ethersjs):
- * 
+ *
  *  [
  *   id: BigNumber { _hex: '0x00', _isBigNumber: true },
  *   owner: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
@@ -561,7 +562,7 @@ export async function getIssuerState(contract: Contract): Promise<String> {
  *   name: 'Test Asset',
  *   symbol: 'TSTA'
  *  ]
- * 
+ *
  */
 export async function getAssetState(contract: Contract): Promise<object> {
   return contract.getState();
@@ -575,12 +576,12 @@ export async function getMirroredAssetChildChainManager(contract: Contract): Pro
 }
 
 /**
- * 
+ *
  * @param contract CfManager contract instance
  * @returns State object
- * 
+ *
  * Example response array (ethersjs):
- * 
+ *
  *   [
  *    id: BigNumber { _hex: '0x00', _isBigNumber: true },
  *    owner: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
@@ -602,12 +603,11 @@ export async function getCrowdfundingCampaignState(contract: Contract): Promise<
 }
 
 /**
- * 
  * @param contract SnapshotDistributor contract instance
  * @returns State object
- * 
+ *
  * Example response array (ethersjs):
- * 
+ *
  *   [
  *    id: BigNumber { _hex: '0x00', _isBigNumber: true },
  *    owner: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
@@ -783,7 +783,7 @@ export async function fetchAssetTransferableStateById(assetFactory: Contract, id
 /**
  * @param snapshotDistributor Predeployed SnapshotDistributor factory
  * @param id SnapshotDistributor id
- * @returns SnapshotDistributor state 
+ * @returns SnapshotDistributor state
  */
 export async function fetchSnapshotDistributorStateById(snapshotDistributorFactory: Contract, id: Number): Promise<object> {
   const instanceAddress = await snapshotDistributorFactory.instances(id);
@@ -793,13 +793,13 @@ export async function fetchSnapshotDistributorStateById(snapshotDistributorFacto
 
 /**
  * Fetches transaction history for given user wallet and issuer instance.
- * To calculate this, one must fetch all the instances of the following contracts for given issuer: 
+ * To calculate this, one must fetch all the instances of the following contracts for given issuer:
  * -> Asset (for asset token transfers, if any)
  * -> CfManagerSoftcap (for investment, cancel investment and claim tokens transactions)
  * -> SnapshotDistributor (for revenue share claim transactions)
  * Then after all the contract instances have been fetched, we scan for specific events and filter
  * by the user's wallet.
- * 
+ *
  * @param wallet User wallet address
  * @param issuer Issuer contract instance
  * @param cfManagerFactory Predeployed CfManager contract factory
@@ -823,9 +823,9 @@ export async function fetchTxHistory(
 /**
  * @param issuer Issuer contract instance
  * @returns Array of issuer wallet records
- * 
+ *
  * Example response array (ethers.js)
- * 
+ *
  *   [
  *     [
  *       wallet: '0x90F79bf6EB2c4f870365E785982E1f101E93b906',
