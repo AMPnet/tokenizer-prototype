@@ -40,7 +40,8 @@ function networks() {
        url: process.env.GOERLI_RPC,
        accounts: {
          mnemonic: process.env.SEED_PHRASE
-       }
+       },
+       gasPrice: 30000000000
     }
    }
    if (process.env.MUMBAI_RPC) {
