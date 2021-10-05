@@ -3,12 +3,13 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "./IAssetSimple.sol";
 import "../shared/IAssetCommon.sol";
 import "../shared/Structs.sol";
 import "../shared/IIssuerCommon.sol";
 import "../shared/ICampaignCommon.sol";
 
-contract AssetSimple is IAssetCommon, ERC20 {
+contract AssetSimple is IAssetSimple, ERC20 {
 
     //------------------------
     //  CONSTANTS
@@ -61,11 +62,44 @@ contract AssetSimple is IAssetCommon, ERC20 {
     }
 
     //------------------------
+    //  MODIFIERS
+    //------------------------
+    modifier ownerOnly() {
+        require(
+            msg.sender == state.owner,
+            "AssetSimple: Only asset creator can make this action."
+        );
+        _;
+    }
+
+    //------------------------
     //  IMPLEMENTATION
     //------------------------
     function flavor() external view override returns (string memory) { return state.flavor; }
     
     function version() external view override returns (string memory) { return state.version; }
+
+    function changeOwnership(address newOwner) external override ownerOnly {
+        state.owner = newOwner;
+        if (newOwner == IIssuerCommon(state.issuer).commonState().owner) { state.assetApprovedByIssuer = true; }
+    }
+
+    function setCampaignState(address campaign, bool approved) external override ownerOnly {
+        bool campaignExists = approvedCampaignsMap[campaign].wallet == campaign;
+        if (campaignExists) {
+            approvedCampaignsMap[campaign].whitelisted = approved;
+        } else {
+            approvedCampaignsMap[campaign] = Structs.WalletRecord(campaign, approved);
+        }
+    }
+
+    function setIssuerStatus(bool status) external override {
+        require(
+            msg.sender == IIssuerCommon(state.issuer).commonState().owner,
+            "AssetSimple: Only issuer owner can make this action." 
+        );
+        state.assetApprovedByIssuer = status;
+    }
 
     function setInfo(string memory info) external override {
         infoHistory.push(Structs.InfoEntry(
@@ -80,7 +114,7 @@ contract AssetSimple is IAssetCommon, ERC20 {
         address campaign = msg.sender;
         require(_campaignWhitelisted(campaign), "AssetSimple: Campaign not approved.");
         Structs.CampaignCommonState memory campaignState = ICampaignCommon(campaign).commonState();
-        require(campaignState.finalized, "Asset: Campaign not finalized");
+        require(campaignState.finalized, "AssetSimple: Campaign not finalized");
         uint256 tokenValue = campaignState.fundsRaised;
         uint256 tokenAmount = campaignState.tokensSold;
         require(
@@ -105,6 +139,18 @@ contract AssetSimple is IAssetCommon, ERC20 {
             block.timestamp
         );
     }
+
+    function getState() external view override returns (Structs.AssetSimpleState memory) {
+        return state;
+    }
+
+    function getInfoHistory() external view override returns (Structs.InfoEntry[] memory) {
+        return infoHistory;
+    }
+
+    function getSellHistory() external view override returns (Structs.TokenSaleInfo[] memory) {
+        return sellHistory;
+    }
     
     function commonState() external view override returns (Structs.AssetCommonState memory) { 
         return Structs.AssetCommonState(
@@ -121,6 +167,9 @@ contract AssetSimple is IAssetCommon, ERC20 {
         );
     }
 
+    //---------------
+    //  HELPERS
+    //---------------
     function _campaignWhitelisted(address campaignAddress) private view returns (bool) {
         if (ICampaignCommon(campaignAddress).commonState().owner == state.owner) {
             return true;

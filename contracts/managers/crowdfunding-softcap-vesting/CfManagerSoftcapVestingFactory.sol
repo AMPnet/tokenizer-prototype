@@ -9,7 +9,7 @@ import "../../registry/INameRegistry.sol";
 contract CfManagerSoftcapVestingFactory is ICfManagerSoftcapVestingFactory {
     
     string constant public FLAVOR = "CfManagerSoftcapVestingV1";
-    string constant public VERSION = "1.0.16";
+    string constant public VERSION = "1.0.18";
     
     address[] public instances;
     mapping (address => address[]) instancesPerIssuer;
@@ -37,7 +37,7 @@ contract CfManagerSoftcapVestingFactory is ICfManagerSoftcapVestingFactory {
         INameRegistry registry = INameRegistry(nameRegistry);
         require(
             registry.getCampaign(mappedName) == address(0),
-            "CfManagerSoftcapFactory: campaign with this name already exists"
+            "CfManagerSoftcapVestingFactory: campaign with this name already exists"
         );
         address cfManagerSoftcap = address(new CfManagerSoftcapVesting(
             FLAVOR,

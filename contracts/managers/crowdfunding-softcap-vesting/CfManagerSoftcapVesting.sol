@@ -173,15 +173,16 @@ contract CfManagerSoftcapVesting is ICfManagerSoftcapVesting {
     //------------------------
     function invest(uint256 amount) external active notFinalized isWhitelisted {
         require(amount > 0, "CfManagerSoftcapVesting: Investment amount has to be greater than 0.");
-
-        uint256 floatingTokens = _assetERC20().balanceOf(address(this)) - state.totalClaimableTokens;
+        uint256 tokenBalance = _assetERC20().balanceOf(address(this));
+        require(_token_value(tokenBalance) >= state.softCap, "CfManagerSoftcapVesting: not enough tokens for sale to reach the softcap.");
+        uint256 floatingTokens = tokenBalance - state.totalClaimableTokens;
         require(floatingTokens > 0, "CfManagerSoftcapVesting: No more tokens available for sale.");
 
-        uint256 tokens = 
-            (amount / state.tokenPrice) 
-                * _asset_price_precision()
-                * _asset_decimals_precision() 
-                / _stablecoin_decimals_precision();
+        uint256 tokens = amount
+                            * _asset_price_precision()
+                            * _asset_decimals_precision()
+                            / state.tokenPrice
+                            / _stablecoin_decimals_precision();
         uint256 tokenValue = _token_value(tokens);
         require(tokens > 0 && tokenValue > 0, "CfManagerSoftcapVesting: Investment amount too low.");
         require(floatingTokens >= tokens, "CfManagerSoftcapVesting: Not enough tokens left for this investment amount.");        
@@ -405,7 +406,8 @@ contract CfManagerSoftcapVesting is ICfManagerSoftcapVesting {
         return tokens
                     * state.tokenPrice
                     * _stablecoin_decimals_precision()
-                    / (_asset_decimals_precision() * _asset_price_precision());
+                    / _asset_price_precision()
+                    / _asset_decimals_precision();
     }
 
     function _walletApproved(address wallet) private view returns (bool) {

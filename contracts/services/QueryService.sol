@@ -11,11 +11,12 @@ import "../shared/IAssetCommon.sol";
 import "../shared/IIssuerCommon.sol";
 import "../shared/IVersioned.sol";
 import "../registry/INameRegistry.sol";
+import "../tokens/erc20/IToken.sol";
 
 contract QueryService is IVersioned {
 
     string constant public FLAVOR = "QueryServiceV1";
-    string constant public VERSION = "1.0.15";
+    string constant public VERSION = "1.0.18";
 
     function flavor() external pure override returns (string memory) { return FLAVOR; }
     function version() external pure override returns (string memory) { return VERSION; } 
@@ -347,6 +348,19 @@ contract QueryService is IVersioned {
         }
 
         return response; 
+    }
+
+    function tokenValue(
+        uint256 tokenAmount,
+        IAssetCommon token,
+        IToken stablecoin,
+        uint256 price
+    ) external view returns (uint256) {
+        return tokenAmount
+            * price
+            * (10 ** stablecoin.decimals())
+            / token.priceDecimalsPrecision()
+            / (10 ** IToken(address(token)).decimals());
     }
 
 }
