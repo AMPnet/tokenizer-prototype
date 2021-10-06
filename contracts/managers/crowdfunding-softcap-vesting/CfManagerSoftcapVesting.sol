@@ -229,11 +229,12 @@ contract CfManagerSoftcapVesting is ICfManagerSoftcapVesting {
     }
 
     function claim(address investor) external finalized vestingStarted {
-        uint256 unreleased = _releasableAmount();
+        uint256 unreleased = _releasableAmount(investor);
         require(unreleased > 0, "CfManagerSoftcapVesting: No tokens to be released.");
 
         state.totalClaimableTokens -= unreleased;
         claims[investor] -= unreleased;
+        released[investor] += unreleased;
         _assetERC20().safeTransfer(investor, unreleased);
         emit Claim(investor, state.asset, unreleased, block.timestamp);
     }
@@ -368,17 +369,17 @@ contract CfManagerSoftcapVesting is ICfManagerSoftcapVesting {
         return vestedAmount - (state.totalTokensSold - state.totalClaimableTokens);
     }
 
-    function _releasableAmount() private view returns (uint256) {
-        return _vestedAmount() - released[msg.sender];
+    function _releasableAmount(address investor) private view returns (uint256) {
+        return _vestedAmount(investor) - released[msg.sender];
     }
 
-    function _vestedAmount() private view returns (uint256) {
+    function _vestedAmount(address investor) private view returns (uint256) {
         if (block.timestamp < state.cliff) {
             return 0;
         } else if (block.timestamp >= (state.start + state.duration) || state.revoked) {
-            return tokenAmounts[msg.sender];
+            return tokenAmounts[investor];
         } else {
-            return tokenAmounts[msg.sender] * (block.timestamp - state.start) / state.duration;
+            return tokenAmounts[investor] * (block.timestamp - state.start) / state.duration;
         }
     }
 
