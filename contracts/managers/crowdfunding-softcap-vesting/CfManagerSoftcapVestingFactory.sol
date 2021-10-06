@@ -9,13 +9,13 @@ import "../../registry/INameRegistry.sol";
 contract CfManagerSoftcapVestingFactory is ICfManagerSoftcapVestingFactory {
     
     string constant public FLAVOR = "CfManagerSoftcapVestingV1";
-    string constant public VERSION = "1.0.18";
+    string constant public VERSION = "1.0.19";
     
     address[] public instances;
     mapping (address => address[]) instancesPerIssuer;
     mapping (address => address[]) instancesPerAsset;
 
-    event CfManagerSoftcapCreated(
+    event CfManagerSoftcapVestingCreated(
         address indexed creator,
         address cfManager,
         address asset,
@@ -56,7 +56,7 @@ contract CfManagerSoftcapVestingFactory is ICfManagerSoftcapVestingFactory {
         instancesPerIssuer[issuer].push(cfManagerSoftcap);
         instancesPerAsset[assetAddress].push(cfManagerSoftcap);
         registry.mapCampaign(mappedName, cfManagerSoftcap);
-        emit CfManagerSoftcapCreated(owner, cfManagerSoftcap, address(assetAddress), block.timestamp);
+        emit CfManagerSoftcapVestingCreated(owner, cfManagerSoftcap, address(assetAddress), block.timestamp);
         return cfManagerSoftcap;
     }
 
