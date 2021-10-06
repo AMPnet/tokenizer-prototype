@@ -70,6 +70,7 @@ async function main() {
             assetFactory.address,
             assetTransferableFactory.address,
             cfManagerFactory.address,
+            cfManagerVestingFactory.address,
             snapshotDistributorFactory.address
         ]);
     
