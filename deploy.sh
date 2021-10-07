@@ -26,30 +26,10 @@ export APX_REGISTRY=
 export APX_REGISTRY_MASTER_OWNER=                   # provide this param if APX_REGISTRY field empty
 export APX_REGISTRY_ASSET_MANAGER=                  # provide this param if APX_REGISTRY field empty
 export APX_REGISTRY_PRICE_MANAGER=                  # provide this param if APX_REGISTRY field empty
-export NAME_REGISTRY_OWNER=
 export NAME_REGISTRY=
+export NAME_REGISTRY_OWNER=                         # provide this param if NAME_REGISTRY field empty
 export DEPLOYER=
 export QUERY_SERVICE=
-
-############################################ Issuer definition ############################################
-# > Load existing Issuer at given address
-export ISSUER=0x0000000000000000000000000000000000000000
-# > Or create a new one with the following properties
-export ISSUER_MAPPED_NAME=                                     # defaults to "test-issuer"
-export ISSUER_OWNER=                                        # defaults to deployerAddress (accounts[0])
-export ISSUER_IPFS=                                         # defaults to "issuer-info-ipfs-hash"
-
-############################################ Asset definition ############################################
-# > Load existing Asset at given address
-export ASSET=0x0000000000000000000000000000000000000000
-# > Or create a new one with the following properties
-export ASSET_NAME=                                          # defaults to "Test Asset"
-export ASSET_MAPPED_NAME=                                   # defaults to "test-asset"
-export ASSET_SYMBOL=                                        # defaults to "$TSTA"
-export ASSET_IPFS=                                          # defaults to "asset-info-ipfs-hash"
-export ASSET_SUPPLY=                                        # defaults to 1M tokens
-export ASSET_OWNER=                                         # defaults to $ISSUER_OWNER value
-export ASSET_TRANSFER_WHITELIST_REQUIRED=                   # defaults to false
 
 ######################################## Mirrored token definition ########################################
 # > Load existing MirroredToken at given address
@@ -59,19 +39,6 @@ export MIRRORED_TOKEN_NAME=                         # provide this param if MIRR
 export MIRRORED_TOKEN_SYMBOL=                       # provide this param if MIRRORED_TOKEN field empty
 export MIRRORED_TOKEN_ORIGINAL=                     # provide this param if MIRRORED_TOKEN field empty
 export MIRRORED_TOKEN_CHILD_CHAIN_MANAGER=          # provide this param if MIRRORED_TOKEN field empty
-
-########################################### Campaign definition ###########################################
-# > Load existing Campaign at given address
-export CAMPAIGN=0x0000000000000000000000000000000000000000
-# > Or create a new one with the following properties
-export CAMPAIGN_OWNER=                                      # defaults to $ISSUER_OWNER
-export CAMPAIGN_MAPPED_NAME=                                   # defaults to "test-campaign"
-export CAMPAIGN_TOKEN_PRICE=                                # defaults to $1
-export CAMPAIGN_SOFT_CAP=                                   # defaults to $100k
-export CAMPAIGN_MIN_INVESTMENT=                             # defaults to $1
-export CAMPAIGN_MAX_INVESTMENT=                             # defaults to $100k
-export CAMPAIGN_INVESTOR_WHITELIST_REQUIRED=                # defaults to false
-export CAMPAIGN_IPFS=                                       # defaults to "test-campaign-ipfs-hash"
 
 ############################################### Run script ###############################################
 STABLECOIN=${STABLECOIN}
@@ -90,25 +57,9 @@ NAME_REGISTRY_OWNER=${NAME_REGISTRY_OWNER}
 NAME_REGISTRY=${NAME_REGISTRY}
 DEPLOYER=${DEPLOYER}
 QUERY_SERVICE=${QUERY_SERVICE}
-ISSUER=${ISSUER}
-ISSUER_MAPPED_NAME=${ISSUER_MAPPED_NAME}
-ISSUER_OWNER=${ISSUER_OWNER}
-ISSUER_IPFS=${ISSUER_IPFS}
-ASSET=${ASSET}
-ASSET_NAME=${ASSET_NAME}
-ASSET_MAPPED_NAME=${ASSET_MAPPED_NAME}
-ASSET_SYMBOL=${ASSET_SYMBOL}
-ASSET_IPFS=${ASSET_IPFS}
-ASSET_SUPPLY=${ASSET_SUPPLY}
-ASSET_OWNER=${ASSET_OWNER}
-ASSET_TRANSFER_WHITELIST_REQUIRED=${ASSET_TRANSFER_WHITELIST_REQUIRED}
-CAMPAIGN=${CAMPAIGN}
-CAMPAIGN_OWNER=${CAMPAIGN_OWNER}
-CAMPAIGN_MAPPED_NAME=${CAMPAIGN_MAPPED_NAME}
-CAMPAIGN_TOKEN_PRICE=${CAMPAIGN_TOKEN_PRICE}
-CAMPAIGN_SOFT_CAP=${CAMPAIGN_SOFT_CAP}
-CAMPAIGN_MIN_INVESTMENT=${CAMPAIGN_MIN_INVESTMENT}
-CAMPAIGN_MAX_INVESTMENT=${CAMPAIGN_MAX_INVESTMENT}
-CAMPAIGN_INVESTOR_WHITELIST_REQUIRED=${CAMPAIGN_INVESTOR_WHITELIST_REQUIRED}
-CAMPAIGN_IPFS=${CAMPAIGN_IPFS}
+MIRRORED_TOKEN=${MIRRORED_TOKEN}
+MIRRORED_TOKEN_NAME=${MIRRORED_TOKEN_NAME}
+MIRRORED_TOKEN_SYMBOL=${MIRRORED_TOKEN_SYMBOL}
+MIRRORED_TOKEN_ORIGINAL=${MIRRORED_TOKEN_ORIGINAL}
+MIRRORED_TOKEN_CHILD_CHAIN_MANAGER=${MIRRORED_TOKEN_CHILD_CHAIN_MANAGER}
 hh run scripts/deploy-test-env.ts --network $NETWORK
