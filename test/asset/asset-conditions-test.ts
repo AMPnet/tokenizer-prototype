@@ -33,6 +33,18 @@ describe("Asset - test function conditions", function () {
         ).to.be.revertedWith(modifierMessage);
     })
 
+    it('should verify transferAllowed modifier', async function () {
+        const address = await testData.jane.getAddress();
+        const tokenSupply = ethers.utils.parseEther(testData.assetTokenSupply.toString());
+
+        await expect(
+            testData.asset.connect(testData.alice).transfer(address, tokenSupply)
+        ).to.be.reverted;
+        await expect(
+            testData.asset.connect(testData.alice).transferFrom(await testData.alice.getAddress(), address, tokenSupply)
+        ).to.be.reverted;
+    })
+
     it('should verify that only issuer owner can set issuer status', async function () {
         await expect(
             testData.asset.connect(testData.assetManager).setIssuerStatus(false)
