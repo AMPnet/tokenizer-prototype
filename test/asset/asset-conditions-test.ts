@@ -20,6 +20,9 @@ describe("Asset - test function conditions", function () {
         const address = await testData.jane.getAddress()
 
         await expect(
+            testData.asset.connect(testData.alice).setCampaignState(testData.cfManager.address, false)
+        ).to.be.revertedWith(modifierMessage);
+        await expect(
             testData.asset.connect(testData.alice).changeOwnership(address)
         ).to.be.revertedWith(modifierMessage);
         await expect(
@@ -27,6 +30,9 @@ describe("Asset - test function conditions", function () {
         ).to.be.revertedWith(modifierMessage);
         await expect(
             testData.asset.connect(testData.alice).setWhitelistFlags(false, false)
+        ).to.be.revertedWith(modifierMessage);
+        await expect(
+            testData.asset.connect(testData.alice).liquidate()
         ).to.be.revertedWith(modifierMessage);
         await expect(
             testData.asset.connect(testData.alice).changeOwnership(address)
@@ -63,6 +69,34 @@ describe("Asset - test function conditions", function () {
     })
 
     it('should fail to claim liquidation share on not whitelisted address', async function () {
+        await testData.liquidateAsset()
+        await expect(
+            testData.asset.connect(testData.alice).claimLiquidationShare(await testData.alice.getAddress())
+        ).to.be.revertedWith("Asset: wallet must be whitelisted before claiming liquidation share.")
+    })
+
+    it('should fail to finalize sale for liquidated asset', async function () {
+        await testData.liquidateAsset()
+        await expect(
+            testData.asset.connect(testData.alice).finalizeSale()
+        ).to.be.revertedWith("Asset: Action forbidden, asset liquidated.")
+    })
+
+    it('should fail to liquidated already liquidated asset', async function () {
+        await testData.liquidateAsset()
+        await expect(
+            testData.asset.connect(testData.issuerOwner).liquidate()
+        ).to.be.revertedWith("Asset: Action forbidden, asset liquidated.")
+    })
+
+    it('should fail to claim liquidation share for not liquidated asset', async function () {
+        await expect(
+            testData.asset.connect(testData.alice).claimLiquidationShare(await testData.alice.getAddress())
+        ).to.be.revertedWith("Asset: not liquidated")
+    })
+
+    it('should fail to claim liquidation funds for not whitelisted wallet', async function () {
+        await testData.asset.connect(testData.issuerOwner).setWhitelistFlags(true, true)
         await testData.liquidateAsset()
         await expect(
             testData.asset.connect(testData.alice).claimLiquidationShare(await testData.alice.getAddress())
