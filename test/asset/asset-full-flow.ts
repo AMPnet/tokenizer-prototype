@@ -6,7 +6,7 @@ import {TestData} from "../TestData";
 import {BigNumber} from "ethers";
 import {SnapshotDistributor} from "../../typechain";
 
-describe("Full test", function () {
+describe("Asset - full test", function () {
 
   const testData = new TestData()
 
