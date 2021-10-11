@@ -17,7 +17,7 @@ describe("Asset transferable - test function conditions", function () {
 
     it(`should verify notLiquidated modifier`, async function () {
         const modifierMessage = "AssetTransferable: Action forbidden, asset liquidated."
-        await liquidateAsset()
+        await testData.liquidateAsset()
 
         await expect(
             testData.asset.connect(testData.assetManager).finalizeSale()
@@ -87,7 +87,7 @@ describe("Asset transferable - test function conditions", function () {
     })
 
     it('should fail to claim liquidation share on not whitelisted address', async function () {
-        await liquidateAsset()
+        await testData.liquidateAsset()
         await expect(
             testData.asset.connect(testData.alice).claimLiquidationShare(await testData.alice.getAddress())
         ).to.be.revertedWith("AssetTransferable: wallet must be whitelisted before claiming liquidation share.")
@@ -95,7 +95,7 @@ describe("Asset transferable - test function conditions", function () {
 
     it('should fail to claim zero liquidation funds', async function () {
         await testData.asset.connect(testData.issuerOwner).setWhitelistRequiredForLiquidationClaim(false)
-        await liquidateAsset()
+        await testData.liquidateAsset()
         await expect(
             testData.asset.connect(testData.alice).claimLiquidationShare(await testData.alice.getAddress())
         ).to.be.revertedWith("AssetTransferable: no tokens approved for claiming liquidation share")
@@ -143,17 +143,5 @@ describe("Asset transferable - test function conditions", function () {
             testData.asset.connect(testData.alice).claimLiquidationShare(await testData.alice.getAddress())
         ).to.be.revertedWith("AssetTransferable: no liquidation funds to claim")
     })
-
-    async function liquidateAsset() {
-        const liquidationFunds = 300000;
-        await testData.stablecoin
-            .transfer(await testData.issuerOwner.getAddress(), ethers.utils.parseEther(liquidationFunds.toString()));
-        await testData.stablecoin.connect(testData.assetManager)
-            .approve(testData.asset.address, ethers.utils.parseEther(liquidationFunds.toString()));
-        await helpers
-            .registerAsset(testData.assetManager, testData.apxRegistry, testData.asset.address, testData.asset.address);
-        await helpers.updatePrice(testData.priceManager, testData.apxRegistry, testData.asset, 1, 60);
-        await helpers.liquidate(testData.issuerOwner, testData.asset, testData.stablecoin, liquidationFunds);
-    }
 
 })
