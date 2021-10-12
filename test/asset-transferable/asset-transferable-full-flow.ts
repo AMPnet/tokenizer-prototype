@@ -5,7 +5,7 @@ import * as helpers from "../../util/helpers";
 import {TestData} from "../TestData";
 import { BigNumber } from "ethers";
 
-describe("Full test", function () {
+describe("Asset transferable - full test", function () {
 
   const testData = new TestData()
 

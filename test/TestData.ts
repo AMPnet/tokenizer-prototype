@@ -190,4 +190,15 @@ export class TestData {
             this.nameRegistry
         );
     }
+
+    async liquidateAsset(liquidationFunds: number = 300000) {
+        await this.stablecoin
+            .transfer(await this.issuerOwner.getAddress(), ethers.utils.parseEther(liquidationFunds.toString()));
+        await this.stablecoin.connect(this.assetManager)
+            .approve(this.asset.address, ethers.utils.parseEther(liquidationFunds.toString()));
+        await helpers
+            .registerAsset(this.assetManager, this.apxRegistry, this.asset.address, this.asset.address);
+        await helpers.updatePrice(this.priceManager, this.apxRegistry, this.asset, 1, 60);
+        await helpers.liquidate(this.issuerOwner, this.asset, this.stablecoin, liquidationFunds);
+    }
 }
