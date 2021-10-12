@@ -92,6 +92,7 @@ contract CfManagerSoftcapVesting is ICfManagerSoftcapVesting {
         require(maxInvestment >= minInvestment, "CfManagerSoftcapVesting: Max has to be bigger than min investment.");
         require(maxInvestment > 0, "CfManagerSoftcapVesting: Max investment has to be bigger than 0.");
         IIssuerCommon issuer = IIssuerCommon(IAssetCommon(asset).commonState().issuer);
+        uint256 softCapNormalized = (softCap / tokenPrice) * tokenPrice;
         state = Structs.CfManagerSoftcapVestingState(
             contractFlavor,
             contractVersion,
@@ -101,7 +102,7 @@ contract CfManagerSoftcapVesting is ICfManagerSoftcapVesting {
             address(issuer),
             issuer.commonState().stablecoin,
             tokenPrice,
-            softCap,
+            softCapNormalized,
             minInvestment,
             maxInvestment,
             whitelistRequired,
@@ -112,7 +113,7 @@ contract CfManagerSoftcapVesting is ICfManagerSoftcapVesting {
             false, 0, 0, 0, true, false
         );
         require(
-            _token_value(IToken(asset).totalSupply()) >= softCap,
+            _token_value(IToken(asset).totalSupply()) >= softCapNormalized,
             "CfManagerSoftcapVesting: Invalid soft cap."
         );
     }
