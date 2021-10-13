@@ -5,12 +5,13 @@ import "./ISnapshotDistributorFactory.sol";
 import "./SnapshotDistributor.sol";
 import "../../issuer/IIssuer.sol";
 import "../../shared/IAssetCommon.sol";
+import "../../shared/ISnapshotDistributorCommon.sol";
 import "../../registry/INameRegistry.sol";
 
 contract SnapshotDistributorFactory is ISnapshotDistributorFactory {
 
     string constant public FLAVOR = "SnapshotDistributorV1";
-    string constant public VERSION = "1.0.15";
+    string constant public VERSION = "1.0.20";
 
     event SnapshotDistributorCreated(
         address indexed creator,
@@ -22,6 +23,10 @@ contract SnapshotDistributorFactory is ISnapshotDistributorFactory {
     address[] public instances;
     mapping (address => address[]) instancesPerIssuer;
     mapping (address => address[]) instancesPerAsset;
+
+    constructor(address _oldFactory) { 
+        if (_oldFactory != address(0)) { _addInstances(ISnapshotDistributorFactory(_oldFactory).getInstances()); }
+    }
 
     function create(
         address owner,
@@ -54,5 +59,20 @@ contract SnapshotDistributorFactory is ISnapshotDistributorFactory {
     function getInstancesForAsset(address asset) external override view returns (address[] memory) {
         return instancesPerAsset[asset];
     }
-    
+
+    /////////// HELPERS ///////////
+
+    function _addInstances(address[] memory _instances) private {
+        if (_instances.length == 0) { return; }
+        for (uint256 i = 0; i < _instances.length; i++) { _addInstance(_instances[i]); }
+    }
+
+    function _addInstance(address _instance) private {
+        address asset = ISnapshotDistributorCommon(_instance).commonState().asset;
+        address issuer = IAssetCommon(asset).commonState().issuer;
+        instances.push(_instance);
+        instancesPerIssuer[issuer].push(_instance);
+        instancesPerAsset[asset].push(_instance);
+    }
+
 }

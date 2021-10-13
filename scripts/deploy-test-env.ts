@@ -37,31 +37,31 @@ async function main() {
 
     const issuerFactory: Contract = (process.env.ISSUER_FACTORY) ?
         await ethers.getContractAt("IssuerFactory", process.env.ISSUER_FACTORY) :
-        await helpers.deployIssuerFactory(deployer);
+        await helpers.deployIssuerFactory(deployer, process.env.ISSUER_FACTORY_OLD);
 
     const assetFactory: Contract = (process.env.ASSET_FACTORY) ?
         await ethers.getContractAt("AssetFactory", process.env.ASSET_FACTORY) :
-        await helpers.deployAssetFactory(deployer);
+        await helpers.deployAssetFactory(deployer, process.env.ASSET_FACTORY_OLD);
 
     const assetTransferableFactory: Contract = (process.env.ASSET_TRANSFERABLE_FACTORY) ?
         await ethers.getContractAt("AssetTransferableFactory", process.env.ASSET_TRANSFERABLE_FACTORY) :
-        await helpers.deployAssetTransferableFactory(deployer);
+        await helpers.deployAssetTransferableFactory(deployer, process.env.ASSET_TRANSFERABLE_FACTORY_OLD);
 
     const assetSimpleFactory: Contract = (process.env.ASSET_SIMPLE_FACTORY) ?
         await ethers.getContractAt("AssetSimpleFactory", process.env.ASSET_SIMPLE_FACTORY) :
-        await helpers.deployAssetSimpleFactory(deployer);
+        await helpers.deployAssetSimpleFactory(deployer, process.env.ASSET_SIMPLE_FACTORY_OLD);
 
     const cfManagerFactory: Contract = (process.env.CF_MANAGER_FACTORY) ?
         await ethers.getContractAt("CfManagerSoftcapFactory", process.env.CF_MANAGER_FACTORY) :
-        await helpers.deployCfManagerFactory(deployer);
+        await helpers.deployCfManagerFactory(deployer, process.env.CF_MANAGER_FACTORY_OLD);
 
     const cfManagerVestingFactory: Contract = (process.env.CF_MANAGER_VESTING_FACTORY) ?
         await ethers.getContractAt("CfManagerSoftcapVestingFactory", process.env.CF_MANAGER_VESTING_FACTORY) :
-        await helpers.deployCfManagerVestingFactory(deployer);
+        await helpers.deployCfManagerVestingFactory(deployer, process.env.CF_MANAGER_VESTING_FACTORY_OLD);
 
     const snapshotDistributorFactory: Contract = (process.env.SNAPSHOT_DISTRIBUTOR_FACTORY) ?
         await ethers.getContractAt("SnapshotDistributorFactory", process.env.SNAPSHOT_DISTRIBUTOR_FACTORY) :
-        await helpers.deploySnapshotDistributorFactory(deployer);
+        await helpers.deploySnapshotDistributorFactory(deployer, process.env.SNAPSHOT_DISTRIBUTOR_FACTORY_OLD);
 
     const nameRegistry: Contract = (process.env.NAME_REGISTRY) ?
         await ethers.getContractAt("NameRegistry", process.env.NAME_REGISTRY) :
@@ -69,14 +69,22 @@ async function main() {
             issuerFactory.address,
             assetFactory.address,
             assetTransferableFactory.address,
+            assetSimpleFactory.address,
             cfManagerFactory.address,
             cfManagerVestingFactory.address,
             snapshotDistributorFactory.address
         ]);
     
+    const walletApprovers: string[] = (process.env.WALLET_APPROVER_ADDRESSES) ? 
+        process.env.WALLET_APPROVER_ADDRESSES.split(",") : [ ]; 
     const walletApproverService: Contract = (process.env.WALLET_APPROVER) ?
         await ethers.getContractAt("WalletApproverService", process.env.WALLET_APPROVER) :
-        await helpers.deployWalletApproverService(deployer, process.env.WALLET_APPROVER_MASTER_OWNER, "0.001");
+        await helpers.deployWalletApproverService(
+            deployer,
+            process.env.WALLET_APPROVER_MASTER_OWNER,
+            walletApprovers,
+            "0.001"
+        );
 
     const deployerService: Contract = (process.env.DEPLOYER) ?
         await ethers.getContractAt("DeployerService", process.env.DEPLOYER) :
