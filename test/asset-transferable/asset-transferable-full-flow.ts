@@ -22,7 +22,9 @@ describe("Asset transferable - full test", function () {
           5)investors claim liquidation funds. asset owner ownes 100% of the supply
     `,
     async function () {
-     await testData.deployIssuerAssetTransferableCampaign()
+      const ASSET_TYPE = "AssetTransferable";
+      const CAMPAIGN_TYPE = "CfManagerSoftcap";
+      await testData.deployIssuerAssetTransferableCampaign()
 
       //// Alice buys $100k USDC and goes through kyc process (wallet approved)
       const aliceAddress = await testData.alice.getAddress();
@@ -166,26 +168,26 @@ describe("Asset transferable - full test", function () {
       console.log("fetched issuer instances", fetchedIssuerInstances);
       
       //// Fetch all the Asset instances ever deployed
-      const fetchedAssetInstances = await helpers.fetchAssetInstances(testData.assetFactory);
+      const fetchedAssetInstances = await helpers.fetchAssetInstances(testData.assetFactory, ASSET_TYPE);
       console.log("fetched asset instances", fetchedAssetInstances);
 
       //// Fetch all the Asset instances for one Issuer
       const fetchedAssetInstancesForIssuer =
-          await helpers.fetchAssetInstancesForIssuer(testData.assetFactory, testData.issuer);
+          await helpers.fetchAssetInstancesForIssuer(testData.assetFactory, ASSET_TYPE, testData.issuer);
       console.log("fetched asset instances for issuer", fetchedAssetInstancesForIssuer);
 
       //// Fetch all the Crowdfunding Campaign instances ever deployed
-      const fetchedCampaignInstances = await helpers.fetchCrowdfundingInstances(testData.cfManagerFactory);
+      const fetchedCampaignInstances = await helpers.fetchCrowdfundingInstances(testData.cfManagerFactory, CAMPAIGN_TYPE);
       console.log("fetched crowdfunding instances", fetchedCampaignInstances);
 
       //// Fetch all the Crowdfunding Campaign instances for one Issuer
       const fetchedCampaignInstancesForIssuer =
-          await helpers.fetchCrowdfundingInstancesForIssuer(testData.cfManagerFactory, testData.issuer);
+          await helpers.fetchCrowdfundingInstancesForIssuer(testData.cfManagerFactory, CAMPAIGN_TYPE, testData.issuer);
       console.log("fetched campaign instances for issuer", fetchedCampaignInstancesForIssuer);
 
       //// Fetch all the Crowdfunding Campaign instances for one Asset
       const fetchedCampaignInstancesForAsset =
-          await helpers.fetchCrowdfundingInstancesForAsset(testData.cfManagerFactory, testData.asset);
+          await helpers.fetchCrowdfundingInstancesForAsset(testData.cfManagerFactory, CAMPAIGN_TYPE, testData.asset);
       console.log("fetched campaign instances for asset", fetchedCampaignInstancesForAsset);
 
      //// Fetch all the SnapshotDistributors ever deployed
@@ -207,11 +209,11 @@ describe("Asset transferable - full test", function () {
       console.log("fetched issuer for id=0", fetchedIssuerById);
 
       //// Fetch Asset instance by id
-      const fetchedAssetById = await helpers.fetchAssetTransferableStateById(testData.assetTransferableFactory, 0);
+      const fetchedAssetById = await helpers.fetchAssetStateById(testData.assetTransferableFactory, ASSET_TYPE, 0);
       console.log("fetched asset for id=0", fetchedAssetById);
 
       //// Fetch Crowdfunding campaign instance by id
-      const fetchedCampaignById = await helpers.fetchCampaignStateById(testData.cfManagerFactory, 0);
+      const fetchedCampaignById = await helpers.fetchCampaignStateById(testData.cfManagerFactory, CAMPAIGN_TYPE, 0);
       console.log("fetched campaign for id=0", fetchedCampaignById);
 
      //// Fetch SnapshotDistributor instance by id
@@ -221,13 +223,13 @@ describe("Asset transferable - full test", function () {
 
       //// Fetch alice tx history
       const aliceTxHistory = await helpers.fetchTxHistory(
-          aliceAddress, testData.issuer, testData.cfManagerFactory, testData.assetFactory, testData.snapshotDistributorFactory
+          aliceAddress, testData.issuer, testData.cfManagerFactory, CAMPAIGN_TYPE, testData.assetFactory, ASSET_TYPE, testData.snapshotDistributorFactory
       );
       console.log("Alice tx history", aliceTxHistory);
 
       //// Fetch jane tx history
       const janeTxHistory = await helpers.fetchTxHistory(
-          janeAddress, testData.issuer, testData.cfManagerFactory, testData.assetFactory, testData.snapshotDistributorFactory
+          janeAddress, testData.issuer, testData.cfManagerFactory, CAMPAIGN_TYPE, testData.assetFactory, ASSET_TYPE, testData.snapshotDistributorFactory
       );
       console.log("Alice tx history", janeTxHistory);
 

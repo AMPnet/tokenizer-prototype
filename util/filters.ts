@@ -5,11 +5,11 @@ interface Transaction {
     timestamp: Date
 }
 
-export async function getAssetTransactions(wallet: string, issuer: Contract, assetFactory: Contract): Promise<Array<Transaction>> {
+export async function getAssetTransactions(wallet: string, issuer: Contract, assetFactory: Contract, assetType: string): Promise<Array<Transaction>> {
     const transactions = [];
     const assetInstanceAddresses = await assetFactory.getInstancesForIssuer(issuer.address);
     const assetInstancesPromisified: [Promise<Contract>] = assetInstanceAddresses.map(async (address: string) => {
-      return ethers.getContractAt("Asset", address);
+      return ethers.getContractAt(assetType, address);
     });
     const assetInstances = await Promise.all(assetInstancesPromisified);
     const assetInstancesScanActions = assetInstances.map(async (asset: Contract) => {
@@ -46,11 +46,11 @@ export async function getAssetTransactions(wallet: string, issuer: Contract, ass
     return transactions;
 }
 
-export async function getCrowdfundingCampaignTransactions(wallet: string, issuer: Contract, cfManagerFactory: Contract): Promise<Array<Transaction>> {
+export async function getCrowdfundingCampaignTransactions(wallet: string, issuer: Contract, cfManagerFactory: Contract, campaignType: string): Promise<Array<Transaction>> {
     const transactions = [];
     const cfManagerInstanceAddresses = await cfManagerFactory.getInstancesForIssuer(issuer.address);
     const cfManagerInstancesPromisifed: [Promise<Contract>] = cfManagerInstanceAddresses.map(async (address: string) => {
-      return ethers.getContractAt("CfManagerSoftcap", address);
+      return ethers.getContractAt(campaignType, address);
     });
     const cfManagerInstances = await Promise.all(cfManagerInstancesPromisifed);
     const cfManagerInstancesScanActions = cfManagerInstances.map(async (cfManager: Contract) => {
@@ -87,8 +87,8 @@ export async function getCrowdfundingCampaignTransactions(wallet: string, issuer
               type: "CLAIM-TOKENS",
               from: event.address,
               to: event.args?.investor,
-              amount: event.args?.tokenValue.toString(),
-              tokenAmount: event.args?.tokenAmount.toString(),
+              amount: event.args?.tokenValue?.toString(),
+              tokenAmount: event.args?.tokenAmount?.toString(),
               timestamp: toDateTime(event.args?.timestamp)
             });
           }
