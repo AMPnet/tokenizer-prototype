@@ -421,7 +421,8 @@ contract DeployerService is IVersioned {
                     request.assetSymbol,
                     request.assetInfo
                 )
-        ));
+            )
+        );
         ICfManagerSoftcapVesting campaign = ICfManagerSoftcapVesting(request.cfManagerSoftcapVestingFactory.create(
             address(this),
             request.cfManagerMappedName,

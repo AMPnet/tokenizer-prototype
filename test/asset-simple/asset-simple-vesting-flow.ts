@@ -19,9 +19,7 @@ describe("Asset simple - full test with vesting schedule", function () {
           1)create Issuer + AssetSimple + VestingCampaign using deployer service
           2)successfully fund the project with two different investors
           3)start vesting with instant unlock of all of the tokens (0 seconds vesting)
-          4)update asset price
-          5)liquidate asset with the correct price: max(crowdfunding campaign price, market price)
-          6)investors claim liquidation funds. asset owner ownes 100% of the supply
+          4)investors claim their tokens (100% of the vested amount)
     `,
     async function () {
       const ASSET_TYPE = "AssetSimple";
