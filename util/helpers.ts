@@ -47,7 +47,9 @@ export async function deployFactories(deployer: Signer, confirmations: number = 
     await deployIssuerFactory(deployer, zeroAddr, confirmations),
     await deployAssetFactory(deployer, zeroAddr, confirmations),
     await deployAssetTransferableFactory(deployer, zeroAddr, confirmations),
+    await deployAssetSimpleFactory(deployer, zeroAddr, confirmations),
     await deployCfManagerFactory(deployer, zeroAddr, confirmations),
+    await deployCfManagerVestingFactory(deployer, zeroAddr, confirmations),
     await deploySnapshotDistributorFactory(deployer, zeroAddr, confirmations)
   ];
 }
@@ -638,10 +640,10 @@ export async function fetchIssuerInstances(issuerFactory: Contract): Promise<obj
  * @param assetFactory Predeployed Asset factory instance
  * @returns Array of asset states
  */
-export async function fetchAssetInstances(assetFactory: Contract): Promise<object> {
+export async function fetchAssetInstances(assetFactory: Contract, assetType: string): Promise<object> {
   const instances = await assetFactory.getInstances();
   const mappedInstances = await Promise.all(instances.map(async (instanceAddress: string) => {
-    const instance = await ethers.getContractAt("Asset", instanceAddress);
+    const instance = await ethers.getContractAt(assetType, instanceAddress);
     return instance.getState();
   }));
   return mappedInstances;
@@ -652,10 +654,10 @@ export async function fetchAssetInstances(assetFactory: Contract): Promise<objec
  * @param issuer Filter assets by this issuer
  * @returns Array of asset states
  */
-export async function fetchAssetInstancesForIssuer(assetFactory: Contract, issuer: Contract): Promise<object> {
+export async function fetchAssetInstancesForIssuer(assetFactory: Contract, assetType: string, issuer: Contract): Promise<object> {
   const instances = await assetFactory.getInstancesForIssuer(issuer.address);
   const mappedInstances = await Promise.all(instances.map(async (instanceAddress: string) => {
-    const instance = await ethers.getContractAt("Asset", instanceAddress);
+    const instance = await ethers.getContractAt(assetType, instanceAddress);
     return instance.getState();
   }));
   return mappedInstances;
@@ -665,10 +667,10 @@ export async function fetchAssetInstancesForIssuer(assetFactory: Contract, issue
  * @param cfManagerFactory Predeployed CfManager factory instance
  * @returns Array of crowdfunding campaign states
  */
-export async function fetchCrowdfundingInstances(cfManagerFactory: Contract): Promise<object> {
+export async function fetchCrowdfundingInstances(cfManagerFactory: Contract, campaignType: string): Promise<object> {
   const instances = await cfManagerFactory.getInstances();
   const mappedInstances = await Promise.all(instances.map(async (instanceAddress: string) => {
-    const instance = await ethers.getContractAt("CfManagerSoftcap", instanceAddress);
+    const instance = await ethers.getContractAt(campaignType, instanceAddress);
     return instance.getState();
   }));
   return mappedInstances;
@@ -679,10 +681,10 @@ export async function fetchCrowdfundingInstances(cfManagerFactory: Contract): Pr
  * @param issuer Filter campaigns by this issuer
  * @returns Array of crowdfunding campaign states
  */
-export async function fetchCrowdfundingInstancesForIssuer(cfManagerFactory: Contract, issuer: Contract): Promise<object> {
+export async function fetchCrowdfundingInstancesForIssuer(cfManagerFactory: Contract, campaignType: string, issuer: Contract): Promise<object> {
   const instances = await cfManagerFactory.getInstancesForIssuer(issuer.address);
   const mappedInstances = await Promise.all(instances.map(async (instanceAddress: string) => {
-    const instance = await ethers.getContractAt("CfManagerSoftcap", instanceAddress);
+    const instance = await ethers.getContractAt(campaignType, instanceAddress);
     return instance.getState();
   }));
   return mappedInstances;
@@ -693,10 +695,10 @@ export async function fetchCrowdfundingInstancesForIssuer(cfManagerFactory: Cont
  * @param asset Filter campaigns by this asset
  * @returns Array of crowdfunding campaign states
  */
-export async function fetchCrowdfundingInstancesForAsset(cfManagerFactory: Contract, asset: Contract): Promise<object> {
+export async function fetchCrowdfundingInstancesForAsset(cfManagerFactory: Contract, campaignType: string, asset: Contract): Promise<object> {
   const instances = await cfManagerFactory.getInstancesForAsset(asset.address);
   const mappedInstances = await Promise.all(instances.map(async (instanceAddress: string) => {
-    const instance = await ethers.getContractAt("CfManagerSoftcap", instanceAddress);
+    const instance = await ethers.getContractAt(campaignType, instanceAddress);
     return instance.getState();
   }));
   return mappedInstances;
@@ -759,9 +761,9 @@ export async function fetchIssuerStateById(issuerFactory: Contract, id: Number):
  * @param id Crowdfunding campaign id
  * @returns Crowdfunding campaign state
  */
-export async function fetchCampaignStateById(cfManagerFactory: Contract, id: Number): Promise<object> {
+export async function fetchCampaignStateById(cfManagerFactory: Contract, campaignType: string, id: Number): Promise<object> {
   const instanceAddress = await cfManagerFactory.instances(id);
-  const instance = await ethers.getContractAt("CfManagerSoftcap", instanceAddress);
+  const instance = await ethers.getContractAt(campaignType, instanceAddress);
   return instance.getState();
 }
 
@@ -770,15 +772,9 @@ export async function fetchCampaignStateById(cfManagerFactory: Contract, id: Num
  * @param id Asset id
  * @returns Asset state
  */
-export async function fetchAssetStateById(assetFactory: Contract, id: Number): Promise<object> {
+export async function fetchAssetStateById(assetFactory: Contract, assetType: string, id: Number): Promise<object> {
   const instanceAddress = await assetFactory.instances(id);
-  const instance = await ethers.getContractAt("Asset", instanceAddress);
-  return instance.getState();
-}
-
-export async function fetchAssetTransferableStateById(assetFactory: Contract, id: Number): Promise<object> {
-  const instanceAddress = await assetFactory.instances(id);
-  const instance = await ethers.getContractAt("AssetTransferable", instanceAddress);
+  const instance = await ethers.getContractAt(assetType, instanceAddress);
   return instance.getState();
 }
 
@@ -812,11 +808,13 @@ export async function fetchTxHistory(
   wallet: string,
   issuer: Contract,
   cfManagerFactory: Contract,
+  campaignType: string,
   assetFactory: Contract,
+  assetType: string,
   snapshotDistributorFactory: Contract
 ) {
-  const assetTransactions = await filters.getAssetTransactions(wallet, issuer, assetFactory);;
-  const crowdfundingTransactions = await filters.getCrowdfundingCampaignTransactions(wallet, issuer, cfManagerFactory);
+  const assetTransactions = await filters.getAssetTransactions(wallet, issuer, assetFactory, assetType);;
+  const crowdfundingTransactions = await filters.getCrowdfundingCampaignTransactions(wallet, issuer, cfManagerFactory, campaignType);
   const snapshotDistributorTransactions = await filters.getSnapshotDistributorTransactions(wallet, issuer, snapshotDistributorFactory);
   const transactions = assetTransactions.concat(crowdfundingTransactions).concat(snapshotDistributorTransactions);
   return transactions.sort((a, b) => (a.timestamp < b.timestamp) ? -1 : 1);

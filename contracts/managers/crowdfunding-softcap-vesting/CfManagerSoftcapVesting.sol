@@ -246,9 +246,9 @@ contract CfManagerSoftcapVesting is ICfManagerSoftcapVesting {
         uint256 duration
     ) external ownerOnly finalized {
         require(!state.vestingStarted, "CfManagerSoftcapVesting: Vesting already started.");
-        require(cliffDuration <= duration);
-        require(duration > 0);
-        require(start + duration > block.timestamp);
+        require(cliffDuration <= duration, "CfManagerSoftcapVesting: cliffDuration <= duration");
+        require(duration > 0, "CfManagerSoftcapVesting: duration > 0");
+        require(start + duration > block.timestamp, "CfManagerSoftcapVesting: start + duration > block.timestamp");
         state.vestingStarted = true;
         state.start = start;
         state.cliff = start + cliffDuration;

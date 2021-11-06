@@ -1,9 +1,9 @@
 // @ts-ignore
-import {ethers} from "hardhat";
-import {Contract, Signer} from "ethers";
+import { ethers } from "hardhat";
+import { Contract, Signer } from "ethers";
 import * as helpers from "../util/helpers";
 import * as deployerServiceUtil from "../util/deployer-service";
-import {CfManagerSoftcap} from "../typechain";
+import { CfManagerSoftcap, CfManagerSoftcapVesting } from "../typechain";
 
 export class TestData {
 
@@ -11,7 +11,9 @@ export class TestData {
     issuerFactory: Contract;
     assetFactory: Contract;
     assetTransferableFactory: Contract;
+    assetSimpleFactory: Contract;
     cfManagerFactory: Contract;
+    cfManagerVestingFactory: Contract;
     snapshotDistributorFactory: Contract;
 
     //////// SERVICES ////////
@@ -39,6 +41,7 @@ export class TestData {
     issuer: Contract;
     asset: Contract;
     cfManager: CfManagerSoftcap;
+    cfManagerVesting: CfManagerSoftcapVesting;
 
     //////// CONST ////////
     assetName = "Test Asset";
@@ -78,8 +81,10 @@ export class TestData {
         this.issuerFactory = factories[0];
         this.assetFactory = factories[1];
         this.assetTransferableFactory = factories[2];
-        this.cfManagerFactory = factories[3];
-        this.snapshotDistributorFactory = factories[4];
+        this.assetSimpleFactory = factories[3];
+        this.cfManagerFactory = factories[4];
+        this.cfManagerVestingFactory = factories[5];
+        this.snapshotDistributorFactory = factories[6];
 
         this.apxRegistry = await helpers.deployApxRegistry(
             this.deployer,
@@ -174,6 +179,38 @@ export class TestData {
         );
         this.asset = contracts[0];
         this.cfManager = contracts[1] as CfManagerSoftcap;
+    }
+
+    async deployIssuerAssetSimpleCampaignVesting() {
+        //// Set the config for Issuer, Asset and Crowdfunding Campaign
+        const issuerOwnerAddress = await this.issuerOwner.getAddress();
+
+        //// Deploy the contracts with the provided config
+        await this.deployIssuer()
+        const contracts = await deployerServiceUtil.createAssetSimpleCampaignVesting(
+            this.issuer,
+            issuerOwnerAddress,
+            this.assetAnsName,
+            this.assetTokenSupply,
+            this.assetName,
+            this.assetTicker,
+            this.assetInfoHash,
+            issuerOwnerAddress,
+            this.campaignAnsName,
+            this.campaignInitialPricePerToken,
+            this.campaignSoftCap,
+            this.campaignMinInvestment,
+            this.campaignMaxInvestment,
+            this.maxTokensToBeSold,
+            this.campaignWhitelistRequired,
+            this.campaignInfoHash,
+            this.nameRegistry.address,
+            this.assetSimpleFactory,
+            this.cfManagerVestingFactory,
+            this.deployerService
+        );
+        this.asset = contracts[0];
+        this.cfManagerVesting = contracts[1] as CfManagerSoftcapVesting;
     }
 
     async deployIssuer() {
