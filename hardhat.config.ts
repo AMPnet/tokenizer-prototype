@@ -24,8 +24,17 @@ task("accounts", "Prints the list of accounts", async (args, hre) => {
 /**
  * @type import('hardhat/config').HardhatUserConfig
  */
+type NetworkConfig = {
+  [key: string]: {
+    url: string,
+    accounts: {
+      mnemonic: string
+    },
+    gasPrice?: number
+  }
+}
 function networks() {
- let networks = {}
+ let networks: NetworkConfig = {}
  if (process.env.SEED_PHRASE) {
    if (process.env.ROPSTEN_RPC) {
      networks["ropsten"] = {

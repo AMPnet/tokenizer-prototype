@@ -126,7 +126,7 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
         require(
             state.finalized,
             "CfManagerSoftcap: The campaign is not finalized."
-        );
+             );
         _;
     }
 
@@ -138,9 +138,9 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
         _;
     }
 
-    modifier isWhitelisted() {
+    modifier isWhitelisted(address investor) {
         require(
-            !state.whitelistRequired || (state.whitelistRequired && _walletApproved(msg.sender)),
+            !state.whitelistRequired || (state.whitelistRequired && _walletApproved(investor)),
             "CfManagerSoftcap: Wallet not whitelisted."
         );
         _;
@@ -149,43 +149,12 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
     //------------------------
     // STATE CHANGE FUNCTIONS
     //------------------------
-    function invest(uint256 amount) external active notFinalized isWhitelisted {
-        require(amount > 0, "CfManagerSoftcap: Investment amount has to be greater than 0.");
-        uint256 tokenBalance = _assetERC20().balanceOf(address(this));
-        require(_token_value(tokenBalance) >= state.softCap, "CfManagerSoftcap: not enough tokens for sale to reach the softcap.");
-        uint256 floatingTokens = tokenBalance - state.totalClaimableTokens;
-        require(floatingTokens > 0, "CfManagerSoftcap: No more tokens available for sale.");
+    function invest(uint256 amount) external {
+        _invest(msg.sender, amount);
+    }
 
-        uint256 tokens = amount 
-                            * _asset_price_precision()
-                            * _asset_decimals_precision()
-                            / state.tokenPrice
-                            / _stablecoin_decimals_precision();
-        uint256 tokenValue = _token_value(tokens);
-        require(tokens > 0 && tokenValue > 0, "CfManagerSoftcap: Investment amount too low.");
-        require(floatingTokens >= tokens, "CfManagerSoftcap: Not enough tokens left for this investment amount.");        
-        uint256 totalInvestmentValue = _token_value(tokens + claims[msg.sender]);
-        require(
-            totalInvestmentValue >= _adjusted_min_investment(floatingTokens),
-            "CfManagerSoftcap: Investment amount too low."
-        );
-        require(
-            totalInvestmentValue <= state.maxInvestment,
-            "CfManagerSoftcap: Investment amount too high."
-        );
-
-        _stablecoin().safeTransferFrom(msg.sender, address(this), tokenValue);
-
-        if (claims[msg.sender] == 0) {
-            state.totalInvestorsCount += 1;
-        }
-        claims[msg.sender] += tokens;
-        investments[msg.sender] += tokenValue;
-        tokenAmounts[msg.sender] += tokens;
-        state.totalClaimableTokens += tokens;
-        state.totalTokensSold += tokens;
-        state.totalFundsRaised += tokenValue;
-        emit Invest(msg.sender, state.asset, tokens, tokenValue, block.timestamp);
+    function investForBeneficiary(address beneficiary, uint256 amount) external {
+        _invest(beneficiary, amount);
     }
 
     function cancelInvestment() external notFinalized {
@@ -300,6 +269,45 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
     //------------------------
     //  HELPERS
     //------------------------
+    function _invest(address investor, uint256 amount) private active notFinalized isWhitelisted(investor) {
+        require(amount > 0, "CfManagerSoftcap: Investment amount has to be greater than 0.");
+        uint256 tokenBalance = _assetERC20().balanceOf(address(this));
+        require(_token_value(tokenBalance) >= state.softCap, "CfManagerSoftcap: not enough tokens for sale to reach the softcap.");
+        uint256 floatingTokens = tokenBalance - state.totalClaimableTokens;
+        require(floatingTokens > 0, "CfManagerSoftcap: No more tokens available for sale.");
+
+        uint256 tokens = amount
+                            * _asset_price_precision()
+                            * _asset_decimals_precision()
+                            / state.tokenPrice
+                            / _stablecoin_decimals_precision();
+        uint256 tokenValue = _token_value(tokens);
+        require(tokens > 0 && tokenValue > 0, "CfManagerSoftcap: Investment amount too low.");
+        require(floatingTokens >= tokens, "CfManagerSoftcap: Not enough tokens left for this investment amount.");        
+        uint256 totalInvestmentValue = _token_value(tokens + claims[investor]);
+        require(
+            totalInvestmentValue >= _adjusted_min_investment(floatingTokens),
+            "CfManagerSoftcap: Investment amount too low."
+        );
+        require(
+            totalInvestmentValue <= state.maxInvestment,
+            "CfManagerSoftcap: Investment amount too high."
+        );
+
+        _stablecoin().safeTransferFrom(msg.sender, address(this), tokenValue);
+
+        if (claims[investor] == 0) {
+            state.totalInvestorsCount += 1;
+        }
+        claims[investor] += tokens;
+        investments[investor] += tokenValue;
+        tokenAmounts[investor] += tokens;
+        state.totalClaimableTokens += tokens;
+        state.totalTokensSold += tokens;
+        state.totalFundsRaised += tokenValue;
+        emit Invest(investor, state.asset, tokens, tokenValue, block.timestamp);
+    }
+
     function _stablecoin() private view returns (IERC20) {
         return IERC20(state.stablecoin);
     }

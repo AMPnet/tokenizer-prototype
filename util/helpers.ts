@@ -377,6 +377,26 @@ export async function invest(investor: Signer, cfManager: Contract, stablecoin: 
 }
 
 /**
+ * Invests some amount of the stablecoin.
+ * The stablecoin to be used was fetched earlier by reading the asset's issuer configuration.
+ *
+ * Two transactions involved here:
+ *  1) Approve CfManager to spend your funds
+ *  2) Call the invest() function on the CfManager
+ *
+ * @param investor Investor signer object
+ * @param cfManager CfManager contract instance
+ * @param stablecoin Stablecoin contract instance to be used for payment
+ * @param amount Amount of the stablecoin to be invested
+ */
+ export async function investForBeneficiary(investor: Signer, beneficiary: Signer, cfManager: Contract, stablecoin: Contract, amount: Number) {
+  const amountWei = ethers.utils.parseEther(amount.toString());
+  const beneficiaryAddress = await beneficiary.getAddress();
+  await stablecoin.connect(investor).approve(cfManager.address, amountWei);
+  await cfManager.connect(investor).investForBeneficiary(beneficiaryAddress, amountWei);
+}
+
+/**
  * Will cancel the full amount invested in the project. Transaction will return
  * all of the invested funds to the investor's wallet. Can only be called by the
  * investor who has placed an investment in the campaign, and the campaign was not yet
