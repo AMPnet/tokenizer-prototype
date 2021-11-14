@@ -24,6 +24,7 @@ export class TestData {
     ////////// APX //////////
     apxRegistry: Contract;
     nameRegistry: Contract;
+    feeManager: Contract;
 
     //////// SIGNERS ////////
     deployer: Signer;
@@ -35,6 +36,7 @@ export class TestData {
     jane: Signer;
     frank: Signer;
     mark: Signer;
+    treasury: Signer;
 
     //////// CONTRACTS ////////
     stablecoin: Contract;
@@ -59,7 +61,6 @@ export class TestData {
     campaignWhitelistRequired = true;       // only whitelisted wallets can invest
     campaignAnsName = "test-campaign";
     campaignInfoHash = "campaign-info-ipfs-hash";
-    childChainManager: string;
 
     async deploy() {
         const accounts: Signer[] = await ethers.getSigners();
@@ -74,6 +75,7 @@ export class TestData {
         this.jane            = accounts[6];
         this.frank           = accounts[7];
         this.mark            = accounts[8];
+        this.treasury        = accounts[9];
 
         this.stablecoin = await helpers.deployStablecoin(this.deployer, "1000000000000");
 
@@ -97,6 +99,11 @@ export class TestData {
             await this.deployer.getAddress(),
             factories.map(factory => factory.address)
         );
+        this.feeManager = await helpers.deployFeeManager(
+            this.deployer,
+            await this.deployer.getAddress(),
+            await this.treasury.getAddress()
+        );
 
         const walletApproverAddress = await this.walletApprover.getAddress();
         const services = await helpers.deployServices(
@@ -107,8 +114,6 @@ export class TestData {
         this.walletApproverService = services[0];
         this.deployerService = services[1];
         this.queryService = services[2];
-
-        this.childChainManager = ethers.Wallet.createRandom().address;
     }
 
     async deployIssuerAssetTransferableCampaign() {
@@ -138,7 +143,7 @@ export class TestData {
             this.campaignInfoHash,
             this.apxRegistry.address,
             this.nameRegistry.address,
-            this.childChainManager,
+            this.feeManager.address,
             this.assetTransferableFactory,
             this.cfManagerFactory,
             this.deployerService
@@ -173,6 +178,7 @@ export class TestData {
             this.campaignInfoHash,
             this.apxRegistry.address,
             this.nameRegistry.address,
+            this.feeManager.address,
             this.assetFactory,
             this.cfManagerFactory,
             this.deployerService
@@ -205,6 +211,7 @@ export class TestData {
             this.campaignWhitelistRequired,
             this.campaignInfoHash,
             this.nameRegistry.address,
+            this.feeManager.address,
             this.assetSimpleFactory,
             this.cfManagerVestingFactory,
             this.deployerService

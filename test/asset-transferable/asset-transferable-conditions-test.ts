@@ -64,9 +64,6 @@ describe("Asset transferable - test function conditions", function () {
         await expect(
             testData.asset.connect(testData.alice).changeOwnership(address)
         ).to.be.revertedWith(modifierMessage);
-        await expect(
-            testData.asset.connect(testData.alice).setChildChainManager(address)
-        ).to.be.revertedWith(modifierMessage);
     })
 
     it('should verify that only issuer owner can set issuer status', async function () {

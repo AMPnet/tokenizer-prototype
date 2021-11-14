@@ -6,5 +6,4 @@ import "../shared/IVersioned.sol";
 interface IMirroredToken is IVersioned {
     function mintMirrored(address wallet, uint256 amount) external;
     function burnMirrored(uint256 amount) external;
-    function setChildChainManager(address childChainManager) external;
 }

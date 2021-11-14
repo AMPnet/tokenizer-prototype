@@ -24,9 +24,17 @@ export async function deployApxRegistry(deployer: Signer, masterOwner: string, a
   return apxRegistry;
 }
 
-export async function deployMirroredToken(deployer: Signer, name: string, symbol: string, originalToken: string, childChainManager: string, confirmations: number = config.confirmationsForDeploy): Promise<Contract> {
+export async function deployFeeManager(deployer: Signer, owner: string, treasury: string, confirmations: number = config.confirmationsForDeploy): Promise<Contract> {
+  const FeeManager = await ethers.getContractFactory("FeeManager", deployer);
+  const feeManager = await FeeManager.deploy(owner, treasury);
+  await ethers.provider.waitForTransaction(feeManager.deployTransaction.hash, confirmations)
+  console.log(`\nFeeManager deployed\n\tAt address: ${feeManager.address}`);
+  return feeManager;
+}
+
+export async function deployMirroredToken(deployer: Signer, name: string, symbol: string, originalToken: string, confirmations: number = config.confirmationsForDeploy): Promise<Contract> {
   const MirroredToken = await ethers.getContractFactory("MirroredToken", deployer);
-  const mirroredToken = await MirroredToken.deploy(name, symbol, originalToken, childChainManager);
+  const mirroredToken = await MirroredToken.deploy(name, symbol, originalToken);
   await ethers.provider.waitForTransaction(mirroredToken.deployTransaction.hash, confirmations)
   console.log(`\nMirroredToken deployed\n\tAt address: ${mirroredToken.address}`);
   return mirroredToken;
@@ -502,10 +510,6 @@ export async function setInfo(owner: Signer, contract: Contract, infoHash: Strin
   await contract.connect(owner).setInfo(infoHash);
 }
 
-export async function setChildChainManager(owner: Signer, contract: Contract, manager: String) {
-  await contract.connect(owner).setChildChainManager(manager);
-}
-
 /**
  * ApxAssetRegistry related functions. Handled by the APX protocol!
  */
@@ -518,6 +522,13 @@ export async function updateState(assetManager: Signer, apxRegistry: Contract, a
 export async function updatePrice(priceManager: Signer, apxRegistry: Contract, asset: Contract, price: Number, expiry: Number) {
   const capturedSupply = await asset.totalSupply();
   await apxRegistry.connect(priceManager).updatePrice(asset.address, price, expiry, capturedSupply);
+}
+
+/**
+ * FeeManager related functions.
+ */
+export async function setFeeForCampaign(feeManager: Contract, campaign: String, numerator: Number, denominator: Number) {
+  await feeManager.setCampaignFee(campaign, true, numerator, denominator);
 }
 
 /**
@@ -590,13 +601,6 @@ export async function getIssuerState(contract: Contract): Promise<String> {
  */
 export async function getAssetState(contract: Contract): Promise<object> {
   return contract.getState();
-}
-export async function getAssetChildChainManager(contract: Contract): Promise<string> {
-  const state = await contract.getState();
-  return state.childChainManager;
-}
-export async function getMirroredAssetChildChainManager(contract: Contract): Promise<string> {
-  return contract.childChainManager();
 }
 
 /**

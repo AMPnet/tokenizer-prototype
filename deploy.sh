@@ -34,6 +34,9 @@ export APX_REGISTRY=
 export APX_REGISTRY_MASTER_OWNER=                   # provide this param if APX_REGISTRY field empty
 export APX_REGISTRY_ASSET_MANAGER=                  # provide this param if APX_REGISTRY field empty
 export APX_REGISTRY_PRICE_MANAGER=                  # provide this param if APX_REGISTRY field empty
+export FEE_MANAGER=
+export FEE_MANAGER_OWNER=                           # provide this param if FEE_MANAGER field empty
+export FEE_MANAGER_TREASURY=                        # provide this param if FEE_MANAGER field empty
 export NAME_REGISTRY=
 export NAME_REGISTRY_OWNER=                         # provide this param if NAME_REGISTRY field empty
 export DEPLOYER=
@@ -46,7 +49,6 @@ export MIRRORED_TOKEN=0x0000000000000000000000000000000000000000
 export MIRRORED_TOKEN_NAME=                         # provide this param if MIRRORED_TOKEN field empty
 export MIRRORED_TOKEN_SYMBOL=                       # provide this param if MIRRORED_TOKEN field empty
 export MIRRORED_TOKEN_ORIGINAL=                     # provide this param if MIRRORED_TOKEN field empty
-export MIRRORED_TOKEN_CHILD_CHAIN_MANAGER=          # provide this param if MIRRORED_TOKEN field empty
 
 ############################################### Run script ###############################################
 STABLECOIN=${STABLECOIN}
@@ -71,6 +73,9 @@ APX_REGISTRY=${APX_REGISTRY}
 APX_REGISTRY_MASTER_OWNER=${APX_REGISTRY_MASTER_OWNER}
 APX_REGISTRY_ASSET_MANAGER=${APX_REGISTRY_ASSET_MANAGER}
 APX_REGISTRY_PRICE_MANAGER=${APX_REGISTRY_PRICE_MANAGER}
+FEE_MANAGER=${FEE_MANAGER}
+FEE_MANAGER_OWNER=${FEE_MANAGER_OWNER}
+FEE_MANAGER_TREASURY=${FEE_MANAGER_TREASURY}
 NAME_REGISTRY_OWNER=${NAME_REGISTRY_OWNER}
 NAME_REGISTRY=${NAME_REGISTRY}
 DEPLOYER=${DEPLOYER}
@@ -79,5 +84,4 @@ MIRRORED_TOKEN=${MIRRORED_TOKEN}
 MIRRORED_TOKEN_NAME=${MIRRORED_TOKEN_NAME}
 MIRRORED_TOKEN_SYMBOL=${MIRRORED_TOKEN_SYMBOL}
 MIRRORED_TOKEN_ORIGINAL=${MIRRORED_TOKEN_ORIGINAL}
-MIRRORED_TOKEN_CHILD_CHAIN_MANAGER=${MIRRORED_TOKEN_CHILD_CHAIN_MANAGER}
 hh run scripts/deploy-test-env.ts --network $NETWORK

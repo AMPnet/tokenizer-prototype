@@ -70,7 +70,8 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
         uint256 minInvestment,
         uint256 maxInvestment,
         bool whitelistRequired,
-        string memory info
+        string memory info,
+        address feeManager
     ) {
         require(owner != address(0), "CfManagerSoftcap: Invalid owner address");
         require(asset != address(0), "CfManagerSoftcap: Invalid asset address");
@@ -95,7 +96,8 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
             false,
             false,
             0, 0, 0, 0, 0, 0,
-            info
+            info,
+            feeManager
         );
         require(
             _token_value(IToken(asset).totalSupply()) >= softCapNormalized,
@@ -201,7 +203,15 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
         uint256 tokensSold = state.totalTokensSold;
         uint256 tokensRefund = assetERC20.balanceOf(address(this)) - tokensSold;
         IAssetCommon(state.asset).finalizeSale();
-        if (fundsRaised > 0) { stablecoin.safeTransfer(msg.sender, fundsRaised); }
+        if (fundsRaised > 0) {
+            (address treasury, uint256 fee) = _calculateFee();
+            if (fee > 0 && treasury != address(0)) {
+                stablecoin.safeTransfer(treasury, fee);
+                stablecoin.safeTransfer(msg.sender, fundsRaised - fee);
+            } else {
+                stablecoin.safeTransfer(msg.sender, fundsRaised);
+            }
+        }
         if (tokensRefund > 0) { assetERC20.safeTransfer(msg.sender, tokensRefund); }
         emit Finalize(msg.sender, state.asset, fundsRaised, tokensSold, tokensRefund, block.timestamp);
     }
@@ -306,6 +316,15 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
         state.totalTokensSold += tokens;
         state.totalFundsRaised += tokenValue;
         emit Invest(investor, state.asset, tokens, tokenValue, block.timestamp);
+    }
+
+    function _calculateFee() private returns (address, uint256) {
+        (bool success, bytes memory result) = state.feeManager.call(
+            abi.encodeWithSignature("calculateFee(address)", address(this))
+        );
+        if (success) {
+            return abi.decode(result, (address, uint256));
+        } else { return (address(0), 0); }
     }
 
     function _stablecoin() private view returns (IERC20) {

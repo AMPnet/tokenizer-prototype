@@ -84,7 +84,8 @@ contract CfManagerSoftcapVesting is ICfManagerSoftcapVesting {
         uint256 minInvestment,
         uint256 maxInvestment,
         bool whitelistRequired,
-        string memory info
+        string memory info,
+        address feeManager
     ) {
         require(owner != address(0), "CfManagerSoftcapVesting: Invalid owner address");
         require(asset != address(0), "CfManagerSoftcapVesting: Invalid asset address");
@@ -110,7 +111,8 @@ contract CfManagerSoftcapVesting is ICfManagerSoftcapVesting {
             false,
             0, 0, 0, 0, 0,
             info,
-            false, 0, 0, 0, true, false
+            false, 0, 0, 0, true, false,
+            feeManager
         );
         require(
             _token_value(IToken(asset).totalSupply()) >= softCapNormalized,
@@ -259,7 +261,15 @@ contract CfManagerSoftcapVesting is ICfManagerSoftcapVesting {
         uint256 tokensSold = state.totalTokensSold;
         uint256 tokensRefund = assetERC20.balanceOf(address(this)) - tokensSold;
         IAssetCommon(state.asset).finalizeSale();
-        if (fundsRaised > 0) { stablecoin.safeTransfer(msg.sender, fundsRaised); }
+        if (fundsRaised > 0) {
+            (address treasury, uint256 fee) = _calculateFee();
+            if (fee > 0 && treasury != address(0)) {
+                stablecoin.safeTransfer(treasury, fee);
+                stablecoin.safeTransfer(msg.sender, fundsRaised - fee);
+            } else {
+                stablecoin.safeTransfer(msg.sender, fundsRaised);
+            }
+        }
         if (tokensRefund > 0) { assetERC20.safeTransfer(msg.sender, tokensRefund); }
         emit Finalize(msg.sender, state.asset, fundsRaised, tokensSold, tokensRefund, block.timestamp);
     }
@@ -364,6 +374,15 @@ contract CfManagerSoftcapVesting is ICfManagerSoftcapVesting {
         state.totalTokensSold += tokens;
         state.totalFundsRaised += tokenValue;
         emit Invest(investor, state.asset, tokens, tokenValue, block.timestamp);
+    }
+
+    function _calculateFee() private returns (address, uint256) {
+        (bool success, bytes memory result) = state.feeManager.call(
+            abi.encodeWithSignature("calculateFee(address)", address(this))
+        );
+        if (success) {
+            return abi.decode(result, (address, uint256));
+        } else { return (address(0), 0); }
     }
 
     function _totalReleasableAmount() private view returns (uint256) {

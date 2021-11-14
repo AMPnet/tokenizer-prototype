@@ -131,7 +131,6 @@ contract Structs {
         string name;
         string symbol;
         string info;
-        address childChainManager;
     }
 
     struct AssetFactoryParams {
@@ -187,7 +186,6 @@ contract Structs {
         string name;
         string symbol;
         string info;
-        address childChainManager;
     }
 
     struct AssetSimpleState {
@@ -253,7 +251,6 @@ contract Structs {
         uint256 liquidationFundsTotal;
         uint256 liquidationTimestamp;
         uint256 liquidationFundsClaimed;
-        address childChainManager;
     }
 
     struct IssuerState {
@@ -288,6 +285,7 @@ contract Structs {
         uint256 totalTokensSold;
         uint256 totalTokensBalance;
         string info;
+        address feeManager;
     }
 
     struct CfManagerSoftcapVestingState {
@@ -317,6 +315,7 @@ contract Structs {
         uint256 duration;
         bool revocable;
         bool revoked;
+        address feeManager;
     }
 
     struct Payout {

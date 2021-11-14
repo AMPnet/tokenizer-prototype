@@ -37,7 +37,8 @@ contract CfManagerSoftcapVestingFactory is ICfManagerSoftcapVestingFactory {
         uint256 maxInvestment,
         bool whitelistRequired,
         string memory info,
-        address nameRegistry
+        address nameRegistry,
+        address feeManager
     ) external override returns (address) {
         INameRegistry registry = INameRegistry(nameRegistry);
         require(
@@ -54,7 +55,8 @@ contract CfManagerSoftcapVestingFactory is ICfManagerSoftcapVestingFactory {
             minInvestment,
             maxInvestment,
             whitelistRequired,
-            info
+            info,
+            feeManager
         ));
         _addInstance(cfManagerSoftcap);
         registry.mapCampaign(mappedName, cfManagerSoftcap);

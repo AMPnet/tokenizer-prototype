@@ -25,8 +25,7 @@ contract AssetTransferableDeployer is IAssetTransferableDeployer {
                     params.whitelistRequiredForLiquidationClaim,
                     params.name,
                     params.symbol,
-                    params.info,
-                    params.childChainManager
+                    params.info
                 )
             )
         );
