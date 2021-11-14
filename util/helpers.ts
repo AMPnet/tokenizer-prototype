@@ -527,6 +527,10 @@ export async function updatePrice(priceManager: Signer, apxRegistry: Contract, a
 /**
  * FeeManager related functions.
  */
+export async function setDefaultFee(feeManager: Contract, numerator: Number, denominator: Number) {
+  await feeManager.setDefaultFee(true, numerator, denominator);
+}
+
 export async function setFeeForCampaign(feeManager: Contract, campaign: String, numerator: Number, denominator: Number) {
   await feeManager.setCampaignFee(campaign, true, numerator, denominator);
 }

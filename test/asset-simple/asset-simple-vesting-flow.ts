@@ -24,6 +24,8 @@ describe("Asset simple - full test with vesting schedule", function () {
     async function () {
       const ASSET_TYPE = "AssetSimple";
       const CAMPAIGN_TYPE = "CfManagerSoftcapVesting";
+      const issuerOwnerAddress = await testData.issuerOwner.getAddress();
+      const treasuryAddress = await testData.treasury.getAddress();
       await testData.deployIssuerAssetSimpleCampaignVesting()
 
       //// Frank buys $100k USDC. Alice goes throgh the kyc process.
@@ -69,9 +71,21 @@ describe("Asset simple - full test with vesting schedule", function () {
       await helpers.invest(testData.jane, testData.cfManagerVesting, testData.stablecoin, janeInvestment);
 
       // Asset owner finalizes the campaign as the soft cap has been reached and starts the vesting campaign.
+      // finalization fee: 10%
+      const feeNumerator = 1;
+      const feeDenominator = 10;
+      const totalInvestment = janeInvestmentWei.add(aliceInvestmentWei);
+      const totalFee = totalInvestment.mul(feeNumerator).div(feeDenominator);
+      await helpers.setDefaultFee(testData.feeManager, feeNumerator, feeDenominator);
       await testData.cfManagerVesting.connect(testData.issuerOwner).finalize();
+      expect(
+        await testData.stablecoin.balanceOf(issuerOwnerAddress)
+      ).to.be.equal(totalInvestment.sub(totalFee));
+      expect(
+        await testData.stablecoin.balanceOf(treasuryAddress)
+      ).to.be.equal(totalFee);
+
       const now = parseInt((Number((new Date()).valueOf()) / 1000).toString());
-      
       await testData.cfManagerVesting.connect(testData.issuerOwner).startVesting(now, 0, 30);
       await advanceBlockTime(now + 50);
 

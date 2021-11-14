@@ -14,7 +14,7 @@ describe("Asset - full test", function () {
     await testData.deploy()
   });
 
-  it.only(
+  it(
     `should successfully complete the flow:\n
           1)create Issuer + Asset + Campaign using deployer service
           2)successfully fund the project with two different investors
