@@ -128,7 +128,7 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
         require(
             state.finalized,
             "CfManagerSoftcap: The campaign is not finalized."
-             );
+        );
         _;
     }
 
