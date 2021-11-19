@@ -38,8 +38,10 @@ describe("Asset - full test", function () {
       await testData.walletApproverService.connect(testData.walletApprover)
           .approveWallet(testData.issuer.address, aliceAddress);
 
-      //// Franke invests $100k credited to the Alice's wallet
+      const randomCaller = testData.deployer;
+      //// Frank invests $100k credited to the Alice's wallet
       await helpers.investForBeneficiary(
+          randomCaller,
           testData.frank,
           testData.alice,
           testData.cfManager,
@@ -50,6 +52,7 @@ describe("Asset - full test", function () {
       ///// Alice tries to invest for Mark's unapproved wallet. Tx should fail.
       await expect(
           helpers.investForBeneficiary(
+              randomCaller,
               testData.alice,
               testData.mark,
               testData.cfManager,
