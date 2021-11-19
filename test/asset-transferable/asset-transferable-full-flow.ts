@@ -147,14 +147,6 @@ describe("Asset transferable - full test", function () {
       expect(janeBalanceAfterLiquidationClaim).to.be.equal(janeRevenueShareWei.add(janeLiquidationShareWei));
       expect(await testData.asset.balanceOf(janeAddress)).to.be.equal(0);
 
-      //// Set child chain manager
-      const oldChildChainManager = await helpers.getAssetChildChainManager(testData.asset);
-      expect(oldChildChainManager).to.be.equal(testData.childChainManager);
-      const newChildChainManager = await ethers.Wallet.createRandom().getAddress();
-      await helpers.setChildChainManager(testData.issuerOwner, testData.asset, newChildChainManager);
-      const fetchedChildChainManager = await helpers.getAssetChildChainManager(testData.asset);
-      expect(fetchedChildChainManager).to.be.equal(newChildChainManager);
-      
       //// Fetch crowdfunding campaign state
       const fetchedCampaignState = await helpers.getCrowdfundingCampaignState(testData.cfManager);
       console.log("fetched crowdfunding campaign state", fetchedCampaignState);

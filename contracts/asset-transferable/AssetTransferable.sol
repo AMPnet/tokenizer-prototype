@@ -6,13 +6,12 @@ import "./IAssetTransferable.sol";
 import "../apx-protocol/IApxAssetsRegistry.sol";
 import "../tokens/erc20/ERC20.sol";
 import "../tokens/erc20/ERC20Snapshot.sol";
-import "../tokens/matic/IChildToken.sol";
 import "../tokens/erc20/IToken.sol";
 import "../shared/IIssuerCommon.sol";
 import "../shared/ICampaignCommon.sol";
 import "../shared/Structs.sol";
 
-contract AssetTransferable is IAssetTransferable, IChildToken, ERC20Snapshot {
+contract AssetTransferable is IAssetTransferable, ERC20Snapshot {
     using SafeERC20 for IERC20;
 
     //------------------------
@@ -44,7 +43,6 @@ contract AssetTransferable is IAssetTransferable, IChildToken, ERC20Snapshot {
     event FinalizeSale(address campaign, uint256 tokenAmount, uint256 tokenValue, uint256 timestamp);
     event Liquidated(address liquidator, uint256 liquidationFunds, uint256 timestamp);
     event ClaimLiquidationShare(address indexed investor, uint256 amount,  uint256 timestamp);
-    event SetChildChainManager(address caller, address oldManager, address newManager, uint256 timestamp);
 
     //------------------------
     //  CONSTRUCTOR
@@ -55,7 +53,6 @@ contract AssetTransferable is IAssetTransferable, IChildToken, ERC20Snapshot {
         require(params.owner != address(0), "AssetTransferable: Invalid owner provided");
         require(params.issuer != address(0), "AssetTransferable: Invalid issuer provided");
         require(params.initialTokenSupply > 0, "AssetTransferable: Initial token supply can't be 0");
-        require(params.childChainManager != address(0), "AssetTransferable: invalid child chain manager address");
         infoHistory.push(Structs.InfoEntry(
             params.info,
             block.timestamp
@@ -78,8 +75,7 @@ contract AssetTransferable is IAssetTransferable, IChildToken, ERC20Snapshot {
             params.symbol,
             0, 0, 0,
             false,
-            0, 0, 0,
-            params.childChainManager
+            0, 0, 0
         );
         _mint(params.owner, params.initialTokenSupply);
     }
@@ -232,12 +228,6 @@ contract AssetTransferable is IAssetTransferable, IChildToken, ERC20Snapshot {
         state.apxRegistry = newRegistry;
     }
 
-    function setChildChainManager(address newManager) external override ownerOnly {
-        address oldManager = state.childChainManager;
-        state.childChainManager = newManager;
-        emit SetChildChainManager(msg.sender, oldManager, newManager, block.timestamp);
-    }
-
     //---------------------------------
     //  IAssetTransferable IMPL - Read
     //---------------------------------
@@ -274,22 +264,6 @@ contract AssetTransferable is IAssetTransferable, IChildToken, ERC20Snapshot {
 
     function getSellHistory() external view override returns (Structs.TokenSaleInfo[] memory) {
         return sellHistory;
-    }
-
-    //---------------------------
-    //  IChildToken IMPL - Write
-    //---------------------------
-    function deposit(address user, bytes calldata depositData) external override {
-        require(
-            msg.sender == state.childChainManager,
-            "AssetTransferable: Only child chain manager can make this action."
-        );
-        uint256 amount = abi.decode(depositData, (uint256));
-        _mint(user, amount);
-    }
-
-    function withdraw(uint256 amount) external override {
-        _burn(_msgSender(), amount);
     }
 
     //------------------------

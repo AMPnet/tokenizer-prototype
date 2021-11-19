@@ -24,18 +24,38 @@ describe("Asset simple - full test with vesting schedule", function () {
     async function () {
       const ASSET_TYPE = "AssetSimple";
       const CAMPAIGN_TYPE = "CfManagerSoftcapVesting";
+      const issuerOwnerAddress = await testData.issuerOwner.getAddress();
+      const treasuryAddress = await testData.treasury.getAddress();
       await testData.deployIssuerAssetSimpleCampaignVesting()
 
-      //// Alice buys $100k USDC and goes through kyc process (wallet approved)
+      //// Frank buys $100k USDC. Alice goes throgh the kyc process.
+      const frankAddress = await testData.frank.getAddress(); 
       const aliceAddress = await testData.alice.getAddress();
       const aliceInvestment = 100000;
       const aliceInvestmentWei = ethers.utils.parseEther(aliceInvestment.toString());
-      await testData.stablecoin.transfer(aliceAddress, aliceInvestmentWei);
+      await testData.stablecoin.transfer(frankAddress, aliceInvestmentWei);
       await testData.walletApproverService.connect(testData.walletApprover)
           .approveWallet(testData.issuer.address, aliceAddress);
 
-      //// Alice invests $100k USDC in the project
-      await helpers.invest(testData.alice, testData.cfManagerVesting, testData.stablecoin, aliceInvestment);
+      //// Frank invests $100k USDC credited to the Alice's wallet.
+      await helpers.investForBeneficiary(
+        testData.frank,
+        testData.alice,
+        testData.cfManagerVesting,
+        testData.stablecoin,
+        aliceInvestment
+      );
+
+      /// Alice tries to invest for Mark's unapproved wallet. Tx should fail.
+      await expect(
+          helpers.investForBeneficiary(
+              testData.alice,
+              testData.mark,
+              testData.cfManagerVesting,
+              testData.stablecoin,
+              aliceInvestment
+          )
+      ).to.be.revertedWith("CfManagerSoftcapVesting: Wallet not whitelisted.");
 
       //// Jane buys $100k USDC and goes through kyc process (wallet approved)
       const janeAddress = await testData.jane.getAddress();
@@ -51,9 +71,21 @@ describe("Asset simple - full test with vesting schedule", function () {
       await helpers.invest(testData.jane, testData.cfManagerVesting, testData.stablecoin, janeInvestment);
 
       // Asset owner finalizes the campaign as the soft cap has been reached and starts the vesting campaign.
+      // finalization fee: 10%
+      const feeNumerator = 1;
+      const feeDenominator = 10;
+      const totalInvestment = janeInvestmentWei.add(aliceInvestmentWei);
+      const totalFee = totalInvestment.mul(feeNumerator).div(feeDenominator);
+      await helpers.setDefaultFee(testData.feeManager, feeNumerator, feeDenominator);
       await testData.cfManagerVesting.connect(testData.issuerOwner).finalize();
+      expect(
+        await testData.stablecoin.balanceOf(issuerOwnerAddress)
+      ).to.be.equal(totalInvestment.sub(totalFee));
+      expect(
+        await testData.stablecoin.balanceOf(treasuryAddress)
+      ).to.be.equal(totalFee);
+
       const now = parseInt((Number((new Date()).valueOf()) / 1000).toString());
-      
       await testData.cfManagerVesting.connect(testData.issuerOwner).startVesting(now, 0, 30);
       await advanceBlockTime(now + 50);
 

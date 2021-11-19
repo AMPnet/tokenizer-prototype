@@ -25,18 +25,38 @@ describe("Asset - full test", function () {
     async function () {
       const ASSET_TYPE = "Asset";
       const CAMPAIGN_TYPE = "CfManagerSoftcap";
+      const issuerOwnerAddress = await testData.issuerOwner.getAddress();
+      const treasuryAddress = await testData.treasury.getAddress();
       await testData.deployIssuerAssetClassicCampaign()
 
       //// Alice buys $100k USDC and goes through kyc process (wallet approved)
+      const frankAddress = await testData.frank.getAddress(); 
       const aliceAddress = await testData.alice.getAddress();
       const aliceInvestment = 100000;
       const aliceInvestmentWei = ethers.utils.parseEther(aliceInvestment.toString());
-      await testData.stablecoin.transfer(aliceAddress, aliceInvestmentWei);
+      await testData.stablecoin.transfer(frankAddress, aliceInvestmentWei);
       await testData.walletApproverService.connect(testData.walletApprover)
           .approveWallet(testData.issuer.address, aliceAddress);
 
-      //// Alice invests $100k USDC in the project
-      await helpers.invest(testData.alice, testData.cfManager, testData.stablecoin, aliceInvestment);
+      //// Franke invests $100k credited to the Alice's wallet
+      await helpers.investForBeneficiary(
+          testData.frank,
+          testData.alice,
+          testData.cfManager,
+          testData.stablecoin,
+          aliceInvestment
+      );
+
+      ///// Alice tries to invest for Mark's unapproved wallet. Tx should fail.
+      await expect(
+          helpers.investForBeneficiary(
+              testData.alice,
+              testData.mark,
+              testData.cfManager,
+              testData.stablecoin,
+              aliceInvestment
+          )
+      ).to.be.revertedWith("CfManagerSoftcap: Wallet not whitelisted.");
 
       //// Jane buys $100k USDC and goes through kyc process (wallet approved)
       const janeAddress = await testData.jane.getAddress();
@@ -46,13 +66,23 @@ describe("Asset - full test", function () {
       await testData.walletApproverService.connect(testData.walletApprover)
           .approveWallet(testData.issuer.address, janeAddress);
 
-      //// Jane invests $100k USDC in the project and then cancels her investment and then invests again
       await helpers.invest(testData.jane, testData.cfManager, testData.stablecoin, janeInvestment);
       await helpers.cancelInvest(testData.jane, testData.cfManager);
       await helpers.invest(testData.jane, testData.cfManager, testData.stablecoin, janeInvestment);
 
-      // Asset owner finalizes the campaign as the soft cap has been reached.
+      // Asset owner finalizes the campaign as the soft cap has been reached. Campaign fee is 10%.
+      const feeNumerator = 1;
+      const feeDenominator = 10;
+      const totalInvestment = janeInvestmentWei.add(aliceInvestmentWei); 
+      const totalFee = totalInvestment.mul(feeNumerator).div(feeDenominator);
+      await helpers.setFeeForCampaign(testData.feeManager, testData.cfManager.address, feeNumerator, feeDenominator);
       await testData.cfManager.connect(testData.issuerOwner).finalize();
+      expect(
+          await testData.stablecoin.balanceOf(issuerOwnerAddress)
+      ).to.be.equal(totalInvestment.sub(totalFee));
+      expect(
+          await testData.stablecoin.balanceOf(treasuryAddress)
+      ).to.be.equal(totalFee);
 
       // Alice has to claim tokens after the campaign has been closed successfully
       await testData.cfManager.connect(testData.alice).claim(aliceAddress);
@@ -63,7 +93,6 @@ describe("Asset - full test", function () {
       const snapshotDistributorMappedName = "snapshot-manager";
       const snapshotDistributorInfoHash = "snapshot-manager-info-hash";
       const updatedSnapshotDistributorInfoHash = "updated-snapshot-manager-info-hash";
-      const issuerOwnerAddress = await testData.issuerOwner.getAddress();
       const snapshotDistributor = await helpers.createSnapshotDistributor(
           issuerOwnerAddress,
           snapshotDistributorMappedName,
@@ -81,7 +110,7 @@ describe("Asset - full test", function () {
       const issuerAddress = await testData.issuerOwner.getAddress();
       await testData.stablecoin.transfer(issuerAddress, revenueAmountWei);
       const balanceBeforePayout: BigNumber = await testData.stablecoin.balanceOf(issuerAddress);
-      expect(balanceBeforePayout).to.be.equal(revenueAmountWei.add(janeInvestmentWei.mul(2)));
+      expect(balanceBeforePayout).to.be.equal(revenueAmountWei.add(totalInvestment).sub(totalFee));
       await helpers.createPayout(
           testData.issuerOwner, snapshotDistributor, testData.stablecoin, revenueAmount, payoutDescription
       );
@@ -111,8 +140,7 @@ describe("Asset - full test", function () {
       const mirroredAsset = await (await ethers.getContractFactory("MirroredToken", testData.deployer)).deploy(
           `APX-${testData.assetName}`,
           `APX-${testData.assetTicker}`,
-          testData.asset.address,
-          testData.childChainManager
+          testData.asset.address
       );
 
       //// Asset is registered on the APX Registry and connected to the mirrored token
@@ -145,7 +173,7 @@ describe("Asset - full test", function () {
       // caller only has to approve the liquidation funds for the rest of the holders.
       // Jane and Alice hold (1/3) of the total supply each, so they can claim $110k each.
       const liquidationAmount = 220000;
-      await testData.stablecoin.transfer(issuerAddress, ethers.utils.parseEther("20000"));
+      await testData.stablecoin.transfer(issuerAddress, ethers.utils.parseEther("40000"));
       const liquidatorBalanceBeforeLiquidation = await testData.stablecoin.balanceOf(issuerAddress);
       expect (liquidatorBalanceBeforeLiquidation).to.be.equal(ethers.utils.parseEther(liquidationAmount.toString()));
       await helpers.liquidate(testData.issuerOwner, testData.asset, testData.stablecoin, liquidationAmount);
@@ -171,14 +199,6 @@ describe("Asset - full test", function () {
       expect(janeBalanceAfterLiquidationClaim).to.be.equal(janeRevenueShareWei.add(janeLiquidationShareWei));
       expect(await testData.asset.balanceOf(janeAddress)).to.be.equal(0);
 
-      //// Set child chain manager
-      const oldChildChainManager = await helpers.getMirroredAssetChildChainManager(mirroredAsset);
-      expect(oldChildChainManager).to.be.equal(testData.childChainManager);
-      const newChildChainManager = await ethers.Wallet.createRandom().getAddress();
-      await helpers.setChildChainManager(testData.issuerOwner, mirroredAsset, newChildChainManager);
-      const fetchedChildChainManager = await helpers.getMirroredAssetChildChainManager(mirroredAsset);
-      expect(fetchedChildChainManager).to.be.equal(newChildChainManager);
-
       //// Fetch crowdfunding campaign state
       // const fetchedCampaignState = await helpers.getCrowdfundingCampaignState(testData.cfManager);
       const state = await testData.cfManager.getState()
@@ -191,7 +211,6 @@ describe("Asset - full test", function () {
       expect(state.finalized).to.be.true
       expect(state.whitelistRequired).to.be.true
       expect(state.info).to.be.equal(testData.campaignInfoHash)
-      const totalInvestment = janeInvestmentWei.add(aliceInvestmentWei)
       expect(state.totalFundsRaised, "totalFundsRaised").to.be.equal(totalInvestment)
       expect(state.totalTokensSold, "totalTokensSold").to.be.equal(totalInvestment)
       expect(state.tokenPrice, "tokenPrice").to.be.equal(testData.campaignInitialPricePerToken)

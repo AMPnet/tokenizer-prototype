@@ -14,6 +14,7 @@ interface ICfManagerSoftcapVestingFactory is ICampaignFactoryCommon {
         uint256 maxInvestment,
         bool whitelistRequired,
         string memory info,
-        address nameRegistry
+        address nameRegistry,
+        address feeManager
     ) external returns (address);
 }

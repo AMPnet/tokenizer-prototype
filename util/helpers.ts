@@ -24,9 +24,17 @@ export async function deployApxRegistry(deployer: Signer, masterOwner: string, a
   return apxRegistry;
 }
 
-export async function deployMirroredToken(deployer: Signer, name: string, symbol: string, originalToken: string, childChainManager: string, confirmations: number = config.confirmationsForDeploy): Promise<Contract> {
+export async function deployFeeManager(deployer: Signer, owner: string, treasury: string, confirmations: number = config.confirmationsForDeploy): Promise<Contract> {
+  const FeeManager = await ethers.getContractFactory("FeeManager", deployer);
+  const feeManager = await FeeManager.deploy(owner, treasury);
+  await ethers.provider.waitForTransaction(feeManager.deployTransaction.hash, confirmations)
+  console.log(`\nFeeManager deployed\n\tAt address: ${feeManager.address}`);
+  return feeManager;
+}
+
+export async function deployMirroredToken(deployer: Signer, name: string, symbol: string, originalToken: string, confirmations: number = config.confirmationsForDeploy): Promise<Contract> {
   const MirroredToken = await ethers.getContractFactory("MirroredToken", deployer);
-  const mirroredToken = await MirroredToken.deploy(name, symbol, originalToken, childChainManager);
+  const mirroredToken = await MirroredToken.deploy(name, symbol, originalToken);
   await ethers.provider.waitForTransaction(mirroredToken.deployTransaction.hash, confirmations)
   console.log(`\nMirroredToken deployed\n\tAt address: ${mirroredToken.address}`);
   return mirroredToken;
@@ -377,6 +385,26 @@ export async function invest(investor: Signer, cfManager: Contract, stablecoin: 
 }
 
 /**
+ * Invests some amount of the stablecoin.
+ * The stablecoin to be used was fetched earlier by reading the asset's issuer configuration.
+ *
+ * Two transactions involved here:
+ *  1) Approve CfManager to spend your funds
+ *  2) Call the invest() function on the CfManager
+ *
+ * @param investor Investor signer object
+ * @param cfManager CfManager contract instance
+ * @param stablecoin Stablecoin contract instance to be used for payment
+ * @param amount Amount of the stablecoin to be invested
+ */
+ export async function investForBeneficiary(investor: Signer, beneficiary: Signer, cfManager: Contract, stablecoin: Contract, amount: Number) {
+  const amountWei = ethers.utils.parseEther(amount.toString());
+  const beneficiaryAddress = await beneficiary.getAddress();
+  await stablecoin.connect(investor).approve(cfManager.address, amountWei);
+  await cfManager.connect(investor).investForBeneficiary(beneficiaryAddress, amountWei);
+}
+
+/**
  * Will cancel the full amount invested in the project. Transaction will return
  * all of the invested funds to the investor's wallet. Can only be called by the
  * investor who has placed an investment in the campaign, and the campaign was not yet
@@ -482,10 +510,6 @@ export async function setInfo(owner: Signer, contract: Contract, infoHash: Strin
   await contract.connect(owner).setInfo(infoHash);
 }
 
-export async function setChildChainManager(owner: Signer, contract: Contract, manager: String) {
-  await contract.connect(owner).setChildChainManager(manager);
-}
-
 /**
  * ApxAssetRegistry related functions. Handled by the APX protocol!
  */
@@ -498,6 +522,17 @@ export async function updateState(assetManager: Signer, apxRegistry: Contract, a
 export async function updatePrice(priceManager: Signer, apxRegistry: Contract, asset: Contract, price: Number, expiry: Number) {
   const capturedSupply = await asset.totalSupply();
   await apxRegistry.connect(priceManager).updatePrice(asset.address, price, expiry, capturedSupply);
+}
+
+/**
+ * FeeManager related functions.
+ */
+export async function setDefaultFee(feeManager: Contract, numerator: Number, denominator: Number) {
+  await feeManager.setDefaultFee(true, numerator, denominator);
+}
+
+export async function setFeeForCampaign(feeManager: Contract, campaign: String, numerator: Number, denominator: Number) {
+  await feeManager.setCampaignFee(campaign, true, numerator, denominator);
 }
 
 /**
@@ -570,13 +605,6 @@ export async function getIssuerState(contract: Contract): Promise<String> {
  */
 export async function getAssetState(contract: Contract): Promise<object> {
   return contract.getState();
-}
-export async function getAssetChildChainManager(contract: Contract): Promise<string> {
-  const state = await contract.getState();
-  return state.childChainManager;
-}
-export async function getMirroredAssetChildChainManager(contract: Contract): Promise<string> {
-  return contract.childChainManager();
 }
 
 /**

@@ -128,6 +128,7 @@ export async function createIssuerAssetCampaign(
     cfManagerInfo: String,
     apxRegistry: String,
     nameRegistry: String,
+    feeManager: String,
     assetFactory: Contract,
     cfManagerFactory: Contract,
     deployerService: Contract
@@ -160,7 +161,8 @@ export async function createIssuerAssetCampaign(
         cfManagerWhitelistRequired,
         cfManagerInfo,
         apxRegistry,
-        nameRegistry
+        nameRegistry,
+        feeManager
       ]
     );
     const receipt = await ethers.provider.waitForTransaction(deployTx.hash);
@@ -218,7 +220,6 @@ export async function createIssuerAssetTransferableCampaign(
     cfManagerInfo: String,
     apxRegistry: String,
     nameRegistry: String,
-    childChainManager: String,
     issuerFactory: Contract,
     assetTransferableFactory: Contract,
     cfManagerFactory: Contract,
@@ -257,8 +258,7 @@ export async function createIssuerAssetTransferableCampaign(
         cfManagerWhitelistRequired,
         cfManagerInfo,
         apxRegistry,
-        nameRegistry,
-        childChainManager
+        nameRegistry
       ]
     );
     const receipt = await ethers.provider.waitForTransaction(deployTx.hash);
@@ -323,7 +323,7 @@ export async function createAssetTransferableCampaign(
     cfManagerInfo: String,
     apxRegistry: String,
     nameRegistry: String,
-    childChainManager: String,
+    feeManager: String,
     assetTransferableFactory: Contract,
     cfManagerFactory: Contract,
     deployerService: Contract
@@ -357,7 +357,7 @@ export async function createAssetTransferableCampaign(
         cfManagerInfo,
         apxRegistry,
         nameRegistry,
-        childChainManager
+        feeManager
       ]
     );
     const receipt = await ethers.provider.waitForTransaction(deployTx.hash);
@@ -408,6 +408,7 @@ export async function createAssetSimpleCampaignVesting(
   cfManagerWhitelistRequired: boolean,
   cfManagerInfo: String,
   nameRegistry: String,
+  feeManager: String,
   assetSimpleFactory: Contract,
   cfManagerVestingFactory: Contract,
   deployerService: Contract
@@ -437,7 +438,8 @@ export async function createAssetSimpleCampaignVesting(
       cfManagerTokensToSellAmountWei,
       cfManagerWhitelistRequired,
       cfManagerInfo,
-      nameRegistry
+      nameRegistry,
+      feeManager
     ]
   );
   const receipt = await ethers.provider.waitForTransaction(deployTx.hash);

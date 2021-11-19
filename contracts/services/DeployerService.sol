@@ -77,6 +77,7 @@ contract DeployerService is IVersioned {
         string cfManagerInfo;
         address apxRegistry;
         address nameRegistry;
+        address feeManager;
     }
 
     struct DeployAssetCampaignRequest {
@@ -102,6 +103,7 @@ contract DeployerService is IVersioned {
         string cfManagerInfo;
         address apxRegistry;
         address nameRegistry;
+        address feeManager;
     }
 
     struct DeployIssuerAssetTransferableCampaignRequest {
@@ -132,7 +134,7 @@ contract DeployerService is IVersioned {
         string cfManagerInfo;
         address apxRegistry;
         address nameRegistry;
-        address childChainManager;
+        address feeManager;
     }
 
     struct DeployAssetTransferableCampaignRequest {
@@ -158,7 +160,7 @@ contract DeployerService is IVersioned {
         string cfManagerInfo;
         address apxRegistry;
         address nameRegistry;
-        address childChainManager;
+        address feeManager;
     }
 
     struct DeployAssetSimpleCampaignVestingRequest {
@@ -181,6 +183,7 @@ contract DeployerService is IVersioned {
         bool cfManagerWhitelistRequired;
         string cfManagerInfo;
         address nameRegistry;
+        address feeManager;
     }
 
     function flavor() external pure override returns (string memory) { return FLAVOR; }
@@ -222,7 +225,8 @@ contract DeployerService is IVersioned {
             request.cfManagerSoftcapMaxInvestment,
             request.cfManagerWhitelistRequired,
             request.cfManagerInfo,
-            request.nameRegistry
+            request.nameRegistry,
+            request.feeManager
         ));
 
         // Whitelist owners
@@ -274,7 +278,8 @@ contract DeployerService is IVersioned {
             request.cfManagerSoftcapMaxInvestment,
             request.cfManagerWhitelistRequired,
             request.cfManagerInfo,
-            request.nameRegistry
+            request.nameRegistry,
+            request.feeManager
         ));
 
         // Transfer tokens to sell to the campaign, transfer the rest to the asset owner's wallet
@@ -317,8 +322,7 @@ contract DeployerService is IVersioned {
                     request.assetWhitelistRequiredForLiquidationClaim,
                     request.assetName,
                     request.assetSymbol,
-                    request.assetInfo,
-                    request.childChainManager
+                    request.assetInfo
                 )
             )
         );
@@ -333,7 +337,8 @@ contract DeployerService is IVersioned {
             request.cfManagerSoftcapMaxInvestment,
             request.cfManagerWhitelistRequired,
             request.cfManagerInfo,
-            request.nameRegistry
+            request.nameRegistry,
+            request.feeManager
         ));
 
         // Whitelist issuer owner
@@ -376,8 +381,7 @@ contract DeployerService is IVersioned {
                     request.assetWhitelistRequiredForLiquidationClaim,
                     request.assetName,
                     request.assetSymbol,
-                    request.assetInfo,
-                    request.childChainManager
+                    request.assetInfo
                 )
         ));
         ICfManagerSoftcap campaign = ICfManagerSoftcap(request.cfManagerSoftcapFactory.create(
@@ -390,7 +394,8 @@ contract DeployerService is IVersioned {
             request.cfManagerSoftcapMaxInvestment,
             request.cfManagerWhitelistRequired,
             request.cfManagerInfo,
-            request.nameRegistry
+            request.nameRegistry,
+            request.feeManager
         ));
 
         // Transfer tokens to sell to the campaign, transfer the rest to the asset owner's wallet
@@ -433,7 +438,8 @@ contract DeployerService is IVersioned {
             request.cfManagerSoftcapMaxInvestment,
             request.cfManagerWhitelistRequired,
             request.cfManagerInfo,
-            request.nameRegistry
+            request.nameRegistry,
+            request.feeManager
         ));
 
         // Transfer tokens to sell to the campaign, transfer the rest to the asset owner's wallet
