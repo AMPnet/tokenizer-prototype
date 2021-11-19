@@ -35,7 +35,15 @@ describe("Asset transferable - full test", function () {
           .approveWallet(testData.issuer.address, aliceAddress);
 
       //// Alice invests $100k USDC in the project
-      await helpers.invest(testData.alice, testData.cfManager, testData.stablecoin, aliceInvestment);
+      const randomCaller = testData.deployer;
+      await helpers.investForBeneficiary(
+          randomCaller,
+          testData.alice,
+          testData.alice,
+          testData.cfManager,
+          testData.stablecoin,
+          aliceInvestment
+      );
 
       //// Jane buys $100k USDC and goes through kyc process (wallet approved)
       const janeAddress = await testData.jane.getAddress();

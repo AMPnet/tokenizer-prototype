@@ -152,11 +152,11 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
     // STATE CHANGE FUNCTIONS
     //------------------------
     function invest(uint256 amount) external {
-        _invest(msg.sender, amount);
+        _invest(msg.sender, msg.sender, amount);
     }
 
-    function investForBeneficiary(address beneficiary, uint256 amount) external {
-        _invest(beneficiary, amount);
+    function investForBeneficiary(address spender, address beneficiary, uint256 amount) external {
+        _invest(spender, beneficiary, amount);
     }
 
     function cancelInvestment() external notFinalized {
@@ -279,7 +279,7 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
     //------------------------
     //  HELPERS
     //------------------------
-    function _invest(address investor, uint256 amount) private active notFinalized isWhitelisted(investor) {
+    function _invest(address spender, address investor, uint256 amount) private active notFinalized isWhitelisted(investor) {
         require(amount > 0, "CfManagerSoftcap: Investment amount has to be greater than 0.");
         uint256 tokenBalance = _assetERC20().balanceOf(address(this));
         require(_token_value(tokenBalance) >= state.softCap, "CfManagerSoftcap: not enough tokens for sale to reach the softcap.");
@@ -304,7 +304,7 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
             "CfManagerSoftcap: Investment amount too high."
         );
 
-        _stablecoin().safeTransferFrom(msg.sender, address(this), tokenValue);
+        _stablecoin().safeTransferFrom(spender, address(this), tokenValue);
 
         if (claims[investor] == 0) {
             state.totalInvestorsCount += 1;
