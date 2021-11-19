@@ -6,6 +6,9 @@ import "../../shared/ICampaignCommon.sol";
 
 contract FeeManager is IFeeManager {
 
+    string constant public FLAVOR = "FeeManagerV1";
+    string constant public VERSION = "1.0.21";
+
     struct FixedFee {
         bool initialized;
         uint256 numerator;
@@ -44,6 +47,10 @@ contract FeeManager is IFeeManager {
     function updateManager(address newManager) external isManager { manager = newManager; }
 
     // IFeeManager IMPL
+
+    function flavor() external pure override returns (string memory) { return FLAVOR; }
+    
+    function version() external pure override returns (string memory) { return VERSION; }
     
     function setDefaultFee(bool initialized, uint256 numerator, uint256 denominator) external override isManager {
         require(numerator <= denominator, "FeeManager: fee > 1.0");

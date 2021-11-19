@@ -20,7 +20,7 @@ import "../shared/IVersioned.sol";
 contract DeployerService is IVersioned {
 
     string constant public FLAVOR = "DeployerServiceV1";
-    string constant public VERSION = "1.0.15";
+    string constant public VERSION = "1.0.21";
 
     event DeployIssuerAssetCampaign(
         address caller,
