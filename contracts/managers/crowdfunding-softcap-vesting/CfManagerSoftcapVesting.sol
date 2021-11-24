@@ -398,7 +398,7 @@ contract CfManagerSoftcapVesting is ICfManagerSoftcapVesting {
     }
 
     function _releasableAmount(address investor) private view returns (uint256) {
-        return _vestedAmount(investor) - released[msg.sender];
+        return _vestedAmount(investor) - released[investor];
     }
 
     function _vestedAmount(address investor) private view returns (uint256) {
