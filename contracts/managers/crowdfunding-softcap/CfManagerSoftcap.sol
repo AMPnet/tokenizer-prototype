@@ -160,21 +160,15 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
     }
 
     function cancelInvestment() external notFinalized {
-        uint256 tokens = claims[msg.sender];
-        uint256 tokenValue = investments[msg.sender];
+        _cancel_investment(msg.sender);
+    }
+
+    function cancelInvestmentFor(address investor) external {
         require(
-            tokens > 0 && tokenValue > 0,
-            "CfManagerSoftcap: No tokens owned."
+            state.canceled,
+            "CfManagerSoftcapVesting: Can only cancel for somoneone if the campaign has been canceled."
         );
-        state.totalInvestorsCount -= 1;
-        claims[msg.sender] = 0;
-        investments[msg.sender] = 0;
-        tokenAmounts[msg.sender] = 0;
-        state.totalClaimableTokens -= tokens;
-        state.totalTokensSold -= tokens;
-        state.totalFundsRaised -= tokenValue;
-        _stablecoin().safeTransfer(msg.sender, tokenValue);
-        emit CancelInvestment(msg.sender, state.asset, tokens, tokenValue, block.timestamp);
+        _cancel_investment(investor);
     }
 
     function claim(address investor) external finalized {
@@ -195,7 +189,7 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
         IERC20 stablecoin = _stablecoin();
         uint256 fundsRaised = stablecoin.balanceOf(address(this));
         require(
-            fundsRaised >= state.softCap,
+            fundsRaised >= state.softCap || _token_value_to_soft_cap() == 0,
             "CfManagerSoftcap: Can only finalize campaign if the minimum funding goal has been reached."
         );
         state.finalized = true;  
@@ -286,11 +280,7 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
         uint256 floatingTokens = tokenBalance - state.totalClaimableTokens;
         require(floatingTokens > 0, "CfManagerSoftcap: No more tokens available for sale.");
 
-        uint256 tokens = amount
-                            * _asset_price_precision()
-                            * _asset_decimals_precision()
-                            / state.tokenPrice
-                            / _stablecoin_decimals_precision();
+        uint256 tokens = _token_amount_for_investment(amount);
         uint256 tokenValue = _token_value(tokens);
         require(tokens > 0 && tokenValue > 0, "CfManagerSoftcap: Investment amount too low.");
         require(floatingTokens >= tokens, "CfManagerSoftcap: Not enough tokens left for this investment amount.");        
@@ -316,6 +306,24 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
         state.totalTokensSold += tokens;
         state.totalFundsRaised += tokenValue;
         emit Invest(investor, state.asset, tokens, tokenValue, block.timestamp);
+    }
+
+    function _cancel_investment(address investor) private {
+        uint256 tokens = claims[investor];
+        uint256 tokenValue = investments[investor];
+        require(
+            tokens > 0 && tokenValue > 0,
+            "CfManagerSoftcap: No tokens owned."
+        );
+        state.totalInvestorsCount -= 1;
+        claims[investor] = 0;
+        investments[investor] = 0;
+        tokenAmounts[investor] = 0;
+        state.totalClaimableTokens -= tokens;
+        state.totalTokensSold -= tokens;
+        state.totalFundsRaised -= tokenValue;
+        _stablecoin().safeTransfer(investor, tokenValue);
+        emit CancelInvestment(investor, state.asset, tokens, tokenValue, block.timestamp);
     }
 
     function _calculateFee() private returns (address, uint256) {
@@ -345,6 +353,21 @@ contract CfManagerSoftcap is ICfManagerSoftcap {
 
     function _stablecoin_decimals_precision() private view returns (uint256) {
         return 10 ** IToken(state.stablecoin).decimals();
+    }
+
+    function _token_value_to_soft_cap() private view returns (uint256) {
+        return 
+            _token_value(
+                _token_amount_for_investment(state.softCap - state.totalFundsRaised)
+            );
+    }
+
+    function _token_amount_for_investment(uint256 investment) private view returns (uint256) {
+        return investment
+                    * _asset_price_precision()
+                    * _asset_decimals_precision()
+                    / state.tokenPrice
+                    / _stablecoin_decimals_precision();
     }
 
     function _token_value(uint256 tokens) private view returns (uint256) {
