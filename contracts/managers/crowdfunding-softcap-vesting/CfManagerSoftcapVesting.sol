@@ -180,6 +180,12 @@ contract CfManagerSoftcapVesting is ICfManagerSoftcapVesting {
     }
 
     function investForBeneficiary(address spender, address beneficiary, uint256 amount) external {
+        if (spender != beneficiary) { 
+            require(
+                spender == msg.sender,
+                "CfManagerSoftcap: Only spender can decide to book the investment on somone else."
+            );
+        }
         _invest(spender, beneficiary, amount);
     }
 

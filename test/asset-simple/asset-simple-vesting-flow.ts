@@ -40,7 +40,6 @@ describe("Asset simple - full test with vesting schedule", function () {
       //// Frank invests $100k USDC credited to the Alice's wallet.
       await helpers.investForBeneficiary(
         testData.frank,
-        testData.frank,
         testData.alice,
         testData.cfManagerVesting,
         testData.stablecoin,
@@ -50,7 +49,6 @@ describe("Asset simple - full test with vesting schedule", function () {
       /// Alice tries to invest for Mark's unapproved wallet. Tx should fail.
       await expect(
           helpers.investForBeneficiary(
-              testData.alice,
               testData.alice,
               testData.mark,
               testData.cfManagerVesting,
