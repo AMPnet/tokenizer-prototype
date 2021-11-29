@@ -29,7 +29,7 @@ describe("Asset transferable - full test", function () {
       //// Alice buys $100k USDC and goes through kyc process (wallet approved)
       const aliceAddress = await testData.alice.getAddress();
       const aliceInvestment = 100000;
-      const aliceInvestmentWei = ethers.utils.parseEther(aliceInvestment.toString());
+      const aliceInvestmentWei = await helpers.parseStablecoin(aliceInvestment, testData.stablecoin);
       await testData.stablecoin.transfer(aliceAddress, aliceInvestmentWei);
       await testData.walletApproverService.connect(testData.walletApprover)
           .approveWallet(testData.issuer.address, aliceAddress);
@@ -46,7 +46,7 @@ describe("Asset transferable - full test", function () {
       //// Jane buys $100k USDC and goes through kyc process (wallet approved)
       const janeAddress = await testData.jane.getAddress();
       const janeInvestment = 100000;
-      const janeInvestmentWei: BigNumber = ethers.utils.parseEther(janeInvestment.toString());
+      const janeInvestmentWei: BigNumber = await helpers.parseStablecoin(janeInvestment, testData.stablecoin);
       await testData.stablecoin.transfer(janeAddress, janeInvestmentWei);
       await testData.walletApproverService.connect(testData.walletApprover)
           .approveWallet(testData.issuer.address, janeAddress);
@@ -81,7 +81,7 @@ describe("Asset transferable - full test", function () {
       //// Distribute $100k revenue to the token holders using the snapshot distributor from the step before
       const payoutDescription = "WindFarm Mexico Q3/2021 revenue";
       const revenueAmount = 300000;
-      const revenueAmountWei: BigNumber = ethers.utils.parseEther(revenueAmount.toString());
+      const revenueAmountWei: BigNumber = await helpers.parseStablecoin(revenueAmount, testData.stablecoin);
       const issuerAddress = await testData.issuerOwner.getAddress();
       await testData.stablecoin.transfer(issuerAddress, revenueAmountWei);
       const balanceBeforePayout: BigNumber = await testData.stablecoin.balanceOf(issuerAddress);
@@ -95,7 +95,7 @@ describe("Asset transferable - full test", function () {
       const snapshotId = 1;
       const aliceBalanceBeforePayout = await testData.stablecoin.balanceOf(aliceAddress);
       expect(aliceBalanceBeforePayout).to.be.equal(0);
-      const aliceRevenueShareWei = ethers.utils.parseEther("100000");    // (1/3) of the total revenue payed out
+      const aliceRevenueShareWei = await helpers.parseStablecoin("100000", testData.stablecoin);    // (1/3) of the total revenue payed out
       await helpers.claimRevenue(testData.alice, snapshotDistributor, snapshotId);
       const aliceBalanceAfterPayout = await testData.stablecoin.balanceOf(aliceAddress);
       expect(aliceBalanceAfterPayout).to.be.equal(aliceRevenueShareWei); // alice claims (1/3) of total revenue
@@ -104,7 +104,7 @@ describe("Asset transferable - full test", function () {
       //// SnapshotDistributors address has to be known upfront (can be found for one asset by scanning SnapshotDistributorCreated event for asset address)
       const janeBalanceBeforePayout = await testData.stablecoin.balanceOf(janeAddress);
       expect(janeBalanceBeforePayout).to.be.equal(0);
-      const janeRevenueShareWei = ethers.utils.parseEther("100000");    // (1/3) of the total revenue payed out
+      const janeRevenueShareWei = await helpers.parseStablecoin("100000", testData.stablecoin);    // (1/3) of the total revenue payed out
       await helpers.claimRevenue(testData.jane, snapshotDistributor, snapshotId);
       const janeBalanceAfterPayout = await testData.stablecoin.balanceOf(janeAddress);
       expect(janeBalanceAfterPayout).to.be.equal(janeRevenueShareWei); // jane claims (1/3) of total revenue
@@ -128,9 +128,9 @@ describe("Asset transferable - full test", function () {
       // caller only has to approve the liquidation funds for the rest of the holders.
       // Jane and Alice hold (1/3) of the total supply each, so they can claim $110k each.
       const liquidationAmount = 220000;
-      await testData.stablecoin.transfer(issuerAddress, ethers.utils.parseEther("20000"));
+      await testData.stablecoin.transfer(issuerAddress, await helpers.parseStablecoin("20000", testData.stablecoin));
       const liquidatorBalanceBeforeLiquidation = await testData.stablecoin.balanceOf(issuerAddress);
-      expect (liquidatorBalanceBeforeLiquidation).to.be.equal(ethers.utils.parseEther(liquidationAmount.toString()));
+      expect (liquidatorBalanceBeforeLiquidation).to.be.equal(await helpers.parseStablecoin(liquidationAmount, testData.stablecoin));
       await helpers.liquidate(testData.issuerOwner, testData.asset, testData.stablecoin, liquidationAmount);
       const liquidatorBalanceAfterLiquidation = await testData.stablecoin.balanceOf(issuerAddress);
       expect (liquidatorBalanceAfterLiquidation).to.be.equal(0);
@@ -139,7 +139,7 @@ describe("Asset transferable - full test", function () {
 
       //// Alice claims liquidation share
       const aliceLiquidationShare = 110000;
-      const aliceLiquidationShareWei = ethers.utils.parseEther(aliceLiquidationShare.toString());
+      const aliceLiquidationShareWei = await helpers.parseStablecoin(aliceLiquidationShare, testData.stablecoin);
       await helpers.claimLiquidationShare(testData.alice, testData.asset);
       const aliceBalanceAfterLiquidationClaim = await testData.stablecoin.balanceOf(aliceAddress);
       expect(aliceBalanceAfterLiquidationClaim).to.be.equal(aliceRevenueShareWei.add(aliceLiquidationShareWei));
@@ -147,7 +147,7 @@ describe("Asset transferable - full test", function () {
 
       //// Jane claims liquidation share
       const janeLiquidationShare = 110000;
-      const janeLiquidationShareWei = ethers.utils.parseEther(janeLiquidationShare.toString());
+      const janeLiquidationShareWei = await helpers.parseStablecoin(janeLiquidationShare, testData.stablecoin);
       await helpers.claimLiquidationShare(testData.jane, testData.asset);
       const janeBalanceAfterLiquidationClaim = await testData.stablecoin.balanceOf(janeAddress);
       expect(janeBalanceAfterLiquidationClaim).to.be.equal(janeRevenueShareWei.add(janeLiquidationShareWei));

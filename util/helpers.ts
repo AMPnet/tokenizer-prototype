@@ -1,19 +1,24 @@
 // @ts-ignore
 import { ethers } from "hardhat";
-import { Contract, Signer } from "ethers";
+import { Contract, Signer, BigNumber } from "ethers";
 import * as filters from "./filters";
 
 const config = {
   confirmationsForDeploy: 1
 }
 
-export async function deployStablecoin(deployer: Signer, supply: string, confirmations: number = config.confirmationsForDeploy): Promise<Contract> {
-  const supplyWei = ethers.utils.parseEther(supply);
+export async function deployStablecoin(deployer: Signer, supply: number | string, precision: number | string, confirmations: number = config.confirmationsForDeploy): Promise<Contract> {
+  const supplyWei = ethers.utils.parseUnits(String(supply), String(precision));
   const USDC = await ethers.getContractFactory("USDC", deployer);
-  const stablecoin = await USDC.deploy(supplyWei);
+  const stablecoin = await USDC.deploy(supplyWei, precision);
   await ethers.provider.waitForTransaction(stablecoin.deployTransaction.hash, confirmations)
   console.log(`\nStablecoin deployed\n\tAt address: ${stablecoin.address}`);
   return stablecoin;
+}
+
+export async function parseStablecoin(amount: number | string | Number, stablecoin: Contract): Promise<BigNumber> {
+  const decimals = await stablecoin.decimals();
+  return ethers.utils.parseUnits(String(amount), decimals);
 }
 
 export async function deployApxRegistry(deployer: Signer, masterOwner: string, assetManager: string, priceManager: string, confirmations: number = config.confirmationsForDeploy): Promise<Contract> {
@@ -98,6 +103,7 @@ export async function deployDeployerService(deployer: Signer, confirmations: num
 export async function deployQueryService(deployer: Signer, confirmations: number = config.confirmationsForDeploy): Promise<Contract> {
   const QueryService = await ethers.getContractFactory("QueryService", deployer);
   const queryService = await QueryService.deploy();
+  await ethers.provider.waitForTransaction(queryService.deployTransaction.hash, confirmations)
   console.log(`\nQuery service deployed\n\tAt address: ${queryService.address}`);
   return queryService;
 }
@@ -303,14 +309,19 @@ export async function createCfManager(
   cfManagerFactory: Contract,
   nameRegistry: Contract
 ): Promise<Contract> {
+  const issuer = await ethers.getContractAt("Issuer", 
+    (await asset.commonState()).issuer
+  );
+  const stablecoinAddress = (await issuer.commonState()).stablecoin;
+  const stablecoin = await ethers.getContractAt("USDC", stablecoinAddress);
   const cfManagerTx = await cfManagerFactory.create(
     owner,
     mappedName,
     asset.address,
     pricePerToken,
-    ethers.utils.parseEther(softCap.toString()),
-    ethers.utils.parseEther(minInvestment.toString()),
-    ethers.utils.parseEther(maxInvestment.toString()),
+    await parseStablecoin(softCap, stablecoin),
+    await parseStablecoin(minInvestment, stablecoin),
+    await parseStablecoin(maxInvestment, stablecoin),
     whitelistRequired,
     info,
     nameRegistry.address
@@ -379,7 +390,7 @@ export async function createSnapshotDistributor(
  * @param amount Amount of the stablecoin to be invested
  */
 export async function invest(investor: Signer, cfManager: Contract, stablecoin: Contract, amount: Number) {
-  const amountWei = ethers.utils.parseEther(amount.toString());
+  const amountWei = await parseStablecoin(amount, stablecoin);
   await stablecoin.connect(investor).approve(cfManager.address, amountWei);
   await cfManager.connect(investor).invest(amountWei);
 }
@@ -398,7 +409,7 @@ export async function invest(investor: Signer, cfManager: Contract, stablecoin: 
  * @param amount Amount of the stablecoin to be invested
  */
  export async function investForBeneficiary(spender: Signer, beneficiary: Signer, cfManager: Contract, stablecoin: Contract, amount: Number) {
-  const amountWei = ethers.utils.parseEther(amount.toString());
+  const amountWei = await parseStablecoin(amount, stablecoin);
   const beneficiaryAddress = await beneficiary.getAddress();
   const spenderAddress = await spender.getAddress();
   await stablecoin.connect(spender).approve(cfManager.address, amountWei);
@@ -480,7 +491,7 @@ export async function cancelCampaign(owner: Signer, cfManager: Contract) {
  * @param payoutDescription Description for this revenue payout
  */
 export async function createPayout(owner: Signer, snapshotDistributor: Contract, stablecoin: Contract, amount: Number, payoutDescription: String) {
-  const amountWei = ethers.utils.parseEther(amount.toString());
+  const amountWei = await parseStablecoin(amount, stablecoin);
   await stablecoin.connect(owner).approve(snapshotDistributor.address, amountWei);
   await snapshotDistributor.connect(owner).createPayout(payoutDescription, stablecoin.address, amountWei, []);
 }
@@ -542,7 +553,7 @@ export async function setFeeForCampaign(feeManager: Contract, campaign: String, 
 export async function liquidate(liquidator: Signer, asset: Contract, stablecoin: Contract, liquidationFunds: Number) {
   const liquidatorAddress = await liquidator.getAddress();
   const liquidatorOwnedAssetTokens = await asset.balanceOf(liquidatorAddress);
-  const liquidationFundsWei = ethers.utils.parseEther(liquidationFunds.toString());
+  const liquidationFundsWei = await parseStablecoin(liquidationFunds, stablecoin);
   await asset.connect(liquidator).approve(asset.address, liquidatorOwnedAssetTokens);
   await stablecoin.connect(liquidator).approve(asset.address, liquidationFundsWei);
   await asset.connect(liquidator).liquidate();

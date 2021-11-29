@@ -32,7 +32,7 @@ describe("Asset simple - full test with vesting schedule", function () {
       const frankAddress = await testData.frank.getAddress(); 
       const aliceAddress = await testData.alice.getAddress();
       const aliceInvestment = 100000;
-      const aliceInvestmentWei = ethers.utils.parseEther(aliceInvestment.toString());
+      const aliceInvestmentWei = await helpers.parseStablecoin(aliceInvestment, testData.stablecoin);
       await testData.stablecoin.transfer(frankAddress, aliceInvestmentWei);
       await testData.walletApproverService.connect(testData.walletApprover)
           .approveWallet(testData.issuer.address, aliceAddress);
@@ -60,7 +60,7 @@ describe("Asset simple - full test with vesting schedule", function () {
       //// Jane buys $100k USDC and goes through kyc process (wallet approved)
       const janeAddress = await testData.jane.getAddress();
       const janeInvestment = 100000;
-      const janeInvestmentWei: BigNumber = ethers.utils.parseEther(janeInvestment.toString());
+      const janeInvestmentWei: BigNumber = await helpers.parseStablecoin(janeInvestment, testData.stablecoin);
       await testData.stablecoin.transfer(janeAddress, janeInvestmentWei);
       await testData.walletApproverService.connect(testData.walletApprover)
           .approveWallet(testData.issuer.address, janeAddress);
@@ -91,11 +91,13 @@ describe("Asset simple - full test with vesting schedule", function () {
 
       // Alice has to claim tokens after the campaign has been closed successfully
       await testData.cfManagerVesting.connect(testData.alice).claim(aliceAddress);
-      expect(await testData.asset.balanceOf(aliceAddress)).to.be.equal(aliceInvestmentWei); // 1 token = $1
+      const aliceTokenClaimAmount = await ethers.utils.formatEther(await testData.asset.balanceOf(aliceAddress)); 
+      expect(Number(aliceTokenClaimAmount)).to.be.equal(aliceInvestment); // 1 token = $1
 
       // Jane has to claim tokens after the campaign has been closed successfully
       await testData.cfManagerVesting.connect(testData.jane).claim(janeAddress);
-      expect(await testData.asset.balanceOf(janeAddress)).to.be.equal(janeInvestmentWei); // 1 token = $1
+      const janeTokenClaimAmount = await ethers.utils.formatEther(await testData.asset.balanceOf(janeAddress)); 
+      expect(Number(janeTokenClaimAmount)).to.be.equal(janeInvestment); // 1 token = $1
       
       //// Fetch crowdfunding campaign state
       const fetchedCampaignState = await helpers.getCrowdfundingCampaignState(testData.cfManagerVesting);

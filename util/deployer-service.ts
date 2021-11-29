@@ -1,11 +1,12 @@
 // @ts-ignore
 import { ethers } from "hardhat";
 import { Contract } from "ethers";
+import { parseStablecoin } from "./helpers";
 
 export async function createIssuerAssetCampaign(
     issuerOwner: String,
     issuerMappedName: String,
-    issuerStablecoin: String,
+    issuerStablecoin: string,
     issuerWalletApprover: String,
     issuerInfo: String,
     assetOwner: String,
@@ -31,11 +32,12 @@ export async function createIssuerAssetCampaign(
     apxRegistry: Contract,
     nameRegistry: Contract
   ): Promise<Array<Contract>> {
+    const stablecoin = await ethers.getContractAt("USDC", issuerStablecoin);
     const assetInitialTokenSupplyWei = ethers.utils.parseEther(assetInitialTokenSupply.toString());
-    const cfManagerSoftcapWei = ethers.utils.parseEther(cfManagerSoftcap.toString());
+    const cfManagerSoftcapWei = await parseStablecoin(cfManagerSoftcap, stablecoin);
     const cfManagerTokensToSellAmountWei = ethers.utils.parseEther(cfManagerTokensToSellAmount.toString());
-    const cfManagerMinInvestmentWei = ethers.utils.parseEther(cfManagerMinInvestment.toString());
-    const cfManagerMaxInvestmentWei = ethers.utils.parseEther(cfManagerMaxInvestment.toString());
+    const cfManagerMinInvestmentWei = await parseStablecoin(cfManagerMinInvestment, stablecoin);
+    const cfManagerMaxInvestmentWei = await parseStablecoin(cfManagerMaxInvestment, stablecoin);
     const deployTx = await deployerService.deployIssuerAssetCampaign(
       [
         issuerFactory.address,
@@ -133,10 +135,12 @@ export async function createIssuerAssetCampaign(
     cfManagerFactory: Contract,
     deployerService: Contract
   ): Promise<Array<Contract>> {
+    const stablecoinAddress = (await issuer.commonState()).stablecoin;
+    const stablecoin = await ethers.getContractAt("USDC", stablecoinAddress);
     const assetInitialTokenSupplyWei = ethers.utils.parseEther(assetInitialTokenSupply.toString());
-    const cfManagerSoftcapWei = ethers.utils.parseEther(cfManagerSoftcap.toString());
-    const cfManagerMinInvestmentWei = ethers.utils.parseEther(cfManagerMinInvestment.toString());
-    const cfManagerMaxInvestmentWei = ethers.utils.parseEther(cfManagerMaxInvestment.toString());
+    const cfManagerSoftcapWei = await parseStablecoin(cfManagerSoftcap, stablecoin);
+    const cfManagerMinInvestmentWei = await parseStablecoin(cfManagerMinInvestment, stablecoin);
+    const cfManagerMaxInvestmentWei = await parseStablecoin(cfManagerMaxInvestment, stablecoin);
     const cfManagerTokensToSellAmountWei = ethers.utils.parseEther(cfManagerTokensToSellAmount.toString());
     const deployTx = await deployerService.deployAssetCampaign(
       [
@@ -198,7 +202,7 @@ export async function createIssuerAssetCampaign(
 export async function createIssuerAssetTransferableCampaign(
     issuerOwner: String,
     issuerMappedName: String,
-    issuerStablecoin: String,
+    issuerStablecoin: string,
     issuerWalletApprover: String,
     issuerInfo: String,
     assetOwner: String,
@@ -225,11 +229,12 @@ export async function createIssuerAssetTransferableCampaign(
     cfManagerFactory: Contract,
     deployerService: Contract
   ): Promise<Array<Contract>> {
+    const stablecoin = await ethers.getContractAt("USDC", issuerStablecoin);
     const assetInitialTokenSupplyWei = ethers.utils.parseEther(assetInitialTokenSupply.toString());
-    const cfManagerSoftcapWei = ethers.utils.parseEther(cfManagerSoftcap.toString());
+    const cfManagerSoftcapWei = await parseStablecoin(cfManagerSoftcap, stablecoin);
     const cfManagerTokensToSellAmountWei = ethers.utils.parseEther(cfManagerTokensToSellAmount.toString());
-    const cfManagerMinInvestmentWei = ethers.utils.parseEther(cfManagerMinInvestment.toString());
-    const cfManagerMaxInvestmentWei = ethers.utils.parseEther(cfManagerMaxInvestment.toString());
+    const cfManagerMinInvestmentWei = await parseStablecoin(cfManagerMinInvestment, stablecoin);
+    const cfManagerMaxInvestmentWei = await parseStablecoin(cfManagerMaxInvestment, stablecoin);
     const deployTx = await deployerService.deployIssuerAssetTransferableCampaign(
       [
         issuerFactory.address,
@@ -328,10 +333,12 @@ export async function createAssetTransferableCampaign(
     cfManagerFactory: Contract,
     deployerService: Contract
   ): Promise<Array<Contract>> {
+    const stablecoinAddress = (await issuer.commonState()).stablecoin;
+    const stablecoin = await ethers.getContractAt("USDC", stablecoinAddress);
     const assetInitialTokenSupplyWei = ethers.utils.parseEther(assetInitialTokenSupply.toString());
-    const cfManagerSoftcapWei = ethers.utils.parseEther(cfManagerSoftcap.toString());
-    const cfManagerMinInvestmentWei = ethers.utils.parseEther(cfManagerMinInvestment.toString());
-    const cfManagerMaxInvestmentWei = ethers.utils.parseEther(cfManagerMaxInvestment.toString());
+    const cfManagerSoftcapWei = await parseStablecoin(cfManagerSoftcap, stablecoin);
+    const cfManagerMinInvestmentWei = await parseStablecoin(cfManagerMinInvestment, stablecoin);
+    const cfManagerMaxInvestmentWei = await parseStablecoin(cfManagerMaxInvestment, stablecoin);
     const cfManagerTokensToSellAmountWei = ethers.utils.parseEther(cfManagerTokensToSellAmount.toString());
     const deployTx = await deployerService.deployAssetTransferableCampaign(
       [
@@ -413,10 +420,12 @@ export async function createAssetSimpleCampaignVesting(
   cfManagerVestingFactory: Contract,
   deployerService: Contract
 ): Promise<Array<Contract>> {
+  const stablecoinAddress = (await issuer.commonState()).stablecoin;
+  const stablecoin = await ethers.getContractAt("USDC", stablecoinAddress);
   const assetInitialTokenSupplyWei = ethers.utils.parseEther(assetInitialTokenSupply.toString());
-  const cfManagerSoftcapWei = ethers.utils.parseEther(cfManagerSoftcap.toString());
-  const cfManagerMinInvestmentWei = ethers.utils.parseEther(cfManagerMinInvestment.toString());
-  const cfManagerMaxInvestmentWei = ethers.utils.parseEther(cfManagerMaxInvestment.toString());
+  const cfManagerSoftcapWei = await parseStablecoin(cfManagerSoftcap, stablecoin);
+  const cfManagerMinInvestmentWei = await parseStablecoin(cfManagerMinInvestment, stablecoin);
+  const cfManagerMaxInvestmentWei = await parseStablecoin(cfManagerMaxInvestment, stablecoin);
   const cfManagerTokensToSellAmountWei = ethers.utils.parseEther(cfManagerTokensToSellAmount.toString());
   const deployTx = await deployerService.deployAssetSimpleCampaignVesting(
     [

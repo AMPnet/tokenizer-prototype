@@ -77,7 +77,7 @@ export class TestData {
         this.mark            = accounts[8];
         this.treasury        = accounts[9];
 
-        this.stablecoin = await helpers.deployStablecoin(this.deployer, "1000000000000");
+        this.stablecoin = await helpers.deployStablecoin(this.deployer, "1000000000000", 6);
 
         const factories = await helpers.deployFactories(this.deployer);
         this.issuerFactory = factories[0];
@@ -237,9 +237,9 @@ export class TestData {
 
     async liquidateAsset(liquidationFunds: number = 300000) {
         await this.stablecoin
-            .transfer(await this.issuerOwner.getAddress(), ethers.utils.parseEther(liquidationFunds.toString()));
+            .transfer(await this.issuerOwner.getAddress(), await helpers.parseStablecoin(liquidationFunds, this.stablecoin));
         await this.stablecoin.connect(this.assetManager)
-            .approve(this.asset.address, ethers.utils.parseEther(liquidationFunds.toString()));
+            .approve(this.asset.address, await helpers.parseStablecoin(liquidationFunds, this.stablecoin));
         await helpers
             .registerAsset(this.assetManager, this.apxRegistry, this.asset.address, this.asset.address);
         await helpers.updatePrice(this.priceManager, this.apxRegistry, this.asset, 1, 60);

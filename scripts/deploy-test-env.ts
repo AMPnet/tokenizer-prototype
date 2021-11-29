@@ -14,7 +14,7 @@ async function main() {
 
     const stablecoin: Contract = (process.env.STABLECOIN) ? 
         await ethers.getContractAt("USDC", process.env.STABLECOIN) :
-        await helpers.deployStablecoin(deployer, "10000000000");
+        await helpers.deployStablecoin(deployer, "10000000000", 6);
 
     const apxRegistry: Contract = (process.env.APX_REGISTRY) ?
         await ethers.getContractAt("ApxAssetsRegistry", process.env.APX_REGISTRY) :
