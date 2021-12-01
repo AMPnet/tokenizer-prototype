@@ -41,25 +41,6 @@ contract CfManagerSoftcap is ICfManagerSoftcap, ACfManager {
         require(maxInvestment > 0, "CfManagerSoftcap: Max investment has to be bigger than 0.");
         uint256 softCapNormalized = (softCap / tokenPrice) * tokenPrice;
         IIssuerCommon issuer = IIssuerCommon(IAssetCommon(asset).commonState().issuer);
-//        additionalState = Structs.CfManagerSoftcapState(
-//            contractFlavor,
-//            contractVersion,
-//            address(this),
-//            owner,
-//            asset,
-//            address(issuer),
-//            issuer.commonState().stablecoin,
-//            tokenPrice,
-//            softCapNormalized,
-//            minInvestment,
-//            maxInvestment,
-//            whitelistRequired,
-//            false,
-//            false,
-//            0, 0, 0, 0, 0, 0,
-//            info,
-//            feeManager
-//        );
         state = Structs.CfManagerState(
             contractFlavor,
             contractVersion,
