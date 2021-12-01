@@ -140,21 +140,4 @@ contract CfManagerSoftcap is ICfManagerSoftcap, ACfManager {
         changeOwnershipInternal(newOwner);
     }
 
-    //------------------------
-    //  HELPERS
-    //------------------------
-    function _token_value_to_soft_cap() private view returns (uint256) {
-        return 
-            _token_value(
-                _token_amount_for_investment(state.softCap - state.totalFundsRaised)
-            );
-    }
-
-    function _token_amount_for_investment(uint256 investment) private view returns (uint256) {
-        return investment
-                    * _asset_price_precision()
-                    * _asset_decimals_precision()
-                    / state.tokenPrice
-                    / _stablecoin_decimals_precision();
-    }
 }

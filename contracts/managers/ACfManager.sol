@@ -178,17 +178,6 @@ abstract contract ACfManager is IVersioned, ICampaignCommon {
 
     function version() external view override returns (string memory) { return state.version; }
 
-//    function commonState() external view returns (Structs.IssuerCommonState memory) {
-//        return Structs.IssuerCommonState(
-//            state.flavor,
-//            state.version,
-//            state.contractAddress,
-//            state.owner,
-//            state.stablecoin,
-//            state.
-//        );
-//    }
-
     function commonState() external view override returns (Structs.CampaignCommonState memory) {
         return Structs.CampaignCommonState(
             state.flavor,
@@ -332,5 +321,20 @@ abstract contract ACfManager is IVersioned, ICampaignCommon {
     function _adjusted_min_investment(uint256 remainingTokens) internal view returns (uint256) {
         uint256 remainingTokensValue = _token_value(remainingTokens);
         return (remainingTokensValue < state.minInvestment) ? remainingTokensValue : state.minInvestment;
+    }
+
+    function _token_value_to_soft_cap() private view returns (uint256) {
+        return
+        _token_value(
+            _token_amount_for_investment(state.softCap - state.totalFundsRaised)
+        );
+    }
+
+    function _token_amount_for_investment(uint256 investment) private view returns (uint256) {
+        return investment
+        * _asset_price_precision()
+        * _asset_decimals_precision()
+        / state.tokenPrice
+        / _stablecoin_decimals_precision();
     }
 }
