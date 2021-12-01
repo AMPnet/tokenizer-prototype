@@ -263,6 +263,30 @@ contract Structs {
         string info;
     }
 
+    struct CfManagerState {
+        string flavor;
+        string version;
+        address contractAddress;
+        address owner;
+        address asset;
+        address issuer;
+        address stablecoin;
+        uint256 tokenPrice;
+        uint256 softCap;
+        uint256 minInvestment;
+        uint256 maxInvestment;
+        bool whitelistRequired;
+        bool finalized;
+        bool canceled;
+        uint256 totalClaimableTokens;
+        uint256 totalInvestorsCount;
+        uint256 totalFundsRaised;
+        uint256 totalTokensSold;
+        uint256 totalTokensBalance;
+        string info;
+        address feeManager;
+    }
+
     struct CfManagerSoftcapState {
         string flavor;
         string version;
