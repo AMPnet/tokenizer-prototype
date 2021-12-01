@@ -131,7 +131,7 @@ abstract contract ACfManager is IVersioned, ICampaignCommon {
         state.totalClaimableTokens -= tokens;
         state.totalTokensSold -= tokens;
         state.totalFundsRaised -= tokenValue;
-        _stablecoin().safeTransfer(msg.sender, tokenValue);
+        stablecoin().safeTransfer(msg.sender, tokenValue);
         emit CancelInvestment(msg.sender, state.asset, tokens, tokenValue, block.timestamp);
     }
 
@@ -144,8 +144,8 @@ abstract contract ACfManager is IVersioned, ICampaignCommon {
     }
 
     function finalize() external ownerOnly active notFinalized {
-        IERC20 stablecoin = _stablecoin();
-        uint256 fundsRaised = stablecoin.balanceOf(address(this));
+        IERC20 sc = stablecoin();
+        uint256 fundsRaised = sc.balanceOf(address(this));
         require(
             fundsRaised >= state.softCap,
             "ACfManager: Can only finalize campaign if the minimum funding goal has been reached."
@@ -158,10 +158,10 @@ abstract contract ACfManager is IVersioned, ICampaignCommon {
         if (fundsRaised > 0) {
             (address treasury, uint256 fee) = _calculateFee();
             if (fee > 0 && treasury != address(0)) {
-                stablecoin.safeTransfer(treasury, fee);
-                stablecoin.safeTransfer(msg.sender, fundsRaised - fee);
+                sc.safeTransfer(treasury, fee);
+                sc.safeTransfer(msg.sender, fundsRaised - fee);
             } else {
-                stablecoin.safeTransfer(msg.sender, fundsRaised);
+                sc.safeTransfer(msg.sender, fundsRaised);
             }
         }
         if (tokensRefund > 0) { assetERC20.safeTransfer(msg.sender, tokensRefund); }
@@ -217,13 +217,21 @@ abstract contract ACfManager is IVersioned, ICampaignCommon {
         emit ChangeOwnership(msg.sender, newOwner, block.timestamp);
     }
 
+    function isWalletWhitelisted(address wallet) external view returns (bool) {
+        return !state.whitelistRequired || (state.whitelistRequired && _walletApproved(wallet));
+    }
+
+    function stablecoin() public view returns (IERC20) {
+        return IERC20(state.stablecoin);
+    }
+
     //------------------------
     //  HELPERS
     //------------------------
     function _invest(address spender, address investor, uint256 amount) internal active notFinalized isWhitelisted(investor) {
         require(amount > 0, "ACfManager: Investment amount has to be greater than 0.");
         uint256 tokenBalance = _assetERC20().balanceOf(address(this));
-        require(_token_value(tokenBalance) >= state.softCap, "CfManagerSoftcapVesting: not enough tokens for sale to reach the softcap.");
+        require(_token_value(tokenBalance) >= state.softCap, "ACfManager: not enough tokens for sale to reach the softcap.");
         uint256 floatingTokens = tokenBalance - state.totalClaimableTokens;
         require(floatingTokens > 0, "ACfManager: No more tokens available for sale.");
 
@@ -245,7 +253,7 @@ abstract contract ACfManager is IVersioned, ICampaignCommon {
             "ACfManager: Investment amount too high."
         );
 
-        _stablecoin().safeTransferFrom(spender, address(this), tokenValue);
+        stablecoin().safeTransferFrom(spender, address(this), tokenValue);
 
         if (claims[investor] == 0) {
             state.totalInvestorsCount += 1;
@@ -273,7 +281,7 @@ abstract contract ACfManager is IVersioned, ICampaignCommon {
         state.totalClaimableTokens -= tokens;
         state.totalTokensSold -= tokens;
         state.totalFundsRaised -= tokenValue;
-        _stablecoin().safeTransfer(investor, tokenValue);
+        stablecoin().safeTransfer(investor, tokenValue);
         emit CancelInvestment(investor, state.asset, tokens, tokenValue, block.timestamp);
     }
 
@@ -284,10 +292,6 @@ abstract contract ACfManager is IVersioned, ICampaignCommon {
         if (success) {
             return abi.decode(result, (address, uint256));
         } else { return (address(0), 0); }
-    }
-
-    function _stablecoin() internal view returns (IERC20) {
-        return IERC20(state.stablecoin);
     }
 
     function _assetERC20() internal view returns (IERC20) {
