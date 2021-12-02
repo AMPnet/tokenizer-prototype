@@ -39,12 +39,16 @@ interface IInvestService {
         INameRegistry nameRegistry
     ) external view returns (PendingInvestmentRecord[] memory);
 
-    function getStatus(InvestmentRecord[] calldata _investments) external view returns (InvestmentRecordStatus[] memory);
+    function getStatus(
+        InvestmentRecord[] calldata _investments
+    ) external view returns (InvestmentRecordStatus[] memory);
 
     function investFor(InvestmentRecord[] calldata _investments) external;
 }
 
 contract InvestService is IVersioned, IInvestService {
+
+    event InvestFor(address investor, address campaign, uint256 amount, bool successful);
 
     string constant public FLAVOR = "InvestServiceV1";
     string constant public VERSION = "1.0.1";
@@ -89,8 +93,11 @@ contract InvestService is IVersioned, IInvestService {
             InvestmentRecord memory investment = _investments[i];
             ACfManager manager = ACfManager(investment.campaign);
             bool isWhitelisted = manager.isWalletWhitelisted(investment.investor);
+            bool allowance = IERC20(
+                manager.stablecoin()
+            ).allowance(investment.investor, investment.campaign) >= investment.amount;
             bool enoughFunds = IERC20(manager.stablecoin()).balanceOf(investment.investor) >= investment.amount;
-            bool readyToInvest = isWhitelisted && enoughFunds;
+            bool readyToInvest = isWhitelisted && allowance && enoughFunds;
             response[i] = InvestmentRecordStatus(
                 investment.investor, investment.campaign, investment.amount, readyToInvest
             );
@@ -101,9 +108,15 @@ contract InvestService is IVersioned, IInvestService {
     function investFor(InvestmentRecord[] calldata _investments) public override {
         for (uint256 i = 0; i < _investments.length; i++) {
             InvestmentRecord memory investment = _investments[i];
-            ACfManager manager = ACfManager(investment.campaign);
-            // TODO: add silent fail
-            manager.investForBeneficiary(investment.investor, investment.investor, investment.amount);
+            (bool success,) = investment.campaign.call(
+                abi.encodeWithSignature(
+                    "investForBeneficiary(address,address,uint256)",
+                    investment.investor,
+                    investment.investor,
+                    investment.amount
+                )
+            );
+            emit InvestFor(investment.investor, investment.campaign, investment.amount, success);
         }
     }
 

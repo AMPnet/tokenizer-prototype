@@ -195,7 +195,9 @@ abstract contract ACfManager is IVersioned, ICampaignCommon {
             state.totalTokensSold
         );
     }
-    function investmentAmount(address investor) external view override returns (uint256) { return investments[investor]; }
+    function investmentAmount(address investor) external view override returns (uint256) {
+        return investments[investor];
+    }
     function tokenAmount(address investor) external view override returns (uint256) { return tokenAmounts[investor]; }
     function claimedAmount(address investor) external view override returns (uint256) { return claims[investor]; }
 

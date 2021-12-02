@@ -71,7 +71,8 @@ export async function deployServices(deployer: Signer, masterWalletApprover: str
   return [
     await deployWalletApproverService(deployer, masterWalletApprover, [ ], rewardPerApprove),
     await deployDeployerService(deployer),
-    await deployQueryService(deployer)
+    await deployQueryService(deployer),
+    await deployInvestService(deployer)
   ];
 }
 
@@ -106,6 +107,14 @@ export async function deployQueryService(deployer: Signer, confirmations: number
   await ethers.provider.waitForTransaction(queryService.deployTransaction.hash, confirmations)
   console.log(`\nQuery service deployed\n\tAt address: ${queryService.address}`);
   return queryService;
+}
+
+export async function deployInvestService(deployer: Signer, confirmations: number = config.confirmationsForDeploy): Promise<Contract> {
+  const InvestService = await ethers.getContractFactory("InvestService", deployer);
+  const investService = await InvestService.deploy();
+  await ethers.provider.waitForTransaction(investService.deployTransaction.hash, confirmations)
+  console.log(`\nInvest service deployed\n\tAt address: ${investService.address}`);
+  return investService;
 }
 
 export async function deployIssuerFactory(deployer: Signer, oldFactory: string = ethers.constants.AddressZero, confirmations: number = config.confirmationsForDeploy): Promise<Contract> {
