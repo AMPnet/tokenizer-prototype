@@ -27,6 +27,7 @@ interface IInvestService {
     struct InvestmentRecordStatus {
         address investor;
         address campaign;
+        uint256 amount;
         bool readyToInvest;
     }
 
@@ -60,17 +61,18 @@ contract InvestService is IVersioned, IInvestService {
         INameRegistry _nameRegistry
     ) external view override returns (PendingInvestmentRecord[] memory) {
         Structs.CampaignCommonStateWithName[] memory campaigns =
-        _queryService.getCampaignsForIssuer(_issuer, _campaignFactories, _nameRegistry);
+            _queryService.getCampaignsForIssuer(_issuer, _campaignFactories, _nameRegistry);
         if (campaigns.length == 0) {return new PendingInvestmentRecord[](0);}
         PendingInvestmentRecord[] memory response = new PendingInvestmentRecord[](campaigns.length);
         for (uint256 i = 0; i < campaigns.length; i++) {
             Structs.CampaignCommonState memory campaign = campaigns[i].campaign;
+            ICampaignCommon campaignContract = ICampaignCommon(campaign.contractAddress);
             response[i] = PendingInvestmentRecord(
                 _user,
                 campaign.contractAddress,
                 IERC20(campaign.stablecoin).allowance(_user, campaign.contractAddress),
                 IERC20(campaign.stablecoin).balanceOf(_user),
-                IERC20(campaign.asset).balanceOf(_user),
+                campaignContract.investmentAmount(_user),
                 IIssuerCommon(_issuer).isWalletApproved(_user)
             );
         }
@@ -87,21 +89,21 @@ contract InvestService is IVersioned, IInvestService {
             InvestmentRecord memory investment = _investments[i];
             ACfManager manager = ACfManager(investment.campaign);
             bool isWhitelisted = manager.isWalletWhitelisted(investment.investor);
-            bool enoughFunds = investment.amount >= IERC20(manager.stablecoin()).balanceOf(investment.investor);
+            bool enoughFunds = IERC20(manager.stablecoin()).balanceOf(investment.investor) >= investment.amount;
             bool readyToInvest = isWhitelisted && enoughFunds;
-            response[i] = InvestmentRecordStatus(investment.investor, investment.campaign, readyToInvest);
+            response[i] = InvestmentRecordStatus(
+                investment.investor, investment.campaign, investment.amount, readyToInvest
+            );
         }
         return response;
     }
 
     function investFor(InvestmentRecord[] calldata _investments) public override {
-        if (_investments.length == 0) {return;}
-
         for (uint256 i = 0; i < _investments.length; i++) {
             InvestmentRecord memory investment = _investments[i];
             ACfManager manager = ACfManager(investment.campaign);
-            manager.investForBeneficiary(address(this), investment.investor, investment.amount);
-            // TODO: maybe release event
+            // TODO: add silent fail
+            manager.investForBeneficiary(investment.investor, investment.investor, investment.amount);
         }
     }
 

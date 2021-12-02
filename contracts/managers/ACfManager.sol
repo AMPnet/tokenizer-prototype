@@ -94,7 +94,7 @@ abstract contract ACfManager is IVersioned, ICampaignCommon {
 
     modifier isWhitelisted(address investor) {
         require(
-            !state.whitelistRequired || (state.whitelistRequired && _walletApproved(investor)),
+            isWalletWhitelisted(investor),
             "ACfManager: Wallet not whitelisted."
         );
         _;
@@ -217,7 +217,7 @@ abstract contract ACfManager is IVersioned, ICampaignCommon {
         emit ChangeOwnership(msg.sender, newOwner, block.timestamp);
     }
 
-    function isWalletWhitelisted(address wallet) external view returns (bool) {
+    function isWalletWhitelisted(address wallet) public view returns (bool) {
         return !state.whitelistRequired || (state.whitelistRequired && _walletApproved(wallet));
     }
 
