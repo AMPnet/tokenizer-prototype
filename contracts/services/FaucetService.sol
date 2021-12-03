@@ -6,7 +6,7 @@ import "../shared/IVersioned.sol";
 contract FaucetService is IVersioned {
 
     string constant public FLAVOR = "FaucetServiceV1";
-    string constant public VERSION = "1.0.1";
+    string constant public VERSION = "1.0.24";
 
     //------------------------
     //  STATE
