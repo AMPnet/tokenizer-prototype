@@ -69,10 +69,11 @@ export async function deployFactories(deployer: Signer, confirmations: number = 
 
 export async function deployServices(deployer: Signer, masterWalletApprover: string, rewardPerApprove: string): Promise<Contract[]> {
   return [
-    await deployWalletApproverService(deployer, masterWalletApprover, [ ], rewardPerApprove),
+    await deployWalletApproverService(deployer, masterWalletApprover, [ ]),
     await deployDeployerService(deployer),
     await deployQueryService(deployer),
-    await deployInvestService(deployer)
+    await deployInvestService(deployer),
+    await deployFaucetService(deployer, masterWalletApprover, [ ], rewardPerApprove)
   ];
 }
 
@@ -80,16 +81,12 @@ export async function deployWalletApproverService(
   deployer: Signer,
   masterWalletApprover: string,
   walletApprovers: string[],
-  rewardPerApproval: string,
   confirmations: number = config.confirmationsForDeploy
 ): Promise<Contract> {
   const WalletApproverService = await ethers.getContractFactory("WalletApproverService", deployer);
-  const rewardPerApprovalWei = ethers.utils.parseEther(rewardPerApproval);
-  const walletApproverService = await WalletApproverService.deploy(
-    masterWalletApprover, walletApprovers, rewardPerApprovalWei
-  );
+  const walletApproverService = await WalletApproverService.deploy(masterWalletApprover, walletApprovers);
   await ethers.provider.waitForTransaction(walletApproverService.deployTransaction.hash, confirmations)
-  console.log(`\nWallet approver service deployed\n\tAt address: ${walletApproverService.address}\n\tReward per approval: ${rewardPerApproval} ETH`);
+  console.log(`\nWallet approver service deployed\n\tAt address: ${walletApproverService.address}`);
   return walletApproverService;
 }
 
@@ -115,6 +112,23 @@ export async function deployInvestService(deployer: Signer, confirmations: numbe
   await ethers.provider.waitForTransaction(investService.deployTransaction.hash, confirmations)
   console.log(`\nInvest service deployed\n\tAt address: ${investService.address}`);
   return investService;
+}
+
+export async function deployFaucetService(
+  deployer: Signer,
+  masterCaller: string,
+  allowedCallers: string[],
+  reward: string,
+  confirmations: number = config.confirmationsForDeploy
+): Promise<Contract> {
+  const FaucetService = await ethers.getContractFactory("FaucetService", deployer);
+  const rewardWei = ethers.utils.parseEther(reward);
+  const faucetService = await FaucetService.deploy(
+      masterCaller, allowedCallers, rewardWei
+  );
+  await ethers.provider.waitForTransaction(faucetService.deployTransaction.hash, confirmations)
+  console.log(`\nInvest service deployed\n\tAt address: ${faucetService.address}\n\tReward per approval: ${reward} ETH`);
+  return faucetService;
 }
 
 export async function deployIssuerFactory(deployer: Signer, oldFactory: string = ethers.constants.AddressZero, confirmations: number = config.confirmationsForDeploy): Promise<Contract> {

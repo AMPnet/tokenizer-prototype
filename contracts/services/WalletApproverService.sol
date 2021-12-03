@@ -17,7 +17,6 @@ contract WalletApproverService is IVersioned {
     //------------------------
     address public masterOwner;
     mapping (address => bool) public allowedApprovers;
-    uint256 public rewardPerApprove;
 
     //------------------------
     //  EVENTS
@@ -26,21 +25,16 @@ contract WalletApproverService is IVersioned {
     event TransferMasterOwnerRights(address indexed caller, address indexed newOwner, uint256 timestamp);
     event ApproveWallet(address indexed caller, address wallet, uint256 timestamp);
     event SuspendWallet(address indexed caller, address wallet, uint256 timestamp);
-    event WalletFunded(address indexed caller, address wallet, uint256 reward, uint256 timestamp);
-    event UpdateRewardAmount(address indexed caller, uint256 oldAmount, uint256 newAmount, uint256 timestamp);
-    event Received(address indexed sender, uint256 amount, uint256 timestamp);
-    event Released(address indexed receiver, uint256 amount, uint256 timestamp);
 
     //------------------------
     //  CONSTRUCTOR
     //------------------------
-    constructor(address _masterOwner, address[] memory approvers, uint256 _rewardPerApprove) {
+    constructor(address _masterOwner, address[] memory approvers) {
         masterOwner = _masterOwner;
         for (uint i=0; i<approvers.length; i++) {
             allowedApprovers[approvers[i]] = true;
         }
         allowedApprovers[masterOwner] = true;
-        rewardPerApprove = _rewardPerApprove;
     }
 
     //------------------------
@@ -78,12 +72,6 @@ contract WalletApproverService is IVersioned {
         emit TransferMasterOwnerRights(msg.sender, newMasterOwner, block.timestamp);
     }
 
-    function updateRewardAmount(uint256 newRewardAmount) external isMasterOwner {
-        uint256 oldAmount = rewardPerApprove;
-        rewardPerApprove = newRewardAmount;
-        emit UpdateRewardAmount(msg.sender, oldAmount, newRewardAmount, block.timestamp);
-    }
-
     function approveWallets(
         IIssuerCommon issuer,
         address payable [] memory wallets
@@ -97,10 +85,6 @@ contract WalletApproverService is IVersioned {
         IIssuerCommon issuer,
         address payable wallet
     ) public isAllowedToApproveForIssuer(issuer) {
-        if (rewardPerApprove > 0 && address(this).balance >= rewardPerApprove && wallet.balance == 0) {
-            wallet.transfer(rewardPerApprove);
-            emit WalletFunded(msg.sender, wallet, rewardPerApprove, block.timestamp);
-        }
         issuer.approveWallet(wallet);
         emit ApproveWallet(msg.sender, wallet, block.timestamp);
     }
@@ -124,19 +108,6 @@ contract WalletApproverService is IVersioned {
 
     function changeWalletApprover(IIssuerCommon issuer, address newWalletApprover) external isMasterOwner {
         issuer.changeWalletApprover(newWalletApprover);
-    }
-
-    //------------------------
-    //  NATIVE TOKEN OPS
-    //------------------------
-    receive() external payable {
-        emit Received(msg.sender, msg.value, block.timestamp);
-    }
-
-    function release() external isMasterOwner {
-        uint256 amount = address(this).balance;
-        payable(msg.sender).transfer(amount);
-        emit Released(msg.sender, amount, block.timestamp);
     }
 
 }
