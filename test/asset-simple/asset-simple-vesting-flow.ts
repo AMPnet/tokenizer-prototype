@@ -85,9 +85,10 @@ describe("Asset simple - full test with vesting schedule", function () {
         await testData.stablecoin.balanceOf(treasuryAddress)
       ).to.be.equal(totalFee);
 
-      const now = parseInt((Number((new Date()).valueOf()) / 1000).toString());
-      await testData.cfManagerVesting.connect(testData.issuerOwner).startVesting(now, 0, 30);
-      await advanceBlockTime(now + 50);
+      const now = (await ethers.provider.getBlock("latest")).timestamp;
+      await advanceBlockTime(now + 30);
+      await testData.cfManagerVesting.connect(testData.issuerOwner).startVesting(now + 30, 0, 30);
+      await advanceBlockTime(now + 90);
 
       // Alice has to claim tokens after the campaign has been closed successfully
       await testData.cfManagerVesting.connect(testData.alice).claim(aliceAddress);

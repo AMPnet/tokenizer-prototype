@@ -2,11 +2,15 @@
 pragma solidity ^0.8.0;
 
 import "../shared/IVersioned.sol";
+import "./IFaucetService.sol";
 
-contract FaucetService is IVersioned {
+contract FaucetService is IVersioned, IFaucetService {
 
     string constant public FLAVOR = "FaucetServiceV1";
-    string constant public VERSION = "1.0.24";
+    string constant public VERSION = "1.0.0";
+
+    function flavor() external pure override returns (string memory) { return FLAVOR; }
+    function version() external pure override returns (string memory) { return VERSION; }
 
     //------------------------
     //  STATE
@@ -14,6 +18,7 @@ contract FaucetService is IVersioned {
     address public masterOwner;
     mapping (address => bool) public allowedCallers;
     uint256 public rewardPerApprove;
+    uint256 public balanceThresholdForReward;
 
     //------------------------
     //  EVENTS
@@ -21,75 +26,103 @@ contract FaucetService is IVersioned {
     event UpdateCallerStatus(address indexed caller, address indexed approver, bool approved, uint256 timestamp);
     event WalletFunded(address indexed caller, address wallet, uint256 reward, uint256 timestamp);
     event UpdateRewardAmount(address indexed caller, uint256 oldAmount, uint256 newAmount, uint256 timestamp);
+    event UpdateBalanceThresholdForReward(address indexed caller, uint256 oldThreshold, uint256 newThreshold, uint256 timestamp);
+    event OwnershipChanged(address indexed oldOwner, address indexed newOwner, uint256 timestamp);
     event Received(address indexed sender, uint256 amount, uint256 timestamp);
     event Released(address indexed receiver, uint256 amount, uint256 timestamp);
 
     //------------------------
     //  CONSTRUCTOR
     //------------------------
-    constructor(address _masterOwner, address[] memory _callers, uint256 _rewardPerApprove) {
-        masterOwner = _masterOwner;
-        for (uint i=0; i< _callers.length; i++) {
+    constructor(address _masterOwner, address[] memory _callers, uint256 _rewardPerApprove, uint256 _balanceThresholdForReward) {
+        require(_masterOwner != address(0), "FaucetService: invalid master owner");
+        require(_rewardPerApprove > 0, "FaucetService: reward per approve must be positive");
+        require(_balanceThresholdForReward >= 0, "FaucetService: balance threshold for reward must not be negative");
+        
+        for (uint i = 0; i < _callers.length; i++) {
+            require(_callers[i] != address(0), "FaucetService: invalid caller address");
             allowedCallers[_callers[i]] = true;
         }
+
+        masterOwner = _masterOwner;
         allowedCallers[masterOwner] = true;
         rewardPerApprove = _rewardPerApprove;
+        balanceThresholdForReward = _balanceThresholdForReward;
     }
 
     //------------------------
     //  MODIFIERS
     //------------------------
-    modifier isMasterOwner() {
-        require(msg.sender == masterOwner, "FaucetService: not master owner;");
+    modifier isMasterOwner {
+        require(msg.sender == masterOwner, "FaucetService: not master owner");
         _;
     }
 
-    modifier isAllowed() {
+    modifier isAllowed {
         require(
             msg.sender == masterOwner || allowedCallers[msg.sender],
-            "FaucetService: not master owner;"
+            "FaucetService: not allowed to call function"
         );
         _;
     }
 
-    function flavor() external pure override returns (string memory) { return FLAVOR; }
-    function version() external pure override returns (string memory) { return VERSION; }
-
     //------------------------
     //  STATE CHANGE FUNCTIONS
     //------------------------
-    function faucet(address payable[] calldata wallets) public isAllowed() {
-        if (rewardPerApprove == 0 || address(this).balance < (rewardPerApprove * wallets.length)) { return; }
-        for (uint256 i = 0; i < wallets.length; i++) {
-            if (wallets[i].balance == 0) {
-                wallets[i].transfer(rewardPerApprove);
-                emit WalletFunded(msg.sender, wallets[i], rewardPerApprove, block.timestamp);
+    function faucet(address payable[] calldata _wallets) external override isAllowed {
+        require(rewardPerApprove > 0, "FaucetService: reward per approve must be positive");
+        require(address(this).balance >= (rewardPerApprove * _wallets.length), "FaucetService: insufficient balance");
+
+        for (uint256 i = 0; i < _wallets.length; i++) {
+            if (_wallets[i].balance <= balanceThresholdForReward) {
+                _wallets[i].transfer(rewardPerApprove);
+                emit WalletFunded(msg.sender, _wallets[i], rewardPerApprove, block.timestamp);
             }
         }
     }
 
-    function updateRewardAmount(uint256 newRewardAmount) external isMasterOwner {
+    function updateRewardAmount(uint256 _newRewardAmount) external override isMasterOwner {
+        require(_newRewardAmount > 0, "FaucetService: reward per approve must be positive");
         uint256 oldAmount = rewardPerApprove;
-        rewardPerApprove = newRewardAmount;
-        emit UpdateRewardAmount(msg.sender, oldAmount, newRewardAmount, block.timestamp);
+        rewardPerApprove = _newRewardAmount;
+        emit UpdateRewardAmount(msg.sender, oldAmount, _newRewardAmount, block.timestamp);
     }
 
-    function updateCallerStatus(address caller, bool approved) external isMasterOwner {
-        allowedCallers[caller] = approved;
-        emit UpdateCallerStatus(msg.sender, caller, approved, block.timestamp);
+    function updateBalanceThresholdForReward(uint256 _newBalanceThresholdForReward) external override isMasterOwner {
+        require(_newBalanceThresholdForReward >= 0, "FaucetService: balance threshold for reward must not be negative");
+        uint256 oldBalanceThresholdForReward = balanceThresholdForReward;
+        balanceThresholdForReward = _newBalanceThresholdForReward;
+        emit UpdateBalanceThresholdForReward(
+            msg.sender,
+            oldBalanceThresholdForReward,
+            _newBalanceThresholdForReward,
+            block.timestamp
+        );
+    }
+
+    function updateCallerStatus(address _caller, bool _approved) external override isMasterOwner {
+        require(_caller != address(0), "FaucetService: invalid caller address");
+        allowedCallers[_caller] = _approved;
+        emit UpdateCallerStatus(msg.sender, _caller, _approved, block.timestamp);
+    }
+
+    function transferOwnership(address _newOwner) external override isMasterOwner {
+        require(_newOwner != address(0), "FaucetService: invalid new master owner");
+        address oldOwner = masterOwner;
+        masterOwner = _newOwner;
+        emit OwnershipChanged(oldOwner, _newOwner, block.timestamp);
     }
 
     //------------------------
     //  NATIVE TOKEN OPS
     //------------------------
-    receive() external payable {
+    receive() external override payable {
         emit Received(msg.sender, msg.value, block.timestamp);
     }
 
-    function release() external isMasterOwner {
+    function release() external override isMasterOwner {
         uint256 amount = address(this).balance;
         payable(msg.sender).transfer(amount);
         emit Released(msg.sender, amount, block.timestamp);
     }
-
 }

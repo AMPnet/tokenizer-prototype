@@ -124,7 +124,7 @@ export async function deployFaucetService(
   const FaucetService = await ethers.getContractFactory("FaucetService", deployer);
   const rewardWei = ethers.utils.parseEther(reward);
   const faucetService = await FaucetService.deploy(
-      masterCaller, allowedCallers, rewardWei
+      masterCaller, allowedCallers, rewardWei, ethers.utils.parseEther("0")
   );
   await ethers.provider.waitForTransaction(faucetService.deployTransaction.hash, confirmations)
   console.log(`\nInvest service deployed\n\tAt address: ${faucetService.address}\n\tReward per approval: ${reward} ETH`);
