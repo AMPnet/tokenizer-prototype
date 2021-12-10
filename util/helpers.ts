@@ -489,11 +489,12 @@ export async function cancelCampaign(owner: Signer, cfManager: Contract) {
  * @param stablecoin Stablecoin contract instance to be used as the payment method
  * @param amount Amount (in stablecoin) to be distributed as revenue
  * @param payoutDescription Description for this revenue payout
+ * @param payoutDescription Addresses to ignore when distributing revenue (for example: liquidity pools, treasury, token owner...)
  */
-export async function createPayout(owner: Signer, snapshotDistributor: Contract, stablecoin: Contract, amount: Number, payoutDescription: String) {
+export async function createPayout(owner: Signer, snapshotDistributor: Contract, stablecoin: Contract, amount: Number, payoutDescription: String, ignoredAddresses: String[] = []) {
   const amountWei = await parseStablecoin(amount, stablecoin);
   await stablecoin.connect(owner).approve(snapshotDistributor.address, amountWei);
-  await snapshotDistributor.connect(owner).createPayout(payoutDescription, stablecoin.address, amountWei, []);
+  await snapshotDistributor.connect(owner).createPayout(payoutDescription, stablecoin.address, amountWei, ignoredAddresses);
 }
 
 /**
