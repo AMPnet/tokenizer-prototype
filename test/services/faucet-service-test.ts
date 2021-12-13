@@ -152,6 +152,29 @@ describe("Faucet service test", function () {
         expect(await ethers.provider.getBalance(frankAddress)).to.be.equal(defaultRewardPerApprove);
     });
 
+    it('should be able to fund 100 different target wallets', async function() {
+        // send funds from masterOwner
+        await masterOwner.sendTransaction({
+            to: faucetService.address,
+            value: ethers.utils.parseEther("1")
+        });
+
+        // check contract balance
+        const contractBalance = await ethers.provider.getBalance(faucetService.address);
+        expect(contractBalance).to.be.equal(ethers.utils.parseEther("1"));
+
+        // generate 100 random addresses
+        const addresses = Array.from({length: 100}, () => ethers.Wallet.createRandom().address);
+
+        // fund wallets as masterOwner
+        await faucetService.connect(masterOwner).faucet(addresses);
+
+        // check wallet balances
+        for (const address of addresses) {
+            expect(await ethers.provider.getBalance(address)).to.be.equal(defaultRewardPerApprove);
+        }
+    });
+
     it('should be able to update reward amount', async function() {
         // get addresses
         const aliceAddress = await alice.getAddress();
