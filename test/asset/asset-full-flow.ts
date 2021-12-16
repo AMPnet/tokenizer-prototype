@@ -46,7 +46,8 @@ describe("Asset - full test", function () {
           testData.alice,
           testData.cfManager,
           testData.stablecoin,
-          aliceInvestment
+          aliceInvestment,
+          testData.frank
       );
 
       ///// Alice tries to invest for Mark's unapproved wallet. Tx should fail.
@@ -56,7 +57,8 @@ describe("Asset - full test", function () {
               testData.mark,
               testData.cfManager,
               testData.stablecoin,
-              aliceInvestment
+              aliceInvestment,
+              testData.alice
           )
       ).to.be.revertedWith("CfManagerSoftcap: Wallet not whitelisted.");
 

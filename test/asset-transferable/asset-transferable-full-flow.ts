@@ -13,7 +13,7 @@ describe("Asset transferable - full test", function () {
     await testData.deploy()
   });
 
-  it.only(
+  it(
     `should successfully complete the flow:\n
           1)create Issuer + AssetTransferable + Campaign using deployer service
           2)successfully fund the project with two different investors
@@ -45,7 +45,8 @@ describe("Asset transferable - full test", function () {
           testData.alice,
           testData.cfManager,
           testData.stablecoin,
-          aliceInvestment
+          aliceInvestment,
+          testData.frank
       );
 
       ///// Alice tries to invest for Mark's unapproved wallet. Tx should fail.
@@ -55,7 +56,8 @@ describe("Asset transferable - full test", function () {
             testData.mark,
             testData.cfManager,
             testData.stablecoin,
-            aliceInvestment
+            aliceInvestment,
+            testData.alice
         )
       ).to.be.revertedWith("CfManagerSoftcap: Wallet not whitelisted.");
 

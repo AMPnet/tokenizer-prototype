@@ -244,6 +244,7 @@ export async function createAsset(
   issuer: Contract,
   mappedName: String,
   initialTokenSupply: Number,
+  transferable: boolean,
   whitelistRequiredForRevenueClaim: boolean,
   whitelistRequiredForLiquidationClaim: boolean,
   name: String,
@@ -253,18 +254,20 @@ export async function createAsset(
   nameRegistry: Contract,
   apxRegistry: Contract
 ): Promise<Contract> {
-  const createAssetTx = await assetFactory.create(
-    owner,
-    issuer.address,
-    apxRegistry.address,
-    nameRegistry.address,
-    mappedName,
-    ethers.utils.parseEther(initialTokenSupply.toString()),
-    whitelistRequiredForRevenueClaim,
-    whitelistRequiredForLiquidationClaim,
-    name,
-    symbol,
-    info
+  const createAssetTx = await assetFactory.create([
+      owner,
+      issuer.address,
+      apxRegistry.address,
+      nameRegistry.address,
+      mappedName,
+      ethers.utils.parseEther(initialTokenSupply.toString()),
+      transferable,
+      whitelistRequiredForRevenueClaim,
+      whitelistRequiredForLiquidationClaim,
+      name,
+      symbol,
+      info
+    ]
   );
   const receipt = await ethers.provider.waitForTransaction(createAssetTx.hash);
   for (const log of receipt.logs) {
@@ -408,12 +411,12 @@ export async function invest(investor: Signer, cfManager: Contract, stablecoin: 
  * @param stablecoin Stablecoin contract instance to be used for payment
  * @param amount Amount of the stablecoin to be invested
  */
- export async function investForBeneficiary(spender: Signer, beneficiary: Signer, cfManager: Contract, stablecoin: Contract, amount: Number) {
+ export async function investForBeneficiary(spender: Signer, beneficiary: Signer, cfManager: Contract, stablecoin: Contract, amount: Number, caller: Signer = ethers.provider.getSigner()) {
   const amountWei = await parseStablecoin(amount, stablecoin);
   const beneficiaryAddress = await beneficiary.getAddress();
   const spenderAddress = await spender.getAddress();
   await stablecoin.connect(spender).approve(cfManager.address, amountWei);
-  await cfManager.connect(spender).investForBeneficiary(spenderAddress, beneficiaryAddress, amountWei);
+  await cfManager.connect(caller).investForBeneficiary(spenderAddress, beneficiaryAddress, amountWei);
 }
 
 /**
