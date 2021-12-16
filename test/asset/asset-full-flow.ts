@@ -60,7 +60,7 @@ describe("Asset - full test", function () {
               aliceInvestment,
               testData.alice
           )
-      ).to.be.revertedWith("CfManagerSoftcap: Wallet not whitelisted.");
+      ).to.be.revertedWith("ACfManager: Wallet not whitelisted.");
 
       //// Jane buys $50k USDC (and another 50k$ to give back to the owner) and goes through kyc process (wallet approved)
       //// Jane will send $50k worth of the tokens back to the owner to test if the tokens are transferable.

@@ -8,55 +8,28 @@ import "../../tokens/erc20/IToken.sol";
 import "../../shared/IAssetCommon.sol";
 import "../../shared/IIssuerCommon.sol";
 import "../../shared/Structs.sol";
+import "../ACfManager.sol";
 
-contract CfManagerSoftcapVesting is ICfManagerSoftcapVesting {
+contract CfManagerSoftcapVesting is ICfManagerSoftcapVesting, ACfManager {
     using SafeERC20 for IERC20;
 
     //------------------------
     //  STATE
     //------------------------
-    Structs.CfManagerSoftcapVestingState private state;
-    Structs.InfoEntry[] private infoHistory;
-    mapping (address => uint256) private claims;
-    mapping (address => uint256) private investments;
-    mapping (address => uint256) private tokenAmounts;
+    struct VestingState {
+        bool vestingStarted;
+        uint256 start;
+        uint256 cliff;
+        uint256 duration;
+        bool revocable;
+        bool revoked;
+    }
+    VestingState private vestingState;
     mapping (address => uint256) private released;
 
     //------------------------
     //  EVENTS
     //------------------------
-    event Invest(
-        address indexed investor,
-        address asset,
-        uint256 tokenAmount,
-        uint256 tokenValue,
-        uint256 timestamp
-    );
-    event Claim(
-        address indexed investor,
-        address asset,
-        uint256 tokenAmount,
-        uint256 tokenValue,
-        uint256 timestamp
-    );
-    event CancelInvestment(
-        address indexed investor,
-        address asset,
-        uint256 tokenAmount,
-        uint256 tokenValue,
-        uint256 timestamp
-    );
-    event Finalize(
-        address indexed owner,
-        address asset,
-        uint256 fundsRaised,
-        uint256 tokensSold,
-        uint256 tokensRefund,
-        uint256 timestamp
-    );
-    event CancelCampaign(address indexed owner, address asset, uint256 tokensReturned, uint256 timestamp);
-    event SetInfo(string info, address setter, uint256 timestamp);
-    event ChangeOwnership(address caller, address newOwner, uint256 timestamp);
     event StartVesting(
         address indexed owner,
         address asset,
@@ -95,7 +68,7 @@ contract CfManagerSoftcapVesting is ICfManagerSoftcapVesting {
         require(maxInvestment > 0, "CfManagerSoftcapVesting: Max investment has to be bigger than 0.");
         IIssuerCommon issuer = IIssuerCommon(IAssetCommon(asset).commonState().issuer);
         uint256 softCapNormalized = (softCap / tokenPrice) * tokenPrice;
-        state = Structs.CfManagerSoftcapVestingState(
+        state = Structs.CfManagerState(
             contractFlavor,
             contractVersion,
             address(this),
@@ -112,9 +85,9 @@ contract CfManagerSoftcapVesting is ICfManagerSoftcapVesting {
             false,
             0, 0, 0, 0, 0,
             info,
-            false, 0, 0, 0, true, false,
             feeManager
         );
+        vestingState = VestingState(false, 0, 0, 0, true, false);
         require(
             _token_value(IToken(asset).totalSupply()) >= softCapNormalized,
             "CfManagerSoftcapVesting: Invalid soft cap."
@@ -124,49 +97,9 @@ contract CfManagerSoftcapVesting is ICfManagerSoftcapVesting {
     //------------------------
     //  MODIFIERS
     //------------------------
-    modifier ownerOnly() {
-        require(
-            msg.sender == state.owner,
-            "CfManagerSoftcapVesting: Only owner can call this function."
-        );
-        _;
-    }
-
-    modifier active() {
-        require(
-            !state.canceled,
-            "CfManagerSoftcapVesting: The campaign has been canceled."
-        );
-        _;
-    }
-
-    modifier finalized() {
-        require(
-            state.finalized,
-            "CfManagerSoftcapVesting: The campaign is not finalized."
-        );
-        _;
-    }
-
-    modifier notFinalized() {
-        require(
-            !state.finalized,
-            "CfManagerSoftcapVesting: The campaign is finalized."
-        );
-        _;
-    }
-
-    modifier isWhitelisted(address investor) {
-        require(
-            !state.whitelistRequired || (state.whitelistRequired && _walletApproved(investor)),
-            "CfManagerSoftcapVesting: Wallet not whitelisted."
-        );
-        _;
-    }
-
     modifier vestingStarted() {
         require(
-            state.vestingStarted,
+            vestingState.vestingStarted,
             "CfManagerSoftcapVesting: Vesting not started"
         );
         _;
@@ -175,32 +108,6 @@ contract CfManagerSoftcapVesting is ICfManagerSoftcapVesting {
     //------------------------
     // STATE CHANGE FUNCTIONS
     //------------------------
-    function invest(uint256 amount) external {
-        _invest(msg.sender, msg.sender, amount);
-    }
-
-    function investForBeneficiary(address spender, address beneficiary, uint256 amount) external {
-        if (spender != beneficiary) { 
-            require(
-                spender == msg.sender,
-                "CfManagerSoftcap: Only spender can decide to book the investment on somone else."
-            );
-        }
-        _invest(spender, beneficiary, amount);
-    }
-
-    function cancelInvestment() external notFinalized {
-        _cancel_investment(msg.sender);
-    }
-
-    function cancelInvestmentFor(address investor) external {
-        require(
-            state.canceled,
-            "CfManagerSoftcapVesting: Can only cancel for somoneone if the campaign has been canceled."
-        );
-        _cancel_investment(investor);
-    }
-
     function claim(address investor) external finalized vestingStarted {
         uint256 unreleased = _releasableAmount(investor);
         uint256 unreleasedValue = _token_value(unreleased);
@@ -218,14 +125,14 @@ contract CfManagerSoftcapVesting is ICfManagerSoftcapVesting {
         uint256 cliffDuration,
         uint256 duration
     ) external ownerOnly finalized {
-        require(!state.vestingStarted, "CfManagerSoftcapVesting: Vesting already started.");
+        require(!vestingState.vestingStarted, "CfManagerSoftcapVesting: Vesting already started.");
         require(cliffDuration <= duration, "CfManagerSoftcapVesting: cliffDuration <= duration");
         require(duration > 0, "CfManagerSoftcapVesting: duration > 0");
         require(start + duration > block.timestamp, "CfManagerSoftcapVesting: start + duration > block.timestamp");
-        state.vestingStarted = true;
-        state.start = start;
-        state.cliff = start + cliffDuration;
-        state.duration = duration;
+        vestingState.vestingStarted = true;
+        vestingState.start = start;
+        vestingState.cliff = start + cliffDuration;
+        vestingState.duration = duration;
         emit StartVesting(
             msg.sender,
             state.asset,
@@ -237,178 +144,74 @@ contract CfManagerSoftcapVesting is ICfManagerSoftcapVesting {
     }
 
     function revoke() public ownerOnly finalized vestingStarted {
-        require(state.revocable, "CfManagerSoftcapVesting: Campaign vesting configuration not revocable.");
-        require(!state.revoked, "CfManagerSoftcapVesting: Campaign vesting already revoked.");
+        require(vestingState.revocable, "CfManagerSoftcapVesting: Campaign vesting configuration not revocable.");
+        require(!vestingState.revoked, "CfManagerSoftcapVesting: Campaign vesting already revoked.");
 
         uint256 balance = state.totalClaimableTokens;
         uint256 unreleased = _totalReleasableAmount();
         uint256 refund = balance - unreleased;
 
-        state.revoked = true;
+        vestingState.revoked = true;
 
         _assetERC20().safeTransfer(msg.sender, refund);
 
         emit Revoke(msg.sender, state.asset, refund, block.timestamp);
     }
 
-    function finalize() external ownerOnly active notFinalized {
-        IERC20 stablecoin = _stablecoin();
-        uint256 fundsRaised = stablecoin.balanceOf(address(this));
-        require(
-            fundsRaised >= state.softCap || _token_value_to_soft_cap() == 0,
-            "CfManagerSoftcapVesting: Can only finalize campaign if the minimum funding goal has been reached."
-        );
-        state.finalized = true;  
-        IERC20 assetERC20 = _assetERC20();
-        uint256 tokensSold = state.totalTokensSold;
-        uint256 tokensRefund = assetERC20.balanceOf(address(this)) - tokensSold;
-        IAssetCommon(state.asset).finalizeSale();
-        if (fundsRaised > 0) {
-            (address treasury, uint256 fee) = _calculateFee();
-            if (fee > 0 && treasury != address(0)) {
-                stablecoin.safeTransfer(treasury, fee);
-                stablecoin.safeTransfer(msg.sender, fundsRaised - fee);
-            } else {
-                stablecoin.safeTransfer(msg.sender, fundsRaised);
-            }
-        }
-        if (tokensRefund > 0) { assetERC20.safeTransfer(msg.sender, tokensRefund); }
-        emit Finalize(msg.sender, state.asset, fundsRaised, tokensSold, tokensRefund, block.timestamp);
-    }
-
-    function cancelCampaign() external ownerOnly active notFinalized {
-        state.canceled = true;
-        uint256 tokenBalance = _assetERC20().balanceOf(address(this));
-        if(tokenBalance > 0) { _assetERC20().safeTransfer(msg.sender, tokenBalance); }
-        emit CancelCampaign(msg.sender, state.asset, tokenBalance, block.timestamp);
-    }
-
     //------------------------
     //  ICfManagerSoftcap IMPL
     //------------------------
-    function flavor() external view override returns (string memory) { return state.flavor; }
+    function getInfoHistory() external view override returns (Structs.InfoEntry[] memory) {
+        return getInfoHistoryInternal();
+    }
 
-    function version() external view override returns (string memory) { return state.version; }
-    
-    function commonState() external view override returns (Structs.CampaignCommonState memory) {
-        return Structs.CampaignCommonState(
+    function getState() external view override returns (Structs.CfManagerSoftcapVestingState memory) {
+        return Structs.CfManagerSoftcapVestingState(
             state.flavor,
             state.version,
             state.contractAddress,
             state.owner,
-            state.info,
             state.asset,
+            state.issuer,
             state.stablecoin,
+            state.tokenPrice,
             state.softCap,
+            state.minInvestment,
+            state.maxInvestment,
+            state.whitelistRequired,
             state.finalized,
             state.canceled,
-            state.tokenPrice,
+            state.totalClaimableTokens,
+            state.totalInvestorsCount,
             state.totalFundsRaised,
-            state.totalTokensSold
+            state.totalTokensSold,
+            _assetERC20().balanceOf(address(this)),
+            state.info,
+            vestingState.vestingStarted,
+            vestingState.start,
+            vestingState.cliff,
+            vestingState.duration,
+            vestingState.revocable,
+            vestingState.revoked,
+            state.feeManager
         );
     }
 
-    function investmentAmount(address investor) external view override returns (uint256) { return investments[investor]; }
-    function tokenAmount(address investor) external view override returns (uint256) { return tokenAmounts[investor]; }
-    function claimedAmount(address investor) external view override returns (uint256) { return claims[investor]; }
-
-    function setInfo(string memory info) external override ownerOnly {
-        infoHistory.push(Structs.InfoEntry(
-            info,
-            block.timestamp
-        ));
-        state.info = info;
-        emit SetInfo(info, msg.sender, block.timestamp);
-    }
-
-    function getInfoHistory() external view override returns (Structs.InfoEntry[] memory) {
-        return infoHistory;
-    }
-
-    function getState() external view override returns (Structs.CfManagerSoftcapVestingState memory) {
-        Structs.CfManagerSoftcapVestingState memory stateWithBalance = state; 
-        stateWithBalance.totalTokensBalance = _assetERC20().balanceOf(address(this));
-        return stateWithBalance;
-    }
-
     function changeOwnership(address newOwner) external override ownerOnly {
-        state.owner = newOwner;
-        emit ChangeOwnership(msg.sender, newOwner, block.timestamp);
+        changeOwnershipInternal(newOwner);
     }
 
     //------------------------
     //  HELPERS
     //------------------------
-    function _invest(address spender, address investor, uint256 amount) private active notFinalized isWhitelisted(investor) {
-        require(amount > 0, "CfManagerSoftcapVesting: Investment amount has to be greater than 0.");
-        uint256 tokenBalance = _assetERC20().balanceOf(address(this));
-        require(_token_value(tokenBalance) >= state.softCap, "CfManagerSoftcapVesting: not enough tokens for sale to reach the softcap.");
-        uint256 floatingTokens = tokenBalance - state.totalClaimableTokens;
-        require(floatingTokens > 0, "CfManagerSoftcapVesting: No more tokens available for sale.");
-
-        uint256 tokens = _token_amount_for_investment(amount);
-        uint256 tokenValue = _token_value(tokens);
-        require(tokens > 0 && tokenValue > 0, "CfManagerSoftcapVesting: Investment amount too low.");
-        require(floatingTokens >= tokens, "CfManagerSoftcapVesting: Not enough tokens left for this investment amount.");        
-        uint256 totalInvestmentValue = _token_value(tokens + claims[investor]);
-        require(
-            totalInvestmentValue >= _adjusted_min_investment(floatingTokens),
-            "CfManagerSoftcapVesting: Investment amount too low."
-        );
-        require(
-            totalInvestmentValue <= state.maxInvestment,
-            "CfManagerSoftcapVesting: Investment amount too high."
-        );
-
-        _stablecoin().safeTransferFrom(spender, address(this), tokenValue);
-
-        if (claims[investor] == 0) {
-            state.totalInvestorsCount += 1;
-        }
-        claims[investor] += tokens;
-        investments[investor] += tokenValue;
-        tokenAmounts[investor] += tokens;
-        state.totalClaimableTokens += tokens;
-        state.totalTokensSold += tokens;
-        state.totalFundsRaised += tokenValue;
-        emit Invest(investor, state.asset, tokens, tokenValue, block.timestamp);
-    }
-
-    function _cancel_investment(address investor) private {
-        uint256 tokens = claims[investor];
-        uint256 tokenValue = investments[investor];
-        require(
-            tokens > 0 && tokenValue > 0,
-            "CfManagerSoftcap: No tokens owned."
-        );
-        state.totalInvestorsCount -= 1;
-        claims[investor] = 0;
-        investments[investor] = 0;
-        tokenAmounts[investor] = 0;
-        state.totalClaimableTokens -= tokens;
-        state.totalTokensSold -= tokens;
-        state.totalFundsRaised -= tokenValue;
-        _stablecoin().safeTransfer(investor, tokenValue);
-        emit CancelInvestment(investor, state.asset, tokens, tokenValue, block.timestamp);
-    }
-
-    function _calculateFee() private returns (address, uint256) {
-        (bool success, bytes memory result) = state.feeManager.call(
-            abi.encodeWithSignature("calculateFee(address)", address(this))
-        );
-        if (success) {
-            return abi.decode(result, (address, uint256));
-        } else { return (address(0), 0); }
-    }
-
     function _totalReleasableAmount() private view returns (uint256) {
         uint256 vestedAmount;
-        if (block.timestamp < state.cliff) {
+        if (block.timestamp < vestingState.cliff) {
             vestedAmount = 0;
-        } else if (block.timestamp >= (state.start + state.duration) || state.revoked) {
+        } else if (block.timestamp >= (vestingState.start + vestingState.duration) || vestingState.revoked) {
             vestedAmount = state.totalTokensSold;
         } else {
-            vestedAmount = state.totalTokensSold * (block.timestamp - state.start) / state.duration;
+            vestedAmount = state.totalTokensSold * (block.timestamp - vestingState.start) / vestingState.duration;
         }
         return vestedAmount - (state.totalTokensSold - state.totalClaimableTokens);
     }
@@ -418,65 +221,13 @@ contract CfManagerSoftcapVesting is ICfManagerSoftcapVesting {
     }
 
     function _vestedAmount(address investor) private view returns (uint256) {
-        if (block.timestamp < state.cliff) {
+        if (block.timestamp < vestingState.cliff) {
             return 0;
-        } else if (block.timestamp >= (state.start + state.duration) || state.revoked) {
+        } else if (block.timestamp >= (vestingState.start + vestingState.duration) || vestingState.revoked) {
             return tokenAmounts[investor];
         } else {
-            return tokenAmounts[investor] * (block.timestamp - state.start) / state.duration;
+            return tokenAmounts[investor] * (block.timestamp - vestingState.start) / vestingState.duration;
         }
-    }
-
-    function _stablecoin() private view returns (IERC20) {
-        return IERC20(state.stablecoin);
-    }
-
-    function _assetERC20() private view returns (IERC20) {
-        return IERC20(state.asset);
-    }
-
-    function _asset_decimals_precision() private view returns (uint256) {
-        return 10 ** IToken(state.asset).decimals();
-    }
-
-    function _asset_price_precision() private view returns (uint256) {
-        return IAssetCommon(state.asset).priceDecimalsPrecision();
-    }
-
-    function _stablecoin_decimals_precision() private view returns (uint256) {
-        return 10 ** IToken(state.stablecoin).decimals();
-    }
-
-    function _token_value_to_soft_cap() private view returns (uint256) {
-        return 
-            _token_value(
-                _token_amount_for_investment(state.softCap - state.totalFundsRaised)
-            );
-    }
-
-    function _token_amount_for_investment(uint256 investment) private view returns (uint256) {
-        return investment
-                    * _asset_price_precision()
-                    * _asset_decimals_precision()
-                    / state.tokenPrice
-                    / _stablecoin_decimals_precision();
-    }
-
-    function _token_value(uint256 tokens) private view returns (uint256) {
-        return tokens
-                    * state.tokenPrice
-                    * _stablecoin_decimals_precision()
-                    / _asset_price_precision()
-                    / _asset_decimals_precision();
-    }
-
-    function _walletApproved(address wallet) private view returns (bool) {
-        return IIssuerCommon(state.issuer).isWalletApproved(wallet);
-    }
-
-    function _adjusted_min_investment(uint256 remainingTokens) private view returns (uint256) {
-        uint256 remainingTokensValue = _token_value(remainingTokens);
-        return (remainingTokensValue < state.minInvestment) ? remainingTokensValue : state.minInvestment;
     }
 
 }

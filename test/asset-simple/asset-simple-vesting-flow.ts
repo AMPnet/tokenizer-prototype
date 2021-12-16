@@ -57,7 +57,7 @@ describe("Asset simple - full test with vesting schedule", function () {
               aliceInvestment,
               testData.alice
           )
-      ).to.be.revertedWith("CfManagerSoftcapVesting: Wallet not whitelisted.");
+      ).to.be.revertedWith("ACfManager: Wallet not whitelisted.");
 
       //// Jane buys $100k USDC and goes through kyc process (wallet approved)
       const janeAddress = await testData.jane.getAddress();
