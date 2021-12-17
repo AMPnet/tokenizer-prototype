@@ -143,7 +143,7 @@ describe("Covers important tests for all campaign flavors", function () {
     ).to.be.revertedWith("ACfManager: Only spender can decide to book the investment on somone else.")
   });
 
-  it.only('is possible to close the campaign if 1 wei left to be funded (or such a small amount not representable by the token amount)', async () => {
+  it('is possible to close the campaign if 1 wei left to be funded (or such a small amount not representable by the token amount)', async () => {
     /**
     * Configuration:
     *   asset supply: 1M tokens
