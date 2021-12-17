@@ -12,7 +12,7 @@ describe("Covers important tests for all campaign flavors", function () {
   let issuerOwner: Signer;
   let issuerOwnerAddress: String;
 
-  before(async function () {
+  beforeEach(async function () {
     await testData.deploy()
     await testData.deployIssuer();
     issuerOwner = testData.issuerOwner;
@@ -71,7 +71,7 @@ describe("Covers important tests for all campaign flavors", function () {
     await testData.stablecoin.transfer(addressA1, investmentAmountWei);
     await expect(
       helpers.investForBeneficiary(walletA1, walletA1, campaign, testData.stablecoin, investmentAmount)
-    ).to.be.revertedWith("CfManagerSoftcap: Wallet not whitelisted.");
+    ).to.be.revertedWith("ACfManager: Wallet not whitelisted.");
     await testData.walletApproverService.connect(testData.walletApprover).approveWallet(testData.issuer.address, addressA1);
     await helpers.investForBeneficiary(walletA1, walletA1, campaign, testData.stablecoin, investmentAmount, walletA1);
     expect(await campaign.investmentAmount(addressA1)).to.be.equal(investmentAmountWei);
@@ -94,7 +94,7 @@ describe("Covers important tests for all campaign flavors", function () {
     await testData.stablecoin.transfer(addressB2, investmentAmountWei);
     await expect(
       helpers.investForBeneficiary(walletB2, walletB2, campaign, testData.stablecoin, investmentAmount, walletA2)
-    ).to.be.revertedWith("CfManagerSoftcap: Wallet not whitelisted.");
+    ).to.be.revertedWith("ACfManager: Wallet not whitelisted.");
     await testData.walletApproverService.connect(testData.walletApprover).approveWallet(testData.issuer.address, addressB2);
     await helpers.investForBeneficiary(walletB2, walletB2, campaign, testData.stablecoin, investmentAmount, walletA2)
     expect(await campaign.investmentAmount(addressB2)).to.be.equal(investmentAmountWei);
@@ -117,7 +117,7 @@ describe("Covers important tests for all campaign flavors", function () {
     await testData.stablecoin.transfer(addressA3, investmentAmountWei);
     await expect(
       helpers.investForBeneficiary(walletA3, walletB3, campaign, testData.stablecoin, investmentAmount, walletA3)
-    ).to.be.revertedWith("CfManagerSoftcap: Wallet not whitelisted.");
+    ).to.be.revertedWith("ACfManager: Wallet not whitelisted.");
     await testData.walletApproverService.connect(testData.walletApprover).approveWallet(testData.issuer.address, addressB3);
     await helpers.investForBeneficiary(walletA3, walletB3, campaign, testData.stablecoin, investmentAmount, walletA3)
     expect(await campaign.investmentAmount(addressB3)).to.be.equal(investmentAmountWei);
@@ -140,10 +140,10 @@ describe("Covers important tests for all campaign flavors", function () {
     await testData.stablecoin.transfer(addressB4, investmentAmountWei);
     await expect(
       helpers.investForBeneficiary(walletB4, walletA4, campaign, testData.stablecoin, investmentAmount, walletA4)
-    ).to.be.revertedWith("CfManagerSoftcap: Only spender can decide to book the investment on somone else.")
+    ).to.be.revertedWith("ACfManager: Only spender can decide to book the investment on somone else.")
   });
 
-  it('is possible to close the campaign if 1 wei left to be funded (or such a small amount not representable by the token amount)', async () => {
+  it.only('is possible to close the campaign if 1 wei left to be funded (or such a small amount not representable by the token amount)', async () => {
     /**
     * Configuration:
     *   asset supply: 1M tokens
@@ -196,6 +196,11 @@ describe("Covers important tests for all campaign flavors", function () {
     await testData.stablecoin.connect(testData.frank).approve(campaign.address, frankInvestment);
     await campaign.connect(testData.frank).invest(frankInvestment);
 
+    // Campaign is well below softcap. Make sure owner can't finalize the campaign and pull the funds
+    await expect(
+      campaign.connect(issuerOwner).finalize()
+    ).to.be.revertedWith("ACfManager: Can only finalize campaign if the minimum funding goal has been reached.");
+
     const aliceAddress = await testData.alice.getAddress();
     const aliceInvestment = BigNumber.from("1559699999");
     await testData.walletApproverService.connect(testData.walletApprover).approveWallet(testData.issuer.address, aliceAddress);
@@ -211,7 +216,7 @@ describe("Covers important tests for all campaign flavors", function () {
     await testData.stablecoin.approve(campaign.address, oneWei);
     await expect(
       campaign.connect(testData.alice).invest(oneWei)
-    ).to.be.revertedWith("CfManagerSoftcap: Investment amount too low.")
+    ).to.be.revertedWith("ACfManager: Investment amount too low.")
 
     // Campaign can be closed although funds raised is 1wei lower than the configured softCap | special case
     await campaign.connect(issuerOwner).finalize();
@@ -295,7 +300,7 @@ describe("Covers important tests for all campaign flavors", function () {
     // Alice can't cancel investment for Frank (campaign is still ongoing)
     await expect(
       campaign.connect(testData.alice).cancelInvestmentFor(frankAddress)
-    ).to.be.revertedWith("CfManagerSoftcapVesting: Can only cancel for somoneone if the campaign has been canceled.");
+    ).to.be.revertedWith("ACfManager: Can only cancel for somoneone if the campaign has been canceled.");
 
     // Frank can cancel investment by himself though
     await campaign.connect(testData.frank).cancelInvestment();

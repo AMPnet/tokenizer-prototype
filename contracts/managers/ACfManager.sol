@@ -7,9 +7,9 @@ import "../shared/Structs.sol";
 import "../tokens/erc20/IToken.sol";
 import "../shared/IAssetCommon.sol";
 import "../shared/IIssuerCommon.sol";
-import "../shared/ICampaignCommon.sol";
+import "./IACfManager.sol";
 
-abstract contract ACfManager is IVersioned, ICampaignCommon {
+abstract contract ACfManager is IVersioned, IACfManager {
     using SafeERC20 for IERC20;
 
     //------------------------
@@ -118,21 +118,7 @@ abstract contract ACfManager is IVersioned, ICampaignCommon {
     }
 
     function cancelInvestment() external notFinalized {
-        uint256 tokens = claims[msg.sender];
-        uint256 tokenValue = investments[msg.sender];
-        require(
-            tokens > 0 && tokenValue > 0,
-            "ACfManager: No tokens owned."
-        );
-        state.totalInvestorsCount -= 1;
-        claims[msg.sender] = 0;
-        investments[msg.sender] = 0;
-        tokenAmounts[msg.sender] = 0;
-        state.totalClaimableTokens -= tokens;
-        state.totalTokensSold -= tokens;
-        state.totalFundsRaised -= tokenValue;
-        _stablecoin().safeTransfer(msg.sender, tokenValue);
-        emit CancelInvestment(msg.sender, state.asset, tokens, tokenValue, block.timestamp);
+        _cancel_investment(msg.sender);
     }
 
     function cancelInvestmentFor(address investor) external {
@@ -147,7 +133,7 @@ abstract contract ACfManager is IVersioned, ICampaignCommon {
         IERC20 stablecoin = _stablecoin();
         uint256 fundsRaised = stablecoin.balanceOf(address(this));
         require(
-            fundsRaised >= state.softCap,
+            fundsRaised >= state.softCap || _token_value_to_soft_cap() == 0,
             "ACfManager: Can only finalize campaign if the minimum funding goal has been reached."
         );
         state.finalized = true;
@@ -174,6 +160,7 @@ abstract contract ACfManager is IVersioned, ICampaignCommon {
         if(tokenBalance > 0) { _assetERC20().safeTransfer(msg.sender, tokenBalance); }
         emit CancelCampaign(msg.sender, state.asset, tokenBalance, block.timestamp);
     }
+
     function flavor() external view override returns (string memory) { return state.flavor; }
 
     function version() external view override returns (string memory) { return state.version; }
@@ -201,18 +188,18 @@ abstract contract ACfManager is IVersioned, ICampaignCommon {
 
     function setInfo(string memory info) external override ownerOnly {
         infoHistory.push(Structs.InfoEntry(
-                info,
-                block.timestamp
-            ));
+            info,
+            block.timestamp
+        ));
         state.info = info;
         emit SetInfo(info, msg.sender, block.timestamp);
     }
 
-    function getInfoHistoryInternal() internal view returns (Structs.InfoEntry[] memory) {
+    function getInfoHistory() external override view returns (Structs.InfoEntry[] memory) {
         return infoHistory;
     }
 
-    function changeOwnershipInternal(address newOwner) internal ownerOnly {
+    function changeOwnership(address newOwner) external override ownerOnly {
         state.owner = newOwner;
         emit ChangeOwnership(msg.sender, newOwner, block.timestamp);
     }
@@ -225,13 +212,8 @@ abstract contract ACfManager is IVersioned, ICampaignCommon {
         uint256 tokenBalance = _assetERC20().balanceOf(address(this));
         require(_token_value(tokenBalance) >= state.softCap, "CfManagerSoftcapVesting: not enough tokens for sale to reach the softcap.");
         uint256 floatingTokens = tokenBalance - state.totalClaimableTokens;
-        require(floatingTokens > 0, "ACfManager: No more tokens available for sale.");
 
-        uint256 tokens = amount
-        * _asset_price_precision()
-        * _asset_decimals_precision()
-        / state.tokenPrice
-        / _stablecoin_decimals_precision();
+        uint256 tokens = _token_amount_for_investment(amount);
         uint256 tokenValue = _token_value(tokens);
         require(tokens > 0 && tokenValue > 0, "ACfManager: Investment amount too low.");
         require(floatingTokens >= tokens, "ACfManager: Not enough tokens left for this investment amount.");
@@ -324,8 +306,7 @@ abstract contract ACfManager is IVersioned, ICampaignCommon {
     }
 
     function _token_value_to_soft_cap() private view returns (uint256) {
-        return
-        _token_value(
+        return _token_value(
             _token_amount_for_investment(state.softCap - state.totalFundsRaised)
         );
     }

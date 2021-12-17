@@ -59,7 +59,7 @@ describe("Asset transferable - full test", function () {
             aliceInvestment,
             testData.alice
         )
-      ).to.be.revertedWith("CfManagerSoftcap: Wallet not whitelisted.");
+      ).to.be.revertedWith("ACfManager: Wallet not whitelisted.");
 
       //// Jane buys $100k USDC and goes through kyc process (wallet approved)
       const janeAddress = await testData.jane.getAddress();
