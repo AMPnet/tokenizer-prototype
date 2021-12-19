@@ -41,6 +41,7 @@ export NAME_REGISTRY=
 export NAME_REGISTRY_OWNER=                         # provide this param if NAME_REGISTRY field empty
 export DEPLOYER=
 export QUERY_SERVICE=
+export INVEST_SERVICE=
 
 ######################################## Mirrored token definition ########################################
 # > Load existing MirroredToken at given address
@@ -80,6 +81,7 @@ NAME_REGISTRY_OWNER=${NAME_REGISTRY_OWNER}
 NAME_REGISTRY=${NAME_REGISTRY}
 DEPLOYER=${DEPLOYER}
 QUERY_SERVICE=${QUERY_SERVICE}
+INVEST_SERVICE=${INVEST_SERVICE}
 MIRRORED_TOKEN=${MIRRORED_TOKEN}
 MIRRORED_TOKEN_NAME=${MIRRORED_TOKEN_NAME}
 MIRRORED_TOKEN_SYMBOL=${MIRRORED_TOKEN_SYMBOL}
