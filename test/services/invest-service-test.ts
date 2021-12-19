@@ -116,7 +116,7 @@ describe("Invest service test", function () {
         expect(firstPending.campaign).to.be.equal(testData.cfManager.address);
         expect(firstPending.allowance).to.be.equal(investmentWei);
         expect(firstPending.balance).to.be.equal(investmentWei);
-        expect(firstPending.alreadyInvest).to.be.equal(0);
+        expect(firstPending.alreadyInvested).to.be.equal(0);
         expect(firstPending.kycPassed).to.be.equal(true);
     });
 
