@@ -10,7 +10,7 @@ import "../registry/INameRegistry.sol";
 contract AssetFactory is IAssetFactory {
 
     string constant public FLAVOR = "AssetV1";
-    string constant public VERSION = "1.0.20";
+    string constant public VERSION = "1.0.24";
 
     address public deployer;
     address[] public instances;
