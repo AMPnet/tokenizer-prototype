@@ -89,8 +89,19 @@ async function main() {
         await helpers.deployWalletApproverService(
             deployer,
             process.env.WALLET_APPROVER_MASTER_OWNER,
-            walletApprovers,
-            "0.001"
+            walletApprovers
+        );
+
+    const allowedCallers: string[] = (process.env.FAUCET_SERVICE_ALLOWED_CALLERS) ?
+        process.env.FAUCET_SERVICE_ALLOWED_CALLERS.split(",") : [ ];
+    const faucetService: Contract = (process.env.FAUCET_SERVICE) ?
+        await ethers.getContractAt("FaucetService", process.env.FAUCET_SERVICE) :
+        await helpers.deployFaucetService(
+            deployer,
+            process.env.FAUCET_SERVICE_MASTER_OWNER,
+            allowedCallers,
+            process.env.FAUCET_SERVICE_REWARD_PER_APPROVE,
+            process.env.FAUCET_SERVICE_BALANCE_THRESHOLD_FOR_REWARD
         );
 
     const deployerService: Contract = (process.env.DEPLOYER) ?

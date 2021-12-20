@@ -110,7 +110,8 @@ export class TestData {
         const services = await helpers.deployServices(
             this.deployer,
             walletApproverAddress,
-            "0.001"
+            "0.001",
+            "0"
         );
         this.walletApproverService = services[0];
         this.deployerService = services[1];
