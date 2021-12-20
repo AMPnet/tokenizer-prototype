@@ -36,8 +36,7 @@ contract FaucetService is IVersioned, IFaucetService {
     //------------------------
     constructor(address _masterOwner, address[] memory _callers, uint256 _rewardPerApprove, uint256 _balanceThresholdForReward) {
         require(_masterOwner != address(0), "FaucetService: invalid master owner");
-        require(_rewardPerApprove > 0, "FaucetService: reward per approve must be positive");
-        require(_balanceThresholdForReward >= 0, "FaucetService: balance threshold for reward must not be negative");
+        require(_rewardPerApprove > 0, "FaucetService: reward per approve must not be zero");
         
         for (uint i = 0; i < _callers.length; i++) {
             require(_callers[i] != address(0), "FaucetService: invalid caller address");
@@ -45,7 +44,6 @@ contract FaucetService is IVersioned, IFaucetService {
         }
 
         masterOwner = _masterOwner;
-        allowedCallers[masterOwner] = true;
         rewardPerApprove = _rewardPerApprove;
         balanceThresholdForReward = _balanceThresholdForReward;
     }
@@ -70,7 +68,6 @@ contract FaucetService is IVersioned, IFaucetService {
     //  STATE CHANGE FUNCTIONS
     //------------------------
     function faucet(address payable[] calldata _wallets) external override isAllowed {
-        require(rewardPerApprove > 0, "FaucetService: reward per approve must be positive");
         require(address(this).balance >= (rewardPerApprove * _wallets.length), "FaucetService: insufficient balance");
 
         for (uint256 i = 0; i < _wallets.length; i++) {
@@ -82,14 +79,13 @@ contract FaucetService is IVersioned, IFaucetService {
     }
 
     function updateRewardAmount(uint256 _newRewardAmount) external override isMasterOwner {
-        require(_newRewardAmount > 0, "FaucetService: reward per approve must be positive");
+        require(_newRewardAmount > 0, "FaucetService: reward per approve must be not be zero");
         uint256 oldAmount = rewardPerApprove;
         rewardPerApprove = _newRewardAmount;
         emit UpdateRewardAmount(msg.sender, oldAmount, _newRewardAmount, block.timestamp);
     }
 
     function updateBalanceThresholdForReward(uint256 _newBalanceThresholdForReward) external override isMasterOwner {
-        require(_newBalanceThresholdForReward >= 0, "FaucetService: balance threshold for reward must not be negative");
         uint256 oldBalanceThresholdForReward = balanceThresholdForReward;
         balanceThresholdForReward = _newBalanceThresholdForReward;
         emit UpdateBalanceThresholdForReward(
