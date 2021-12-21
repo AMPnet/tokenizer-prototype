@@ -92,6 +92,7 @@ contract Asset is IAsset, ERC20Snapshot {
         IIssuerCommon issuer = _issuer();
         require(
             state.transferable ||
+            (to == state.owner) ||
             (from == address(this) && issuer.isWalletApproved(to)) ||
             (to == address(this) && issuer.isWalletApproved(from)) ||
             (from == state.owner && _campaignWhitelisted(to)) ||

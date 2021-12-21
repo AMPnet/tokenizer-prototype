@@ -111,6 +111,10 @@ async function main() {
     const queryService: Contract = (process.env.QUERY_SERVICE) ?
         await ethers.getContractAt("QueryService", process.env.QUERY_SERVICE) :
         await helpers.deployQueryService(deployer);
+
+    const investService: Contract = (process.env.INVEST_SERVICE) ?
+        await ethers.getContractAt("InvestService", process.env.INVEST_SERVICE) :
+        await helpers.deployInvestService(deployer);
 }
 
 main()

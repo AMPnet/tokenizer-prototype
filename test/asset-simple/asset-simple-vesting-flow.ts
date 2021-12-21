@@ -43,7 +43,8 @@ describe("Asset simple - full test with vesting schedule", function () {
         testData.alice,
         testData.cfManagerVesting,
         testData.stablecoin,
-        aliceInvestment
+        aliceInvestment,
+        testData.frank
       );
 
       /// Alice tries to invest for Mark's unapproved wallet. Tx should fail.
@@ -53,7 +54,8 @@ describe("Asset simple - full test with vesting schedule", function () {
               testData.mark,
               testData.cfManagerVesting,
               testData.stablecoin,
-              aliceInvestment
+              aliceInvestment,
+              testData.alice
           )
       ).to.be.revertedWith("ACfManager: Wallet not whitelisted.");
 

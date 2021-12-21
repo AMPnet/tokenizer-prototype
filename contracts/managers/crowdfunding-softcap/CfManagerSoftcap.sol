@@ -112,13 +112,4 @@ contract CfManagerSoftcap is ICfManagerSoftcap, ACfManager {
             state.feeManager
         );
     }
-
-    function getInfoHistory() external view override returns (Structs.InfoEntry[] memory) {
-        return getInfoHistoryInternal();
-    }
-
-    function changeOwnership(address newOwner) external override {
-        changeOwnershipInternal(newOwner);
-    }
-
 }

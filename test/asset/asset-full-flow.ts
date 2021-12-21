@@ -29,22 +29,25 @@ describe("Asset - full test", function () {
       const treasuryAddress = await testData.treasury.getAddress();
       await testData.deployIssuerAssetClassicCampaign()
 
-      //// Alice buys $100k USDC and goes through kyc process (wallet approved)
+      //// Frank buys $100k USDC
       const frankAddress = await testData.frank.getAddress(); 
-      const aliceAddress = await testData.alice.getAddress();
       const aliceInvestment = 100000;
       const aliceInvestmentWei = await helpers.parseStablecoin(aliceInvestment, testData.stablecoin);
       await testData.stablecoin.transfer(frankAddress, aliceInvestmentWei);
+
+      //// Alice goes through kyc process (wallet approved)
+      const aliceAddress = await testData.alice.getAddress();
       await testData.walletApproverService.connect(testData.walletApprover)
           .approveWallet(testData.issuer.address, aliceAddress);
 
-      //// Frank invests $100k credited to the Alice's wallet
+      //// Frank spends $100k to invest in the Alice's name. Should succeed: alice is approved and frank wallet is funded
       await helpers.investForBeneficiary(
           testData.frank,
           testData.alice,
           testData.cfManager,
           testData.stablecoin,
-          aliceInvestment
+          aliceInvestment,
+          testData.frank
       );
 
       ///// Alice tries to invest for Mark's unapproved wallet. Tx should fail.
@@ -54,27 +57,43 @@ describe("Asset - full test", function () {
               testData.mark,
               testData.cfManager,
               testData.stablecoin,
-              aliceInvestment
+              aliceInvestment,
+              testData.alice
           )
       ).to.be.revertedWith("ACfManager: Wallet not whitelisted.");
 
-      //// Jane buys $100k USDC and goes through kyc process (wallet approved)
+      //// Jane buys $50k USDC (and another 50k$ to give back to the owner) and goes through kyc process (wallet approved)
+      //// Jane will send $50k worth of the tokens back to the owner to test if the tokens are transferable.
+      //// This asset type forbids token transfer in general, but allows sending tokens to the asset owner.
       const janeAddress = await testData.jane.getAddress();
-      const janeInvestment = 100000;
-      const janeInvestmentWei = await helpers.parseStablecoin(janeInvestment.toString(), testData.stablecoin);
+      const janeInvestment = 50000;
+      const janeAdditionalInvestment = 50000;
+      const janeTotalInvestment = janeInvestment + janeAdditionalInvestment;
+      const janeInvestmentWei = await helpers.parseStablecoin((janeTotalInvestment).toString(), testData.stablecoin);
       await testData.stablecoin.transfer(janeAddress, janeInvestmentWei);
       await testData.walletApproverService.connect(testData.walletApprover)
           .approveWallet(testData.issuer.address, janeAddress);
 
-      await helpers.invest(testData.jane, testData.cfManager, testData.stablecoin, janeInvestment);
+      //// Jane invests $50k + $50k. The additional $50k of tokens will be transferred back to the project owner wallet
+      //// Cancel invest is called one time before investing again to check if the cancel investment process works well.
+      await helpers.invest(testData.jane, testData.cfManager, testData.stablecoin, janeTotalInvestment);
+      expect(await testData.stablecoin.balanceOf(janeAddress)).to.be.equal(0);
       await helpers.cancelInvest(testData.jane, testData.cfManager);
-      await helpers.invest(testData.jane, testData.cfManager, testData.stablecoin, janeInvestment);
+      expect(
+          await testData.stablecoin.balanceOf(janeAddress)
+      ).to.be.equal(await helpers.parseStablecoin(janeTotalInvestment, testData.stablecoin));
+      await helpers.invest(testData.jane, testData.cfManager, testData.stablecoin, janeTotalInvestment);
 
-      // Asset owner finalizes the campaign as the soft cap has been reached. Campaign fee is 10%.
+      //// Asset owner finalizes the campaign as the soft cap has been reached. Campaign fee is 10%.
+      //// This tests the case when the default fee (1/5 = 20%) is overriden by the per-campaign-basis fee (1/10 = 10%).
       const feeNumerator = 1;
       const feeDenominator = 10;
       const totalInvestment = janeInvestmentWei.add(aliceInvestmentWei); 
       const totalFee = totalInvestment.mul(feeNumerator).div(feeDenominator);
+      const fundsRaisedWei = totalInvestment.sub(totalFee);
+      const stablecoinPrecision = await testData.stablecoin.decimals();
+      const fundsRaised = await ethers.utils.formatUnits(fundsRaisedWei, stablecoinPrecision);
+      await helpers.setDefaultFee(testData.feeManager, 1, 5);
       await helpers.setFeeForCampaign(testData.feeManager, testData.cfManager.address, feeNumerator, feeDenominator);
       await testData.cfManager.connect(testData.issuerOwner).finalize();
       expect(
@@ -84,10 +103,39 @@ describe("Asset - full test", function () {
           await testData.stablecoin.balanceOf(treasuryAddress)
       ).to.be.equal(totalFee);
 
-      // Alice has to claim tokens after the campaign has been closed successfully
+      //// Alice has to claim tokens after the campaign has been closed successfully
       await testData.cfManager.connect(testData.alice).claim(aliceAddress);
-      // Jane has to claim tokens after the campaign has been closed successfully
+      //// Jane has to claim tokens after the campaign has been closed successfully
       await testData.cfManager.connect(testData.jane).claim(janeAddress);
+      //// Test claim balances. Jane and Alice should each own 100k tokens each ($100k investment each at $1/token)
+      expect(await testData.asset.balanceOf(janeAddress)).to.be.equal(
+        await ethers.utils.parseEther(janeTotalInvestment.toString())
+      );
+      expect(await testData.asset.balanceOf(aliceAddress)).to.be.equal(
+        await ethers.utils.parseEther(aliceInvestment.toString())
+      );
+
+      //// Test sending tokens to the asset owner wallet (janeAdditionalInvestment).
+      //// Jane sends half of her tokens (50k out of 100k) back to the asset owner
+      await testData.asset.connect(testData.jane).transfer(
+          testData.issuerOwner.getAddress(),
+          await ethers.utils.parseEther(janeAdditionalInvestment.toString())
+      );
+
+      //// After Jane sends back janeAdditionalTokens, Alice owns 100k tokens while Jane is left with 50k of tokens
+      const janePostInvestmentTokenBalance = await testData.asset.balanceOf(janeAddress);
+      const alicePostInvestmentTokenBalance = await testData.asset.balanceOf(aliceAddress);
+      expect(janePostInvestmentTokenBalance).to.be.equal(
+          await ethers.utils.parseEther(janeInvestment.toString())
+      );
+      expect(alicePostInvestmentTokenBalance).to.be.equal(
+          await ethers.utils.parseEther(aliceInvestment.toString())
+      );
+      
+      //// Verify tokens can't be transfered
+      await expect(
+        testData.asset.connect(testData.alice).transfer(janeAddress, 1000)
+      ).to.be.reverted;
 
       //// Owner creates snapshot distributor, updates info once
       const snapshotDistributorMappedName = "snapshot-manager";
@@ -103,32 +151,41 @@ describe("Asset - full test", function () {
       );
       await helpers.setInfo(testData.issuerOwner, snapshotDistributor, updatedSnapshotDistributorInfoHash);
 
-      //// Distribute $100k revenue to the token holders using the snapshot distributor from the step before
+      //// Distribute $300k revenue to the token holders using the snapshot distributor from the step before
+      //// Add self (project owner / distributor) to the ignored addresses when calculating distribution amounts
       const payoutDescription = "WindFarm Mexico Q3/2021 revenue";
       const revenueAmount = 300000;
       const revenueAmountWei = await helpers.parseStablecoin(revenueAmount, testData.stablecoin);
-      const issuerAddress = await testData.issuerOwner.getAddress();
-      await testData.stablecoin.transfer(issuerAddress, revenueAmountWei);
-      const balanceBeforePayout: BigNumber = await testData.stablecoin.balanceOf(issuerAddress);
+      await testData.stablecoin.transfer(issuerOwnerAddress, revenueAmountWei);
+      const balanceBeforePayout: BigNumber = await testData.stablecoin.balanceOf(issuerOwnerAddress);
       expect(balanceBeforePayout).to.be.equal(revenueAmountWei.add(totalInvestment).sub(totalFee));
       await helpers.createPayout(
-          testData.issuerOwner, snapshotDistributor, testData.stablecoin, revenueAmount, payoutDescription
+          testData.issuerOwner,
+          snapshotDistributor,
+          testData.stablecoin,
+          revenueAmount,
+          payoutDescription,
+          [ issuerOwnerAddress ]
       );
-      const afterSharePayout = await testData.stablecoin.balanceOf(issuerAddress);
+      const afterSharePayout = await testData.stablecoin.balanceOf(issuerOwnerAddress);
       expect(afterSharePayout).to.be.equal(balanceBeforePayout.sub(revenueAmountWei));
 
       //// Alice claims her revenue share by calling previously created SnapshotDistributor contract and providing the snapshotId param (0 in this case)
       //// SnapshotDistributor address has to be known upfront (can be found for one asset by scanning SnapshotDistributorCreated event for asset address)
+      //// Alice will receive 2/3 of the total revenue (or $200k) since Alice holds 100k tokens and Jane holds 50k tokens
+      //// (Jane and Alice are the only token holders other the token owner)
       const snapshotId = 1;
       const aliceBalanceBeforePayout = await testData.stablecoin.balanceOf(aliceAddress);
       expect(aliceBalanceBeforePayout).to.be.equal(0);
-      const aliceRevenueShareWei = await helpers.parseStablecoin("100000", testData.stablecoin);    // (1/3) of the total revenue payed out
+      const aliceRevenueShareWei = await helpers.parseStablecoin("200000", testData.stablecoin);    // (2/3) of the total revenue payed out
       await helpers.claimRevenue(testData.alice, snapshotDistributor, snapshotId)
       const aliceBalanceAfterPayout = await testData.stablecoin.balanceOf(aliceAddress);
-      expect(aliceBalanceAfterPayout).to.be.equal(aliceRevenueShareWei); // alice claims (1/3) of total revenue
+      expect(aliceBalanceAfterPayout).to.be.equal(aliceRevenueShareWei); // alice claims (2/3) of total revenue
 
       //// Jane claims her revenue share by calling previously created SnapshotDistributor contract and providing the snapshotId param (0 in this case)
       //// SnapshotDistributors address has to be known upfront (can be found for one asset by scanning SnapshotDistributorCreated event for asset address)
+      //// Jane will receive 1/3 of the total revenue (or $100k) since Jane holds 50k tokens and ALice holds 100k tokens
+      //// (Jane and Alice are the only token holders other the token owner)
       const janeBalanceBeforePayout = await testData.stablecoin.balanceOf(janeAddress);
       expect(janeBalanceBeforePayout).to.be.equal(0);
       const janeRevenueShareWei = await helpers.parseStablecoin("100000", testData.stablecoin);    // (1/3) of the total revenue payed out
@@ -149,7 +206,7 @@ describe("Asset - full test", function () {
       );
 
       //// Jane mirrors her tokens
-      const tokensToMirror = ethers.utils.parseEther("100000"); // all of the jane tokens will be mirrored
+      const tokensToMirror = ethers.utils.parseEther("50000"); // all of the jane tokens will be mirrored
       await testData.asset.connect(testData.jane).approve(testData.asset.address, tokensToMirror);
       await testData.asset.connect(testData.jane).lockTokens(tokensToMirror);
       const janePostLockAssetBalance = await testData.asset.balanceOf(janeAddress);
@@ -159,31 +216,28 @@ describe("Asset - full test", function () {
       const mirroredTokenSupply = await mirroredAsset.totalSupply();
       expect(mirroredTokenSupply).to.be.equal(tokensToMirror);
 
-      // update market price for asset
-      // price: $0.70, expiry: 60 seconds
+      ////// update market price for asset
+      ////// price: $0.70, expiry: 60 seconds
       await helpers.updatePrice(testData.priceManager, testData.apxRegistry, mirroredAsset, 11000, 60);
 
       //// Asset owner liquidates asset
       // Asset was crowdfunded at $1/token and is now trading at $1.10/token so the total supply must be liquidated
       // at the max($1, $1.10), therefore must be liquidated at the price of $1.10.
-      // Since the asset supply is 300k tokens, liqudiation funds = 300k tokens * $1.10 = $330k
-      // Project owner already holds $200k at his wallet after finalizing the campaign, so we transfer another $20k
-      // to his wallet and call liquidate() function. Liquidate function doesn't require full $330k payment since the
-      // caller holds (1/3) of the token and is entitled to $110k claim. This is deducted in the liquidate() function so
-      // caller only has to approve the liquidation funds for the rest of the holders.
-      // Jane and Alice hold (1/3) of the total supply each, so they can claim $110k each.
-      const liquidationAmount = 220000;
-      await testData.stablecoin.transfer(issuerAddress, await helpers.parseStablecoin("40000", testData.stablecoin));
-      const liquidatorBalanceBeforeLiquidation = await testData.stablecoin.balanceOf(issuerAddress);
-      expect (liquidatorBalanceBeforeLiquidation).to.be.equal(await helpers.parseStablecoin(liquidationAmount, testData.stablecoin));
+      // Since the asset circulating supply is 150k tokens (jane and alice), liqudiation funds = 150k tokens * $1.10 = $165k
+      // Project owner already holds $200k at his wallet after finalizing the campaign so he is good to go.
+      // Alice is entitled to (2/3) and Jane to (1/3) of the $165k liquidation amount according to their token holdings.
+      const liquidationAmount = 165000;
+      const liquidationAmountWei = await helpers.parseStablecoin(liquidationAmount, testData.stablecoin);
+      const liquidatorBalanceBeforeLiquidation = await testData.stablecoin.balanceOf(issuerOwnerAddress);
+      expect(liquidatorBalanceBeforeLiquidation).to.be.equal(fundsRaisedWei);
       await helpers.liquidate(testData.issuerOwner, testData.asset, testData.stablecoin, liquidationAmount);
-      const liquidatorBalanceAfterLiquidation = await testData.stablecoin.balanceOf(issuerAddress);
-      expect (liquidatorBalanceAfterLiquidation).to.be.equal(0);
+      const liquidatorBalanceAfterLiquidation = await testData.stablecoin.balanceOf(issuerOwnerAddress);
+      expect(liquidatorBalanceAfterLiquidation).to.be.equal(fundsRaisedWei.sub(liquidationAmountWei));
       const assetTotalSupply = await testData.asset.totalSupply();
       expect(await (testData.asset.balanceOf(issuerOwnerAddress))).to.be.equal(assetTotalSupply);
 
       //// Alice claims liquidation share
-      const aliceLiquidationShare = 110000;
+      const aliceLiquidationShare = 110000; // liquidationAmount * (2/3) 
       const aliceLiquidationShareWei = await helpers.parseStablecoin(aliceLiquidationShare, testData.stablecoin);
       await helpers.claimLiquidationShare(testData.alice, testData.asset);
       const aliceBalanceAfterLiquidationClaim = await testData.stablecoin.balanceOf(aliceAddress);
@@ -192,7 +246,7 @@ describe("Asset - full test", function () {
 
       //// Jane converts mirrored to original and claims liquidation share
       await mirroredAsset.connect(testData.jane).burnMirrored(tokensToMirror);
-      const janeLiquidationShare = 110000;
+      const janeLiquidationShare = 55000;   // liquidationAmount * (1/3)
       const janeLiquidationShareWei = await helpers.parseStablecoin(janeLiquidationShare, testData.stablecoin);
       await helpers.claimLiquidationShare(testData.jane, testData.asset);
       const janeBalanceAfterLiquidationClaim = await testData.stablecoin.balanceOf(janeAddress);
@@ -200,7 +254,6 @@ describe("Asset - full test", function () {
       expect(await testData.asset.balanceOf(janeAddress)).to.be.equal(0);
 
       //// Fetch crowdfunding campaign state
-      // const fetchedCampaignState = await helpers.getCrowdfundingCampaignState(testData.cfManager);
       const state = await testData.cfManager.getState()
       const stablecoinDecimals = await testData.stablecoin.decimals();
       const expectedTotalTokensSold = await ethers.utils.formatUnits(totalInvestment.toString(), stablecoinDecimals);

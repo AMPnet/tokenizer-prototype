@@ -161,10 +161,6 @@ contract CfManagerSoftcapVesting is ICfManagerSoftcapVesting, ACfManager {
     //------------------------
     //  ICfManagerSoftcap IMPL
     //------------------------
-    function getInfoHistory() external view override returns (Structs.InfoEntry[] memory) {
-        return getInfoHistoryInternal();
-    }
-
     function getState() external view override returns (Structs.CfManagerSoftcapVestingState memory) {
         return Structs.CfManagerSoftcapVestingState(
             state.flavor,
@@ -195,10 +191,6 @@ contract CfManagerSoftcapVesting is ICfManagerSoftcapVesting, ACfManager {
             vestingState.revoked,
             state.feeManager
         );
-    }
-
-    function changeOwnership(address newOwner) external override ownerOnly {
-        changeOwnershipInternal(newOwner);
     }
 
     //------------------------

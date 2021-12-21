@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../shared/IVersioned.sol";
 import "../shared/ICampaignFactoryCommon.sol";
+import "../shared/ICampaignCommon.sol";
 import "../managers/ACfManager.sol";
 import "./QueryService.sol";
 import "../shared/Structs.sol";
@@ -14,7 +15,7 @@ interface IInvestService {
         address campaign;
         uint256 allowance;
         uint256 balance;
-        uint256 alreadyInvest;
+        uint256 alreadyInvested;
         bool kycPassed;
     }
 
@@ -48,14 +49,14 @@ interface IInvestService {
 
 contract InvestService is IVersioned, IInvestService {
 
-    event InvestFor(address investor, address campaign, uint256 amount, bool successful);
+    event InvestFor(address indexed investor, address indexed campaign, uint256 amount, bool successful);
 
     string constant public FLAVOR = "InvestServiceV1";
     string constant public VERSION = "1.0.1";
 
-    function flavor() external pure override returns (string memory) {return FLAVOR;}
+    function flavor() external pure override returns (string memory) { return FLAVOR; }
 
-    function version() external pure override returns (string memory) {return VERSION;}
+    function version() external pure override returns (string memory) { return VERSION; }
 
     function getPendingFor(
         address _user,
