@@ -129,7 +129,7 @@ export async function deployFaucetService(
       masterCaller, allowedCallers, rewardWei, thresholdWei
   );
   await ethers.provider.waitForTransaction(faucetService.deployTransaction.hash, confirmations)
-  console.log(`\nInvest service deployed\n\tAt address: ${faucetService.address}\n\tReward per approval: ${reward} ETH\n\tBalance threshold for reward: ${balanceThresholdForReward} ETH`);
+  console.log(`\nFaucet service deployed\n\tAt address: ${faucetService.address}\n\tReward per approval: ${reward} ETH\n\tBalance threshold for reward: ${balanceThresholdForReward} ETH`);
   return faucetService;
 }
 
