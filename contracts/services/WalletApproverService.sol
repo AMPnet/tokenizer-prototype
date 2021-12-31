@@ -34,10 +34,11 @@ contract WalletApproverService is IVersioned {
     //------------------------
     //  CONSTRUCTOR
     //------------------------
-    constructor(address _masterOwner, address[] memory approvers) {
+    constructor(address _masterOwner, address[] memory _approvers, uint256 _rewardPerApprove) {
         masterOwner = _masterOwner;
-        for (uint i=0; i<approvers.length; i++) {
-            allowedApprovers[approvers[i]] = true;
+        rewardPerApprove = _rewardPerApprove;
+        for (uint i=0; i< _approvers.length; i++) {
+            allowedApprovers[_approvers[i]] = true;
         }
         allowedApprovers[masterOwner] = true;
     }
