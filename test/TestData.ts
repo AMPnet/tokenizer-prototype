@@ -3,7 +3,7 @@ import { ethers } from "hardhat";
 import { Contract, Signer } from "ethers";
 import * as helpers from "../util/helpers";
 import * as deployerServiceUtil from "../util/deployer-service";
-import { CfManagerSoftcap, CfManagerSoftcapVesting, InvestService } from "../typechain";
+import { CfManagerSoftcap, CfManagerSoftcapVesting, InvestService, Issuer } from "../typechain";
 
 export class TestData {
 
@@ -41,7 +41,7 @@ export class TestData {
 
     //////// CONTRACTS ////////
     stablecoin: Contract;
-    issuer: Contract;
+    issuer: Issuer;
     asset: Contract;
     cfManager: CfManagerSoftcap;
     cfManagerVesting: CfManagerSoftcapVesting;
@@ -235,7 +235,7 @@ export class TestData {
             issuerInfoHash,
             this.issuerFactory,
             this.nameRegistry
-        );
+        ) as Issuer;
     }
 
     async liquidateAsset(liquidationFunds: number = 300000) {
