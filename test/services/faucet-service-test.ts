@@ -1,6 +1,6 @@
 // @ts-ignore
 import { ethers } from "hardhat";
-import { providers, Signer } from "ethers";
+import { Signer } from "ethers";
 import { expect } from "chai";
 import { describe, it } from "mocha";
 import { FaucetService } from "../../typechain";

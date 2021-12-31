@@ -24,8 +24,8 @@ contract WalletApproverService is IVersioned {
     //------------------------
     event UpdateApproverStatus(address indexed caller, address indexed approver, bool approved, uint256 timestamp);
     event TransferMasterOwnerRights(address indexed caller, address indexed newOwner, uint256 timestamp);
-    event ApproveWallet(address indexed caller, address wallet, uint256 timestamp);
-    event SuspendWallet(address indexed caller, address wallet, uint256 timestamp);
+    event ApproveWallet(address indexed caller, address wallet, uint256 timestamp, bool successful);
+    event SuspendWallet(address indexed caller, address wallet, uint256 timestamp, bool successful);
     event WalletFunded(address indexed caller, address wallet, uint256 reward, uint256 timestamp);
     event UpdateRewardAmount(address indexed caller, uint256 oldAmount, uint256 newAmount, uint256 timestamp);
     event Received(address indexed sender, uint256 amount, uint256 timestamp);
@@ -137,17 +137,22 @@ contract WalletApproverService is IVersioned {
     //  HELPERS
     //------------------------
     function _approveWallet(IIssuerCommon issuer, address payable wallet) private {
+        (bool success,) = address(issuer).call(
+            abi.encodeWithSignature("approveWallet(address)", wallet)
+        );
         issuer.approveWallet(wallet);
-        emit ApproveWallet(msg.sender, wallet, block.timestamp);
+        emit ApproveWallet(msg.sender, wallet, block.timestamp, success);
 
-        if (rewardPerApprove > 0 && address(this).balance >= rewardPerApprove && wallet.balance == 0) {
+        if (rewardPerApprove > 0 && wallet.balance == 0 && address(this).balance >= rewardPerApprove) {
             wallet.transfer(rewardPerApprove);
             emit WalletFunded(msg.sender, wallet, rewardPerApprove, block.timestamp);
         }
     }
 
     function _suspendWallet(IIssuerCommon issuer, address wallet) private {
-        issuer.suspendWallet(wallet);
-        emit SuspendWallet(msg.sender, wallet, block.timestamp);
+        (bool success,) = address(issuer).call(
+            abi.encodeWithSignature("suspendWallet(address)", wallet)
+        );
+        emit SuspendWallet(msg.sender, wallet, block.timestamp, success);
     }
 }

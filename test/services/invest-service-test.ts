@@ -1,5 +1,4 @@
 // @ts-ignore
-import {ethers} from "hardhat";
 import * as helpers from "../../util/helpers";
 import {expect} from "chai";
 import {describe, it} from "mocha";
