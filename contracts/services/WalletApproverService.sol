@@ -7,7 +7,7 @@ import "../shared/IVersioned.sol";
 contract WalletApproverService is IVersioned {
 
     string constant public FLAVOR = "WalletApproverServiceV1";
-    string constant public VERSION = "1.0.24";
+    string constant public VERSION = "1.0.25";
 
     function flavor() external pure override returns (string memory) { return FLAVOR; }
     function version() external pure override returns (string memory) { return VERSION; } 
@@ -17,6 +17,7 @@ contract WalletApproverService is IVersioned {
     //------------------------
     address public masterOwner;
     mapping (address => bool) public allowedApprovers;
+    uint256 public rewardPerApprove;
 
     //------------------------
     //  EVENTS
@@ -25,6 +26,10 @@ contract WalletApproverService is IVersioned {
     event TransferMasterOwnerRights(address indexed caller, address indexed newOwner, uint256 timestamp);
     event ApproveWallet(address indexed caller, address wallet, uint256 timestamp);
     event SuspendWallet(address indexed caller, address wallet, uint256 timestamp);
+    event WalletFunded(address indexed caller, address wallet, uint256 reward, uint256 timestamp);
+    event UpdateRewardAmount(address indexed caller, uint256 oldAmount, uint256 newAmount, uint256 timestamp);
+    event Received(address indexed sender, uint256 amount, uint256 timestamp);
+    event Released(address indexed receiver, uint256 amount, uint256 timestamp);
 
     //------------------------
     //  CONSTRUCTOR
@@ -72,12 +77,18 @@ contract WalletApproverService is IVersioned {
         emit TransferMasterOwnerRights(msg.sender, newMasterOwner, block.timestamp);
     }
 
+    function updateRewardAmount(uint256 newRewardAmount) external isMasterOwner {
+        uint256 oldAmount = rewardPerApprove;
+        rewardPerApprove = newRewardAmount;
+        emit UpdateRewardAmount(msg.sender, oldAmount, newRewardAmount, block.timestamp);
+    }
+
     function approveWallets(
         IIssuerCommon issuer,
         address payable [] memory wallets
     ) external isAllowedToApproveForIssuer(issuer) {
         for (uint i=0; i<wallets.length; i++) {
-            approveWallet(issuer, wallets[i]);
+            _approveWallet(issuer, wallets[i]);
         }
     }
 
@@ -85,8 +96,7 @@ contract WalletApproverService is IVersioned {
         IIssuerCommon issuer,
         address payable wallet
     ) public isAllowedToApproveForIssuer(issuer) {
-        issuer.approveWallet(wallet);
-        emit ApproveWallet(msg.sender, wallet, block.timestamp);
+        _approveWallet(issuer, wallet);
     }
 
     function suspendWallets(
@@ -94,7 +104,7 @@ contract WalletApproverService is IVersioned {
         address[] memory wallets
     ) external isAllowedToApproveForIssuer(issuer) {
         for (uint i=0; i<wallets.length; i++) {
-            suspendWallet(issuer, wallets[i]);
+            _suspendWallet(issuer, wallets[i]);
         }
     }
 
@@ -102,12 +112,41 @@ contract WalletApproverService is IVersioned {
         IIssuerCommon issuer,
         address wallet
     ) public isAllowedToApproveForIssuer(issuer) {
-        issuer.suspendWallet(wallet);
-        emit SuspendWallet(msg.sender, wallet, block.timestamp);
+        _suspendWallet(issuer, wallet);
     }
 
     function changeWalletApprover(IIssuerCommon issuer, address newWalletApprover) external isMasterOwner {
         issuer.changeWalletApprover(newWalletApprover);
     }
 
+    //------------------------
+    //  NATIVE TOKEN OPS
+    //------------------------
+    receive() external payable {
+        emit Received(msg.sender, msg.value, block.timestamp);
+    }
+
+    function release() external isMasterOwner {
+        uint256 amount = address(this).balance;
+        payable(msg.sender).transfer(amount);
+        emit Released(msg.sender, amount, block.timestamp);
+    }
+
+    //------------------------
+    //  HELPERS
+    //------------------------
+    function _approveWallet(IIssuerCommon issuer, address payable wallet) private {
+        issuer.approveWallet(wallet);
+        emit ApproveWallet(msg.sender, wallet, block.timestamp);
+
+        if (rewardPerApprove > 0 && address(this).balance >= rewardPerApprove && wallet.balance == 0) {
+            wallet.transfer(rewardPerApprove);
+            emit WalletFunded(msg.sender, wallet, rewardPerApprove, block.timestamp);
+        }
+    }
+
+    function _suspendWallet(IIssuerCommon issuer, address wallet) private {
+        issuer.suspendWallet(wallet);
+        emit SuspendWallet(msg.sender, wallet, block.timestamp);
+    }
 }
