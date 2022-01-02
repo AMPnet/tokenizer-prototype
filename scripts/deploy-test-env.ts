@@ -1,3 +1,4 @@
+// @ts-ignore
 import { ethers } from "hardhat";
 import { Contract } from "ethers";
 import * as helpers from "../util/helpers";
@@ -89,7 +90,8 @@ async function main() {
         await helpers.deployWalletApproverService(
             deployer,
             process.env.WALLET_APPROVER_MASTER_OWNER,
-            walletApprovers
+            walletApprovers,
+            process.env.FAUCET_SERVICE_REWARD_PER_APPROVE
         );
 
     const allowedCallers: string[] = (process.env.FAUCET_SERVICE_ALLOWED_CALLERS) ?

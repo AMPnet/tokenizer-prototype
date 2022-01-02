@@ -69,7 +69,7 @@ export async function deployFactories(deployer: Signer, confirmations: number = 
 
 export async function deployServices(deployer: Signer, masterWalletApprover: string, rewardPerApprove: string, balanceThresholdForReward: string): Promise<Contract[]> {
   return [
-    await deployWalletApproverService(deployer, masterWalletApprover, [ ]),
+    await deployWalletApproverService(deployer, masterWalletApprover, [ ], rewardPerApprove),
     await deployDeployerService(deployer),
     await deployQueryService(deployer),
     await deployInvestService(deployer),
@@ -81,12 +81,14 @@ export async function deployWalletApproverService(
   deployer: Signer,
   masterWalletApprover: string,
   walletApprovers: string[],
+  rewardPerApproval: string,
   confirmations: number = config.confirmationsForDeploy
 ): Promise<Contract> {
   const WalletApproverService = await ethers.getContractFactory("WalletApproverService", deployer);
-  const walletApproverService = await WalletApproverService.deploy(masterWalletApprover, walletApprovers);
+  const rewardPerApprovalWei = ethers.utils.parseEther(rewardPerApproval);
+  const walletApproverService = await WalletApproverService.deploy(masterWalletApprover, walletApprovers, rewardPerApprovalWei);
   await ethers.provider.waitForTransaction(walletApproverService.deployTransaction.hash, confirmations)
-  console.log(`\nWallet approver service deployed\n\tAt address: ${walletApproverService.address}`);
+  console.log(`\nWallet approver service deployed\n\tAt address: ${walletApproverService.address}\n\tReward per approval: ${rewardPerApproval} ETH`);
   return walletApproverService;
 }
 
