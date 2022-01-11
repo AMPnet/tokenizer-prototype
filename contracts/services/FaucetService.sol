@@ -73,7 +73,7 @@ contract FaucetService is IVersioned, IFaucetService {
         for (uint256 i = 0; i < _wallets.length; i++) {
             if (_wallets[i].balance <= balanceThresholdForReward) {
                 _wallets[i].transfer(rewardPerApprove);
-                emit WalletFunded(msg.sender, _wallets[i], rewardPerApprove, block.timestamp);
+                emit WalletFunded(msg.sender, _wallets[i], rewardPerApprove);
             }
         }
     }
