@@ -108,8 +108,7 @@ async function main() {
 
     if (
         process.env.NAME_REGISTRY_OLD && !process.env.NAME_REGISTRY && 
-        process.env.ISSUER_FACTORY_OLD && process.env.ISSUER_FACTORY_OLD != addressZero && 
-        !process.env.ISSUER_FACTORY
+        process.env.ISSUER_FACTORY_OLD && process.env.ISSUER_FACTORY_OLD != addressZero
     ) { 
         await issuerFactory.addInstancesForNewRegistry(
             process.env.ISSUER_FACTORY_OLD,
@@ -120,8 +119,7 @@ async function main() {
 
     if (
         process.env.NAME_REGISTRY_OLD && !process.env.NAME_REGISTRY && 
-        process.env.ASSET_FACTORY_OLD && process.env.ASSET_FACTORY_OLD != addressZero && 
-        !process.env.ASSET_FACTORY
+        process.env.ASSET_FACTORY_OLD && process.env.ASSET_FACTORY_OLD != addressZero
     ) { 
         await assetFactory.addInstancesForNewRegistry(
             process.env.ASSET_FACTORY_OLD,
@@ -132,8 +130,7 @@ async function main() {
 
     if (
         process.env.NAME_REGISTRY_OLD && !process.env.NAME_REGISTRY && 
-        process.env.ASSET_TRANSFERABLE_FACTORY_OLD && process.env.ASSET_TRANSFERABLE_FACTORY_OLD != addressZero && 
-        !process.env.ASSET_TRANSFERABLE_FACTORY
+        process.env.ASSET_TRANSFERABLE_FACTORY_OLD && process.env.ASSET_TRANSFERABLE_FACTORY_OLD != addressZero 
     ) { 
         await assetTransferableFactory.addInstancesForNewRegistry(
             process.env.ASSET_TRANSFERABLE_FACTORY_OLD,
@@ -144,8 +141,7 @@ async function main() {
     
     if (
         process.env.NAME_REGISTRY_OLD && !process.env.NAME_REGISTRY && 
-        process.env.ASSET_SIMPLE_FACTORY_OLD && process.env.ASSET_SIMPLE_FACTORY_OLD != addressZero && 
-        !process.env.ASSET_SIMPLE_FACTORY
+        process.env.ASSET_SIMPLE_FACTORY_OLD && process.env.ASSET_SIMPLE_FACTORY_OLD != addressZero
     ) { 
         await assetSimpleFactory.addInstancesForNewRegistry(
             process.env.ASSET_SIMPLE_FACTORY_OLD,
@@ -156,8 +152,7 @@ async function main() {
 
     if (
         process.env.NAME_REGISTRY_OLD && !process.env.NAME_REGISTRY && 
-        process.env.CF_MANAGER_FACTORY_OLD && process.env.CF_MANAGER_FACTORY_OLD != addressZero && 
-        !process.env.CF_MANAGER_FACTORY
+        process.env.CF_MANAGER_FACTORY_OLD && process.env.CF_MANAGER_FACTORY_OLD != addressZero
     ) { 
         await cfManagerFactory.addInstancesForNewRegistry(
             process.env.CF_MANAGER_FACTORY_OLD,
@@ -168,8 +163,7 @@ async function main() {
 
     if (
         process.env.NAME_REGISTRY_OLD && !process.env.NAME_REGISTRY && 
-        process.env.CF_MANAGER_VESTING_FACTORY_OLD && process.env.CF_MANAGER_VESTING_FACTORY_OLD != addressZero && 
-        !process.env.CF_MANAGER_VESTING_FACTORY
+        process.env.CF_MANAGER_VESTING_FACTORY_OLD && process.env.CF_MANAGER_VESTING_FACTORY_OLD != addressZero
     ) { 
         await cfManagerVestingFactory.addInstancesForNewRegistry(
             process.env.CF_MANAGER_VESTING_FACTORY_OLD,
@@ -180,8 +174,7 @@ async function main() {
 
     if (
         process.env.NAME_REGISTRY_OLD && !process.env.NAME_REGISTRY && 
-        process.env.SNAPSHOT_DISTRIBUTOR_FACTORY_OLD && process.env.SNAPSHOT_DISTRIBUTOR_FACTORY_OLD != addressZero && 
-        !process.env.SNAPSHOT_DISTRIBUTOR_FACTORY
+        process.env.SNAPSHOT_DISTRIBUTOR_FACTORY_OLD && process.env.SNAPSHOT_DISTRIBUTOR_FACTORY_OLD != addressZero
     ) { 
         await snapshotDistributorFactory.addInstancesForNewRegistry(
             process.env.SNAPSHOT_DISTRIBUTOR_FACTORY_OLD,
