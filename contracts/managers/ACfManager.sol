@@ -111,7 +111,7 @@ abstract contract ACfManager is IVersioned, IACfManager {
         if (spender != beneficiary) {
             require(
                 spender == msg.sender,
-                "ACfManager: Only spender can decide to book the investment on somone else."
+                "ACfManager: Only spender can decide to book the investment on someone else."
             );
         }
         _invest(spender, beneficiary, amount);
@@ -124,7 +124,7 @@ abstract contract ACfManager is IVersioned, IACfManager {
     function cancelInvestmentFor(address investor) external {
         require(
             state.canceled,
-            "ACfManager: Can only cancel for somoneone if the campaign has been canceled."
+            "ACfManager: Can only cancel for someone if the campaign has been canceled."
         );
         _cancel_investment(investor);
     }

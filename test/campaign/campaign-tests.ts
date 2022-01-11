@@ -140,7 +140,7 @@ describe("Covers important tests for all campaign flavors", function () {
     await testData.stablecoin.transfer(addressB4, investmentAmountWei);
     await expect(
       helpers.investForBeneficiary(walletB4, walletA4, campaign, testData.stablecoin, investmentAmount, walletA4)
-    ).to.be.revertedWith("ACfManager: Only spender can decide to book the investment on somone else.")
+    ).to.be.revertedWith("ACfManager: Only spender can decide to book the investment on someone else.")
   });
 
   it('is possible to close the campaign if 1 wei left to be funded (or such a small amount not representable by the token amount)', async () => {
@@ -300,7 +300,7 @@ describe("Covers important tests for all campaign flavors", function () {
     // Alice can't cancel investment for Frank (campaign is still ongoing)
     await expect(
       campaign.connect(testData.alice).cancelInvestmentFor(frankAddress)
-    ).to.be.revertedWith("ACfManager: Can only cancel for somoneone if the campaign has been canceled.");
+    ).to.be.revertedWith("ACfManager: Can only cancel for someone if the campaign has been canceled.");
 
     // Frank can cancel investment by himself though
     await campaign.connect(testData.frank).cancelInvestment();

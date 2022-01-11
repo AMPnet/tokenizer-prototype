@@ -7,7 +7,7 @@ import "./IFaucetService.sol";
 contract FaucetService is IVersioned, IFaucetService {
 
     string constant public FLAVOR = "FaucetServiceV1";
-    string constant public VERSION = "1.0.0";
+    string constant public VERSION = "1.0.26";
 
     function flavor() external pure override returns (string memory) { return FLAVOR; }
     function version() external pure override returns (string memory) { return VERSION; }
@@ -24,7 +24,7 @@ contract FaucetService is IVersioned, IFaucetService {
     //  EVENTS
     //------------------------
     event UpdateCallerStatus(address indexed caller, address indexed approver, bool approved, uint256 timestamp);
-    event WalletFunded(address indexed caller, address wallet, uint256 reward, uint256 timestamp);
+    event WalletFunded(address indexed caller, address indexed wallet, uint256 reward);
     event UpdateRewardAmount(address indexed caller, uint256 oldAmount, uint256 newAmount, uint256 timestamp);
     event UpdateBalanceThresholdForReward(address indexed caller, uint256 oldThreshold, uint256 newThreshold, uint256 timestamp);
     event OwnershipChanged(address indexed oldOwner, address indexed newOwner, uint256 timestamp);
@@ -73,7 +73,7 @@ contract FaucetService is IVersioned, IFaucetService {
         for (uint256 i = 0; i < _wallets.length; i++) {
             if (_wallets[i].balance <= balanceThresholdForReward) {
                 _wallets[i].transfer(rewardPerApprove);
-                emit WalletFunded(msg.sender, _wallets[i], rewardPerApprove, block.timestamp);
+                emit WalletFunded(msg.sender, _wallets[i], rewardPerApprove);
             }
         }
     }
