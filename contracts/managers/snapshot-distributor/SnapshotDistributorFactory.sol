@@ -63,7 +63,6 @@ contract SnapshotDistributorFactory is ISnapshotDistributorFactory {
     /////////// HELPERS ///////////
 
     function _addInstances(address[] memory _instances) private {
-        if (_instances.length == 0) { return; }
         for (uint256 i = 0; i < _instances.length; i++) { _addInstance(_instances[i]); }
     }
 

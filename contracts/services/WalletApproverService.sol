@@ -7,7 +7,7 @@ import "../shared/IVersioned.sol";
 contract WalletApproverService is IVersioned {
 
     string constant public FLAVOR = "WalletApproverServiceV1";
-    string constant public VERSION = "1.0.25";
+    string constant public VERSION = "1.0.26";
 
     function flavor() external pure override returns (string memory) { return FLAVOR; }
     function version() external pure override returns (string memory) { return VERSION; } 
@@ -22,14 +22,16 @@ contract WalletApproverService is IVersioned {
     //------------------------
     //  EVENTS
     //------------------------
-    event UpdateApproverStatus(address indexed caller, address indexed approver, bool approved, uint256 timestamp);
-    event TransferMasterOwnerRights(address indexed caller, address indexed newOwner, uint256 timestamp);
-    event ApproveWallet(address indexed caller, address wallet, uint256 timestamp, bool successful);
-    event SuspendWallet(address indexed caller, address wallet, uint256 timestamp, bool successful);
-    event WalletFunded(address indexed caller, address wallet, uint256 reward, uint256 timestamp);
-    event UpdateRewardAmount(address indexed caller, uint256 oldAmount, uint256 newAmount, uint256 timestamp);
-    event Received(address indexed sender, uint256 amount, uint256 timestamp);
-    event Released(address indexed receiver, uint256 amount, uint256 timestamp);
+    event UpdateApproverStatus(address indexed caller, address indexed approver, bool approved);
+    event TransferMasterOwnerRights(address indexed caller, address indexed newOwner);
+    event ApproveWalletSuccess(address indexed caller, address indexed wallet);
+    event ApproveWalletFail(address indexed caller, address indexed wallet);
+    event SuspendWalletSuccess(address indexed caller, address indexed wallet);
+    event SuspendWalletFail(address indexed caller, address indexed wallet);
+    event WalletFunded(address indexed caller, address indexed wallet, uint256 reward);
+    event UpdateRewardAmount(address indexed caller, uint256 oldAmount, uint256 newAmount);
+    event Received(address indexed sender, uint256 amount);
+    event Released(address indexed receiver, uint256 amount);
 
     //------------------------
     //  CONSTRUCTOR
@@ -68,20 +70,20 @@ contract WalletApproverService is IVersioned {
     //------------------------
     function updateApproverStatus(address approver, bool approved) external isMasterOwner {
         allowedApprovers[approver] = approved;
-        emit UpdateApproverStatus(msg.sender, approver, approved, block.timestamp);
+        emit UpdateApproverStatus(msg.sender, approver, approved);
     }
     
     function transferMasterOwnerRights(address newMasterOwner) external isMasterOwner {
         allowedApprovers[msg.sender] = false;
         allowedApprovers[newMasterOwner] = true;
         masterOwner = newMasterOwner;
-        emit TransferMasterOwnerRights(msg.sender, newMasterOwner, block.timestamp);
+        emit TransferMasterOwnerRights(msg.sender, newMasterOwner);
     }
 
     function updateRewardAmount(uint256 newRewardAmount) external isMasterOwner {
         uint256 oldAmount = rewardPerApprove;
         rewardPerApprove = newRewardAmount;
-        emit UpdateRewardAmount(msg.sender, oldAmount, newRewardAmount, block.timestamp);
+        emit UpdateRewardAmount(msg.sender, oldAmount, newRewardAmount);
     }
 
     function approveWallets(
@@ -124,13 +126,13 @@ contract WalletApproverService is IVersioned {
     //  NATIVE TOKEN OPS
     //------------------------
     receive() external payable {
-        emit Received(msg.sender, msg.value, block.timestamp);
+        emit Received(msg.sender, msg.value);
     }
 
     function release() external isMasterOwner {
         uint256 amount = address(this).balance;
         payable(msg.sender).transfer(amount);
-        emit Released(msg.sender, amount, block.timestamp);
+        emit Released(msg.sender, amount);
     }
 
     //------------------------
@@ -140,12 +142,15 @@ contract WalletApproverService is IVersioned {
         (bool success,) = address(issuer).call(
             abi.encodeWithSignature("approveWallet(address)", wallet)
         );
-        issuer.approveWallet(wallet);
-        emit ApproveWallet(msg.sender, wallet, block.timestamp, success);
+        if (success) {
+            emit ApproveWalletSuccess(msg.sender, wallet);
+        } else {
+            emit ApproveWalletFail(msg.sender, wallet);
+        }
 
         if (rewardPerApprove > 0 && wallet.balance == 0 && address(this).balance >= rewardPerApprove) {
             wallet.transfer(rewardPerApprove);
-            emit WalletFunded(msg.sender, wallet, rewardPerApprove, block.timestamp);
+            emit WalletFunded(msg.sender, wallet, rewardPerApprove);
         }
     }
 
@@ -153,6 +158,11 @@ contract WalletApproverService is IVersioned {
         (bool success,) = address(issuer).call(
             abi.encodeWithSignature("suspendWallet(address)", wallet)
         );
-        emit SuspendWallet(msg.sender, wallet, block.timestamp, success);
+        if (success) {
+            emit SuspendWalletSuccess(msg.sender, wallet);
+        } else {
+            emit SuspendWalletFail(msg.sender, wallet);
+        }
     }
+
 }

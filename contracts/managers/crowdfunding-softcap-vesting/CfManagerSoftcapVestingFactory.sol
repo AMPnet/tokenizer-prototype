@@ -10,7 +10,7 @@ import "../../registry/INameRegistry.sol";
 contract CfManagerSoftcapVestingFactory is ICfManagerSoftcapVestingFactory {
     
     string constant public FLAVOR = "CfManagerSoftcapVestingV1";
-    string constant public VERSION = "1.0.25";
+    string constant public VERSION = "1.0.26";
     
     address[] public instances;
     mapping (address => address[]) instancesPerIssuer;
@@ -77,7 +77,6 @@ contract CfManagerSoftcapVestingFactory is ICfManagerSoftcapVestingFactory {
     /////////// HELPERS ///////////
 
     function _addInstances(address[] memory _instances) private {
-        if (_instances.length == 0) { return; }
         for (uint256 i = 0; i < _instances.length; i++) { _addInstance(_instances[i]); }
     }
 
