@@ -10,9 +10,10 @@ import "../registry/INameRegistry.sol";
 contract AssetSimpleFactory is IAssetSimpleFactory {
     
     string constant public FLAVOR = "AssetSimpleV1";
-    string constant public VERSION = "1.0.20";
+    string constant public VERSION = "1.0.27";
 
     address[] public instances;
+    bool public initialized;
     mapping (address => address[]) instancesPerIssuer;
 
     event AssetSimpleCreated(address indexed creator, address asset, uint256 timestamp);
@@ -49,6 +50,22 @@ contract AssetSimpleFactory is IAssetSimpleFactory {
     
     function getInstancesForIssuer(address issuer) external override view returns (address[] memory) { 
         return instancesPerIssuer[issuer];
+    }
+
+    function addInstancesForNewRegistry(
+        address oldFactory,
+        address oldNameRegistry,
+        address newNameRegistry
+    ) external override {
+        require(!initialized, "AssetSimpleFactory: Already initialized");
+        address[] memory _instances = IAssetSimpleFactory(oldFactory).getInstances();
+        for (uint256 i = 0; i < _instances.length; i++) {
+            address instance = _instances[i];
+            _addInstance(instance);
+            string memory oldName = INameRegistry(oldNameRegistry).getAssetName(instance);
+            if (bytes(oldName).length > 0) { INameRegistry(newNameRegistry).mapAsset(oldName, instance); }
+        }
+        initialized = true;
     }
 
     /////////// HELPERS ///////////
