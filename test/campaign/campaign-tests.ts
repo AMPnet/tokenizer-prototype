@@ -43,7 +43,7 @@ describe("Covers important tests for all campaign flavors", function () {
       issuerOwnerAddress,
       "regular-campaign-successful-1",
       asset,
-      1000,             // $1 price per token
+      10000,             // $1 price per token
       10000000,         // $10 softCap (taken from real example)
       10000000,         // $10 min per user investment
       2000000000,       // $2000 max per user investment
@@ -271,7 +271,7 @@ describe("Covers important tests for all campaign flavors", function () {
       issuerOwnerAddress,
       "failed-campaign",
       asset,
-      1000,             // $1 price per token
+      10000,            // $1 price per token
       10000000,         // $10 softCap (taken from real example)
       10000000,         // $10 min per user investment
       2000000000,       // $2000 max per user investment
@@ -332,6 +332,111 @@ describe("Covers important tests for all campaign flavors", function () {
     expect(
       await testData.stablecoin.balanceOf(frankAddress)
     ).to.be.equal(frankInvestment);
+  })
+
+  it(`will adjust minPerUser investment on regular campaign for amount to be normalized and "investable"`, async () => {
+    const asset = await helpers.createAsset(
+      issuerOwnerAddress,
+      testData.issuer,
+      "test-asset-4",
+      1000000,
+      false, true, true,
+      "Test Asset",
+      "TSTA",
+      "ipfs-info-hash",
+      testData.assetFactory,
+      testData.nameRegistry,
+      testData.apxRegistry
+    );
+
+    const campaign = await createCampaign(
+      issuerOwnerAddress,
+      "min-per-user-test",
+      asset,
+      30000,            // $3 price per token
+      10000000,         // $10 softCap
+      2000000,          // $2 min per user investment
+      10000000,         // $10 max per user investment
+      true, "",
+      testData.cfManagerFactory,
+      testData.nameRegistry,
+      testData.feeManager
+    );
+
+    await asset.connect(issuerOwner).transfer(
+      campaign.address,
+      BigNumber.from("1000000000000000000000") // tranfers 1k tokens for sale (1000 * 10e18)
+    );
+
+    // frank tries to invest 2$ which is minPerUser. Tx should pass. Frank is left with 1 wei. Data by pevezzinni
+    const frankAddress = await testData.frank.getAddress();
+    const frankInvestment = await helpers.parseStablecoin("2", testData.stablecoin);
+    await testData.stablecoin.transfer(frankAddress, frankInvestment);
+    await testData.walletApproverService.connect(testData.walletApprover).approveWallet(testData.issuer.address, frankAddress);
+
+    await testData.stablecoin.connect(testData.frank).approve(campaign.address, frankInvestment);
+    await campaign.connect(testData.frank).invest(frankInvestment);
+
+    const campaignState = await campaign.getState();
+    expect(
+      await campaign.investmentAmount(frankAddress)
+    ).to.be.equal(campaignState.minInvestment);
+    expect(
+      await testData.stablecoin.balanceOf(frankAddress)
+    ).to.be.equal(BigNumber.from("1"));
+  })
+
+
+  it(`will adjust minPerUser investment on vested campaign for amount to be normalized and "investable"`, async () => {
+    const asset = await helpers.createAsset(
+      issuerOwnerAddress,
+      testData.issuer,
+      "test-asset-4",
+      1000000,
+      false, true, true,
+      "Test Asset",
+      "TSTA",
+      "ipfs-info-hash",
+      testData.assetFactory,
+      testData.nameRegistry,
+      testData.apxRegistry
+    );
+
+    const campaign = await createCampaign(
+      issuerOwnerAddress,
+      "min-per-user-test",
+      asset,
+      30000,            // $3 price per token
+      10000000,         // $10 softCap
+      2000000,          // $2 min per user investment
+      10000000,         // $10 max per user investment
+      true, "",
+      testData.cfManagerVestingFactory,
+      testData.nameRegistry,
+      testData.feeManager
+    );
+
+    await asset.connect(issuerOwner).transfer(
+      campaign.address,
+      BigNumber.from("1000000000000000000000") // tranfers 1k tokens for sale (1000 * 10e18)
+    );
+
+    // frank tries to invest 2$ which is minPerUser. Tx should pass. Frank is left with 1 wei. Data by pevezzinni
+    const frankAddress = await testData.frank.getAddress();
+    const frankInvestment = await helpers.parseStablecoin("2", testData.stablecoin);
+    await testData.stablecoin.transfer(frankAddress, frankInvestment);
+    await testData.walletApproverService.connect(testData.walletApprover).approveWallet(testData.issuer.address, frankAddress);
+
+    await testData.stablecoin.connect(testData.frank).approve(campaign.address, frankInvestment);
+    await campaign.connect(testData.frank).invest(frankInvestment);
+
+    const campaignState = await campaign.getState();
+    expect(
+      await campaign.investmentAmount(frankAddress)
+    ).to.be.equal(campaignState.minInvestment);
+    expect(
+      await testData.stablecoin.balanceOf(frankAddress)
+    ).to.be.equal(BigNumber.from("1"));
   })
 
 });

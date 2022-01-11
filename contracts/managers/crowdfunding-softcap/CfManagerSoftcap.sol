@@ -39,7 +39,16 @@ contract CfManagerSoftcap is ICfManagerSoftcap, ACfManager {
         require(tokenPrice > 0, "CfManagerSoftcap: Initial price per token must be greater than 0.");
         require(maxInvestment >= minInvestment, "CfManagerSoftcap: Max has to be bigger than min investment.");
         require(maxInvestment > 0, "CfManagerSoftcap: Max investment has to be bigger than 0.");
-        uint256 softCapNormalized = (softCap / tokenPrice) * tokenPrice;
+        uint256 softCapNormalized = _token_value(
+            _token_amount_for_investment(softCap, tokenPrice, asset),
+            tokenPrice,
+            asset
+        );
+        uint256 minInvestmentNormalized = _token_value(
+            _token_amount_for_investment(minInvestment, tokenPrice, asset),
+            tokenPrice,
+            asset
+        );
         IIssuerCommon issuer = IIssuerCommon(IAssetCommon(asset).commonState().issuer);
         state = Structs.CfManagerState(
             contractFlavor,
@@ -51,7 +60,7 @@ contract CfManagerSoftcap is ICfManagerSoftcap, ACfManager {
             issuer.commonState().stablecoin,
             tokenPrice,
             softCapNormalized,
-            minInvestment,
+            minInvestmentNormalized,
             maxInvestment,
             whitelistRequired,
             false,
@@ -61,7 +70,7 @@ contract CfManagerSoftcap is ICfManagerSoftcap, ACfManager {
             feeManager
         );
         require(
-            _token_value(IToken(asset).totalSupply()) >= softCapNormalized,
+            _token_value(IToken(asset).totalSupply(), tokenPrice, asset) >= softCapNormalized,
             "CfManagerSoftcap: Invalid soft cap."
         );
     }

@@ -67,7 +67,16 @@ contract CfManagerSoftcapVesting is ICfManagerSoftcapVesting, ACfManager {
         require(maxInvestment >= minInvestment, "CfManagerSoftcapVesting: Max has to be bigger than min investment.");
         require(maxInvestment > 0, "CfManagerSoftcapVesting: Max investment has to be bigger than 0.");
         IIssuerCommon issuer = IIssuerCommon(IAssetCommon(asset).commonState().issuer);
-        uint256 softCapNormalized = (softCap / tokenPrice) * tokenPrice;
+        uint256 softCapNormalized = _token_value(
+            _token_amount_for_investment(softCap, tokenPrice, asset),
+            tokenPrice,
+            asset
+        );
+        uint256 minInvestmentNormalized = _token_value(
+            _token_amount_for_investment(minInvestment, tokenPrice, asset),
+            tokenPrice,
+            asset
+        );
         state = Structs.CfManagerState(
             contractFlavor,
             contractVersion,
@@ -78,7 +87,7 @@ contract CfManagerSoftcapVesting is ICfManagerSoftcapVesting, ACfManager {
             issuer.commonState().stablecoin,
             tokenPrice,
             softCapNormalized,
-            minInvestment,
+            minInvestmentNormalized,
             maxInvestment,
             whitelistRequired,
             false,
@@ -89,7 +98,7 @@ contract CfManagerSoftcapVesting is ICfManagerSoftcapVesting, ACfManager {
         );
         vestingState = VestingState(false, 0, 0, 0, true, false);
         require(
-            _token_value(IToken(asset).totalSupply()) >= softCapNormalized,
+            _token_value(IToken(asset).totalSupply(), tokenPrice, asset) >= softCapNormalized,
             "CfManagerSoftcapVesting: Invalid soft cap."
         );
     }
@@ -110,7 +119,7 @@ contract CfManagerSoftcapVesting is ICfManagerSoftcapVesting, ACfManager {
     //------------------------
     function claim(address investor) external finalized vestingStarted {
         uint256 unreleased = _releasableAmount(investor);
-        uint256 unreleasedValue = _token_value(unreleased);
+        uint256 unreleasedValue = _token_value(unreleased, state.tokenPrice, state.asset);
         require(unreleased > 0, "CfManagerSoftcapVesting: No tokens to be released.");
 
         state.totalClaimableTokens -= unreleased;

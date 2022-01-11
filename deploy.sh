@@ -41,15 +41,12 @@ export NAME_REGISTRY=
 export NAME_REGISTRY_OWNER=                         # provide this param if NAME_REGISTRY field empty
 export DEPLOYER=
 export QUERY_SERVICE=
-<<<<<<< HEAD
 export FAUCET_SERVICE=
-export FAUCET_SERVICE_MASTER_OWNER=                 # provide this param if FAUCET_SERVICE field empty
-export FAUCET_SERVICE_ALLOWED_CALLERS=              # provide this param if FAUCET_SERVICE field empty
-export FAUCET_SERVICE_REWARD_PER_APPROVE=           # provide this param if FAUCET_SERVICE field empty (value is ETH, decimals are allowed)
-export FAUCET_SERVICE_BALANCE_THRESHOLD_FOR_REWARD= # provide this param if FAUCET_SERVICE field empty (value is ETH, decimals are allowed)
-=======
+export FAUCET_SERVICE_MASTER_OWNER=                     # provide this param if FAUCET_SERVICE field empty
+export FAUCET_SERVICE_ALLOWED_CALLERS=                  # provide this param if FAUCET_SERVICE field empty
+export FAUCET_SERVICE_REWARD_PER_APPROVE=               # provide this param if FAUCET_SERVICE field empty (value is ETH, decimals are allowed)
+export FAUCET_SERVICE_BALANCE_THRESHOLD_FOR_REWARD=     # provide this param if FAUCET_SERVICE field empty (value is ETH, decimals are allowed)
 export INVEST_SERVICE=
->>>>>>> master
 
 ######################################## Mirrored token definition ########################################
 # > Load existing MirroredToken at given address
