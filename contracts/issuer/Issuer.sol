@@ -17,7 +17,8 @@ contract Issuer is IIssuer {
     //------------------------
     //  EVENTS
     //------------------------
-    event WalletWhitelist(address indexed approver, address wallet, bool whitelisted, uint256 timestamp);
+    event WalletWhitelist(address indexed approver, address indexed wallet);
+    event WalletBlacklist(address indexed approver, address indexed wallet);
     event ChangeOwnership(address caller, address newOwner, uint256 timestamp);
     event ChangeWalletApprover(address caller, address oldWalletApprover, address newWalletApprover, uint256 timestamp);
     event SetInfo(string info, address setter, uint256 timestamp);
@@ -86,12 +87,12 @@ contract Issuer is IIssuer {
 
     function approveWallet(address wallet) external override walletApproverOnly {
         _setWalletState(wallet, true);
-        emit WalletWhitelist(msg.sender, wallet, true, block.timestamp);
+        emit WalletWhitelist(msg.sender, wallet);
     }
 
     function suspendWallet(address wallet) external override walletApproverOnly {
         _setWalletState(wallet, false);
-        emit WalletWhitelist(msg.sender, wallet, false, block.timestamp);
+        emit WalletBlacklist(msg.sender, wallet);
     }
 
     function changeOwnership(address newOwner) external override ownerOnly {
