@@ -8,9 +8,10 @@ import "../registry/INameRegistry.sol";
 contract IssuerFactory is IIssuerFactory {
 
     string constant public FLAVOR = "IssuerV1";
-    string constant public VERSION = "1.0.20";
+    string constant public VERSION = "1.0.28";
 
     address[] public instances;
+    bool public initialized;
 
     event IssuerCreated(address indexed creator, address issuer, uint256 timestamp);
 
@@ -47,6 +48,22 @@ contract IssuerFactory is IIssuerFactory {
     }
 
     function getInstances() external override view returns (address[] memory) { return instances; }
+
+    function addInstancesForNewRegistry(
+        address oldFactory,
+        address oldNameRegistry,
+        address newNameRegistry
+    ) external override {
+        require(!initialized, "IssuerFactory: Already initialized");
+        address[] memory _instances = IIssuerFactory(oldFactory).getInstances();
+        for (uint256 i = 0; i < _instances.length; i++) {
+            address instance = _instances[i];
+            instances.push(instance);
+            string memory oldName = INameRegistry(oldNameRegistry).getIssuerName(instance);
+            if (bytes(oldName).length > 0) { INameRegistry(newNameRegistry).mapIssuer(oldName, instance); }
+        }
+        initialized = true;
+    }
 
     /////////// HELPERS ///////////
 

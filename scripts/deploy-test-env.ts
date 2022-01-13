@@ -1,6 +1,6 @@
 // @ts-ignore
 import { ethers } from "hardhat";
-import { Contract } from "ethers";
+import { Contract, constants } from "ethers";
 import * as helpers from "../util/helpers";
 
 async function main() {
@@ -8,6 +8,8 @@ async function main() {
     const network = await ethers.provider.getNetwork();
     const deployer = accounts[0];
     const deployerAddress = await deployer.getAddress();
+    const addressZero = constants.AddressZero;
+
     console.log(`Network name: ${network.name}`);
     console.log(`Chain Id: ${network.chainId}`);
     console.log(`Deployer address (accounts[0]): ${deployerAddress}`);
@@ -45,31 +47,52 @@ async function main() {
 
     const issuerFactory: Contract = (process.env.ISSUER_FACTORY) ?
         await ethers.getContractAt("IssuerFactory", process.env.ISSUER_FACTORY) :
-        await helpers.deployIssuerFactory(deployer, process.env.ISSUER_FACTORY_OLD);
+        await helpers.deployIssuerFactory(
+            deployer,
+            process.env.NAME_REGISTRY ? process.env.ISSUER_FACTORY_OLD : addressZero
+        );
 
     const assetFactory: Contract = (process.env.ASSET_FACTORY) ?
         await ethers.getContractAt("AssetFactory", process.env.ASSET_FACTORY) :
-        await helpers.deployAssetFactory(deployer, process.env.ASSET_FACTORY_OLD);
+        await helpers.deployAssetFactory(
+            deployer,
+            process.env.NAME_REGISTRY ? process.env.ASSET_FACTORY_OLD : addressZero
+        );
 
     const assetTransferableFactory: Contract = (process.env.ASSET_TRANSFERABLE_FACTORY) ?
         await ethers.getContractAt("AssetTransferableFactory", process.env.ASSET_TRANSFERABLE_FACTORY) :
-        await helpers.deployAssetTransferableFactory(deployer, process.env.ASSET_TRANSFERABLE_FACTORY_OLD);
+        await helpers.deployAssetTransferableFactory(
+            deployer,
+            process.env.NAME_REGISTRY ? process.env.ASSET_TRANSFERABLE_FACTORY_OLD : addressZero
+        );
 
     const assetSimpleFactory: Contract = (process.env.ASSET_SIMPLE_FACTORY) ?
         await ethers.getContractAt("AssetSimpleFactory", process.env.ASSET_SIMPLE_FACTORY) :
-        await helpers.deployAssetSimpleFactory(deployer, process.env.ASSET_SIMPLE_FACTORY_OLD);
+        await helpers.deployAssetSimpleFactory(
+            deployer,
+            process.env.NAME_REGISTRY ? process.env.ASSET_SIMPLE_FACTORY_OLD : addressZero
+        );
 
     const cfManagerFactory: Contract = (process.env.CF_MANAGER_FACTORY) ?
         await ethers.getContractAt("CfManagerSoftcapFactory", process.env.CF_MANAGER_FACTORY) :
-        await helpers.deployCfManagerFactory(deployer, process.env.CF_MANAGER_FACTORY_OLD);
+        await helpers.deployCfManagerFactory(
+            deployer,
+            process.env.NAME_REGISTRY ? process.env.CF_MANAGER_FACTORY_OLD : addressZero
+        );
 
     const cfManagerVestingFactory: Contract = (process.env.CF_MANAGER_VESTING_FACTORY) ?
         await ethers.getContractAt("CfManagerSoftcapVestingFactory", process.env.CF_MANAGER_VESTING_FACTORY) :
-        await helpers.deployCfManagerVestingFactory(deployer, process.env.CF_MANAGER_VESTING_FACTORY_OLD);
+        await helpers.deployCfManagerVestingFactory(
+            deployer,
+            process.env.NAME_REGISTRY ? process.env.CF_MANAGER_VESTING_FACTORY_OLD : addressZero
+        );
 
     const snapshotDistributorFactory: Contract = (process.env.SNAPSHOT_DISTRIBUTOR_FACTORY) ?
         await ethers.getContractAt("SnapshotDistributorFactory", process.env.SNAPSHOT_DISTRIBUTOR_FACTORY) :
-        await helpers.deploySnapshotDistributorFactory(deployer, process.env.SNAPSHOT_DISTRIBUTOR_FACTORY_OLD);
+        await helpers.deploySnapshotDistributorFactory(
+            deployer,
+            process.env.NAME_REGISTRY ? process.env.SNAPSHOT_DISTRIBUTOR_FACTORY_OLD : addressZero
+        );
 
     const nameRegistry: Contract = (process.env.NAME_REGISTRY) ?
         await ethers.getContractAt("NameRegistry", process.env.NAME_REGISTRY) :
@@ -82,6 +105,83 @@ async function main() {
             cfManagerVestingFactory.address,
             snapshotDistributorFactory.address
         ]);
+
+    if (
+        process.env.NAME_REGISTRY_OLD && !process.env.NAME_REGISTRY && 
+        process.env.ISSUER_FACTORY_OLD && process.env.ISSUER_FACTORY_OLD != addressZero
+    ) { 
+        await issuerFactory.addInstancesForNewRegistry(
+            process.env.ISSUER_FACTORY_OLD,
+            process.env.NAME_REGISTRY_OLD,
+            nameRegistry.address
+        )
+    }
+
+    if (
+        process.env.NAME_REGISTRY_OLD && !process.env.NAME_REGISTRY && 
+        process.env.ASSET_FACTORY_OLD && process.env.ASSET_FACTORY_OLD != addressZero
+    ) { 
+        await assetFactory.addInstancesForNewRegistry(
+            process.env.ASSET_FACTORY_OLD,
+            process.env.NAME_REGISTRY_OLD,
+            nameRegistry.address
+        )
+    }
+
+    if (
+        process.env.NAME_REGISTRY_OLD && !process.env.NAME_REGISTRY && 
+        process.env.ASSET_TRANSFERABLE_FACTORY_OLD && process.env.ASSET_TRANSFERABLE_FACTORY_OLD != addressZero 
+    ) { 
+        await assetTransferableFactory.addInstancesForNewRegistry(
+            process.env.ASSET_TRANSFERABLE_FACTORY_OLD,
+            process.env.NAME_REGISTRY_OLD,
+            nameRegistry.address
+        )
+    }
+    
+    if (
+        process.env.NAME_REGISTRY_OLD && !process.env.NAME_REGISTRY && 
+        process.env.ASSET_SIMPLE_FACTORY_OLD && process.env.ASSET_SIMPLE_FACTORY_OLD != addressZero
+    ) { 
+        await assetSimpleFactory.addInstancesForNewRegistry(
+            process.env.ASSET_SIMPLE_FACTORY_OLD,
+            process.env.NAME_REGISTRY_OLD,
+            nameRegistry.address
+        )
+    }
+
+    if (
+        process.env.NAME_REGISTRY_OLD && !process.env.NAME_REGISTRY && 
+        process.env.CF_MANAGER_FACTORY_OLD && process.env.CF_MANAGER_FACTORY_OLD != addressZero
+    ) { 
+        await cfManagerFactory.addInstancesForNewRegistry(
+            process.env.CF_MANAGER_FACTORY_OLD,
+            process.env.NAME_REGISTRY_OLD,
+            nameRegistry.address
+        )
+    }
+
+    if (
+        process.env.NAME_REGISTRY_OLD && !process.env.NAME_REGISTRY && 
+        process.env.CF_MANAGER_VESTING_FACTORY_OLD && process.env.CF_MANAGER_VESTING_FACTORY_OLD != addressZero
+    ) { 
+        await cfManagerVestingFactory.addInstancesForNewRegistry(
+            process.env.CF_MANAGER_VESTING_FACTORY_OLD,
+            process.env.NAME_REGISTRY_OLD,
+            nameRegistry.address
+        )
+    }
+
+    if (
+        process.env.NAME_REGISTRY_OLD && !process.env.NAME_REGISTRY && 
+        process.env.SNAPSHOT_DISTRIBUTOR_FACTORY_OLD && process.env.SNAPSHOT_DISTRIBUTOR_FACTORY_OLD != addressZero
+    ) { 
+        await snapshotDistributorFactory.addInstancesForNewRegistry(
+            process.env.SNAPSHOT_DISTRIBUTOR_FACTORY_OLD,
+            process.env.NAME_REGISTRY_OLD,
+            nameRegistry.address
+        )
+    }
     
     const walletApprovers: string[] = (process.env.WALLET_APPROVER_ADDRESSES) ? 
         process.env.WALLET_APPROVER_ADDRESSES.split(",") : [ ]; 
