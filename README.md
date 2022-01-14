@@ -89,10 +89,11 @@ List of factory contracts:
 - CfManagerSoftcapVestingFactory
 - PayoutManagerFactory.sol
 
-## Local development in [Remix](https://remix-project.org/) (browser)
+## Local development with [Remix](https://remix-project.org/) (in browser)
 
 1. Open a link between localhost and Remix:
 ```
 npm run remix-dev
 ```
-2. Open [remix](https://remix.ethereum.org), go to *Workspaces*, select *-connect to localhost-*, and your local files will be in sync with your remix workspace.
+2. Open [Remix](https://remix.ethereum.org), go to *Workspaces*, select *-connect to localhost-*, and your local files will be in sync with your Remix workspace.
+g
