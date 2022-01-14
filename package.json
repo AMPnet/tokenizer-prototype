@@ -10,7 +10,8 @@
   "scripts": {
     "lint": "npx hardhat check",
     "test": "npx hardhat test",
-    "compile": "npx hardhat compile"
+    "compile": "npx hardhat compile",
+    "remix-dev": "npx @remix-project/remixd -s . --remix-ide https://remix.ethereum.org"
   },
   "repository": {
     "type": "git",
