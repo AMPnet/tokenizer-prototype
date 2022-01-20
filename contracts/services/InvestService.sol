@@ -87,7 +87,7 @@ contract InvestService is IVersioned, IInvestService {
         return response;
     }
 
-    // Function will return a list of wallets that are ready to invest with corrected investment value
+    // Function will return a list of wallets that are ready to invest with maximum investment value
     function getStatus(
         InvestmentRecord[] calldata _investments
     ) external view override returns (InvestmentRecordStatus[] memory) {
@@ -97,22 +97,13 @@ contract InvestService is IVersioned, IInvestService {
         for (uint256 i = 0; i < _investments.length; i++) {
             InvestmentRecord memory investment = _investments[i];
             ACfManager manager = ACfManager(investment.campaign);
-            uint256 minInvestment;
-            if (_compareStrings(manager.flavor(), "CfManagerSoftcapV1")) {
-                minInvestment = ICfManagerSoftcap(investment.campaign).getState().minInvestment;
-            } else if (_compareStrings(manager.flavor(), "CfManagerSoftcapVestingV1")) {
-                minInvestment = ICfManagerSoftcapVesting(investment.campaign).getState().minInvestment;
-            } else {
-                minInvestment = type(uint256).max;
-            }
             bool isWhitelisted = manager.isWalletWhitelisted(investment.investor);
             uint256 allowance = IERC20(
                 manager.stablecoin()
             ).allowance(investment.investor, investment.campaign);
             uint256 balance = IERC20(manager.stablecoin()).balanceOf(investment.investor);
             uint256 userMaxInvestment = Math.min(balance, allowance);
-            bool enoughFunds = userMaxInvestment >= minInvestment;
-            bool readyToInvest = isWhitelisted && enoughFunds;
+            bool readyToInvest = isWhitelisted && userMaxInvestment > 0;
             response[i] = InvestmentRecordStatus(
                 investment.investor, investment.campaign, userMaxInvestment, readyToInvest
             );
@@ -134,9 +125,5 @@ contract InvestService is IVersioned, IInvestService {
             );
             emit InvestFor(investment.investor, investment.campaign, investment.amount, success);
         }
-    }
-
-    function _compareStrings(string memory a, string memory b) internal pure returns (bool) {
-        return (keccak256(abi.encodePacked((a))) == keccak256(abi.encodePacked((b))));
     }
 }
