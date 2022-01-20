@@ -1,11 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../shared/IVersioned.sol";
 import "../shared/ICampaignFactoryCommon.sol";
 import "../shared/ICampaignCommon.sol";
 import "../managers/ACfManager.sol";
+import "../managers/crowdfunding-softcap/ICfManagerSoftcap.sol";
+import "../managers/crowdfunding-softcap-vesting/ICfManagerSoftcapVesting.sol";
 import "./QueryService.sol";
 import "../shared/Structs.sol";
 
@@ -52,7 +55,7 @@ contract InvestService is IVersioned, IInvestService {
     event InvestFor(address indexed investor, address indexed campaign, uint256 amount, bool successful);
 
     string constant public FLAVOR = "InvestServiceV1";
-    string constant public VERSION = "1.0.1";
+    string constant public VERSION = "1.0.2";
 
     function flavor() external pure override returns (string memory) { return FLAVOR; }
 
@@ -84,6 +87,7 @@ contract InvestService is IVersioned, IInvestService {
         return response;
     }
 
+    // Function will return a list of wallets that are ready to invest with corrected investment value
     function getStatus(
         InvestmentRecord[] calldata _investments
     ) external view override returns (InvestmentRecordStatus[] memory) {
@@ -93,19 +97,30 @@ contract InvestService is IVersioned, IInvestService {
         for (uint256 i = 0; i < _investments.length; i++) {
             InvestmentRecord memory investment = _investments[i];
             ACfManager manager = ACfManager(investment.campaign);
+            uint256 minInvestment;
+            if (_compareStrings(manager.flavor(), "CfManagerSoftcapV1")) {
+                minInvestment = ICfManagerSoftcap(investment.campaign).getState().minInvestment;
+            } else if (_compareStrings(manager.flavor(), "CfManagerSoftcapVestingV1")) {
+                minInvestment = ICfManagerSoftcapVesting(investment.campaign).getState().minInvestment;
+            } else {
+                minInvestment = type(uint256).max;
+            }
             bool isWhitelisted = manager.isWalletWhitelisted(investment.investor);
-            bool allowance = IERC20(
+            uint256 allowance = IERC20(
                 manager.stablecoin()
-            ).allowance(investment.investor, investment.campaign) >= investment.amount;
-            bool enoughFunds = IERC20(manager.stablecoin()).balanceOf(investment.investor) >= investment.amount;
-            bool readyToInvest = isWhitelisted && allowance && enoughFunds;
+            ).allowance(investment.investor, investment.campaign);
+            uint256 balance = IERC20(manager.stablecoin()).balanceOf(investment.investor);
+            uint256 userMaxInvestment = Math.min(balance, allowance);
+            bool enoughFunds = userMaxInvestment >= minInvestment;
+            bool readyToInvest = isWhitelisted && enoughFunds;
             response[i] = InvestmentRecordStatus(
-                investment.investor, investment.campaign, investment.amount, readyToInvest
+                investment.investor, investment.campaign, userMaxInvestment, readyToInvest
             );
         }
         return response;
     }
 
+    // it is recommended to send investment amounts received from function getStatus
     function investFor(InvestmentRecord[] calldata _investments) public override {
         for (uint256 i = 0; i < _investments.length; i++) {
             InvestmentRecord memory investment = _investments[i];
@@ -121,4 +136,7 @@ contract InvestService is IVersioned, IInvestService {
         }
     }
 
+    function _compareStrings(string memory a, string memory b) internal pure returns (bool) {
+        return (keccak256(abi.encodePacked((a))) == keccak256(abi.encodePacked((b))));
+    }
 }
