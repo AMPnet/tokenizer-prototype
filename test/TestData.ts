@@ -3,7 +3,7 @@ import { ethers } from "hardhat";
 import { Contract, Signer } from "ethers";
 import * as helpers from "../util/helpers";
 import * as deployerServiceUtil from "../util/deployer-service";
-import { CfManagerSoftcap, CfManagerSoftcapVesting, InvestService, Issuer } from "../typechain";
+import { CfManagerSoftcap, CfManagerSoftcapVesting, InvestService, Issuer, WalletApproverService } from "../typechain";
 
 export class TestData {
 
@@ -17,7 +17,7 @@ export class TestData {
     snapshotDistributorFactory: Contract;
 
     //////// SERVICES ////////
-    walletApproverService: Contract;
+    walletApproverService: WalletApproverService;
     deployerService: Contract;
     queryService: Contract;
     investService: InvestService;
@@ -113,7 +113,7 @@ export class TestData {
             "0.001",
             "0"
         );
-        this.walletApproverService = services[0];
+        this.walletApproverService = services[0] as WalletApproverService;
         this.deployerService = services[1];
         this.queryService = services[2];
         this.investService = services[3] as InvestService;

@@ -22,8 +22,6 @@ describe("Invest service test", function () {
         const investmentWei = await helpers.parseStablecoin(investment, testData.stablecoin);
         await testData.stablecoin.transfer(frankAddress, investmentWei);
         await testData.stablecoin.transfer(aliceAddress, investmentWei);
-        await testData.walletApproverService.connect(testData.walletApprover)
-            .approveWallet(testData.issuer.address, aliceAddress);
 
         //// Invest service will return empty list of wallets ready for auto invest
         const request = [
@@ -39,6 +37,8 @@ describe("Invest service test", function () {
         await testData.stablecoin.connect(testData.alice).approve(testData.cfManager.address, investmentWei);
         await testData.stablecoin.connect(testData.frank).approve(testData.cfManager.address, investmentWei);
 
+        await testData.walletApproverService.connect(testData.walletApprover)
+            .approveWallet(testData.issuer.address, aliceAddress);
         await testData.walletApproverService.connect(testData.walletApprover)
             .approveWallet(testData.issuer.address, frankAddress);
 
@@ -62,6 +62,8 @@ describe("Invest service test", function () {
         await testData.stablecoin.transfer(aliceAddress, investmentWei);
         await testData.walletApproverService.connect(testData.walletApprover)
             .approveWallet(testData.issuer.address, aliceAddress);
+        await testData.walletApproverService.connect(testData.walletApprover)
+            .approveWallet(testData.issuer.address, frankAddress);
 
         //// Invest service will return empty list of wallets ready for auto invest
         const request = [
@@ -80,9 +82,13 @@ describe("Invest service test", function () {
         const approved = await testData.investService.getStatus(request);
         expect(approved.length).to.be.equal(2);
         expect(approved[0].readyToInvest).to.be.equal(true);
-        expect(approved[1].readyToInvest).to.be.equal(false);
+        expect(approved[1].readyToInvest).to.be.equal(true);
 
-        await testData.investService.connect(testData.deployer).investFor(request);
+        //// Suspend one wallet to fail investment transaction
+        await testData.walletApproverService.connect(testData.walletApprover)
+            .suspendWallet(testData.issuer.address, frankAddress);
+
+        await testData.investService.connect(testData.deployer).investFor(approved);
         const campaignState = await testData.cfManager.commonState();
         expect(campaignState.fundsRaised).to.be.equal(investmentWei);
     });
@@ -119,12 +125,51 @@ describe("Invest service test", function () {
         expect(firstPending.kycPassed).to.be.equal(true);
     });
 
+    it('should auto invest for balance below allowance', async function () {
+        //// Frank buy $100k USDC and goes through kyc process (wallet approved)
+        const frankAddress = await testData.frank.getAddress();
+        const investment = 100;
+        const investmentWei = await helpers.parseStablecoin(investment, testData.stablecoin);
+        await testData.stablecoin.transfer(frankAddress, investmentWei);
+        await testData.walletApproverService.connect(testData.walletApprover)
+            .approveWallet(testData.issuer.address, frankAddress);
+
+        //// Users approve cf manager to spend stablecoin
+        const allowanceWei = await helpers.parseStablecoin(1000000000, testData.stablecoin);
+        await testData.stablecoin.connect(testData.frank).approve(testData.cfManager.address, allowanceWei);
+
+        //// Invest service will return wallet that has passed kyc with maximum user investment
+        const request = [
+            {investor: frankAddress, campaign: testData.cfManager.address, amount: allowanceWei}
+        ]
+        const approved1 = await testData.investService.getStatus(request);
+        expect(approved1.length).to.be.equal(1);
+        expect(approved1[0].readyToInvest).to.be.equal(true);
+        expect(approved1[0].amount).to.be.equal(investmentWei);
+
+        //// User deposits min investment
+        const minInvestment = await helpers.parseStablecoin(100000, testData.stablecoin);
+        await testData.stablecoin.transfer(frankAddress, minInvestment);
+        const maxUserInvestment = investmentWei.add(minInvestment)
+
+        //// Invest service will return wallet that has passed kyc with updated maximum user investment
+        const approved2 = await testData.investService.getStatus(request);
+        expect(approved2.length).to.be.equal(1);
+        expect(approved2[0].readyToInvest).to.be.equal(true);
+        expect(approved2[0].amount).to.be.equal(maxUserInvestment);
+
+        //// Use list of approved wallets for auto invest because this will return user max investment
+        await testData.investService.connect(testData.deployer).investFor(approved2);
+        const campaignState = await testData.cfManager.commonState();
+        expect(campaignState.fundsRaised).to.be.equal(maxUserInvestment);
+    });
+
     async function verifyWalletReadyToInvest(wallet: string, ready: boolean) {
         const request = [
             {investor: wallet, campaign: testData.cfManager.address, amount: investment}
         ]
         const walletStates = await testData.investService.getStatus(request);
-        console.log(walletStates)
+        console.log(walletStates);
         expect(walletStates.length).to.be.equal(1);
         expect(walletStates[0].readyToInvest).to.be.equal(ready);
     }
