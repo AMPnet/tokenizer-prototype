@@ -7,8 +7,6 @@ import "../shared/IVersioned.sol";
 import "../shared/ICampaignFactoryCommon.sol";
 import "../shared/ICampaignCommon.sol";
 import "../managers/ACfManager.sol";
-import "../managers/crowdfunding-softcap/ICfManagerSoftcap.sol";
-import "../managers/crowdfunding-softcap-vesting/ICfManagerSoftcapVesting.sol";
 import "./QueryService.sol";
 import "../shared/Structs.sol";
 
