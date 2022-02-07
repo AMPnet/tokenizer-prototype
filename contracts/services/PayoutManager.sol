@@ -15,7 +15,7 @@ contract PayoutManager {
     struct Payout {
         uint256 payoutId; // ID of this payout
         address payoutOwner; // address which created this payout
-        bool isCanceled; // determines if this payout is cancelled
+        bool isCanceled; // determines if this payout is canceled
 
         IERC20 asset; // asset for which payout is being made
         uint256 totalAssetAmount; // sum of all asset holdings in the snapshot, minus ignored asset address holdings
@@ -43,8 +43,8 @@ contract PayoutManager {
     //------------------------
     //  EVENTS
     //------------------------
-    event PayoutCreated(uint256 payoutId, IERC20 asset, IERC20 rewardAsset, uint256 totalRewardAmount);
-    event PayoutCancelled(uint256 payoutId, IERC20 asset);
+    event PayoutCreated(uint256 payoutId, address indexed payoutOwner, IERC20 asset, IERC20 rewardAsset, uint256 totalRewardAmount);
+    event PayoutCanceled(uint256 payoutId, IERC20 asset);
     event PayoutClaimed(uint256 payoutId, address indexed wallet, uint256 balance, uint256 payoutAmount);
 
     //------------------------
@@ -63,8 +63,8 @@ contract PayoutManager {
         _;
     }
 
-    modifier payoutNotCancelled(uint256 _payoutId) {
-        require(payoutsById[_payoutId].isCanceled == false, "PayoutManager: payout with specified ID is cancelled");
+    modifier payoutNotCanceled(uint256 _payoutId) {
+        require(payoutsById[_payoutId].isCanceled == false, "PayoutManager: payout with specified ID is canceled");
         _;
     }
 
@@ -114,18 +114,25 @@ contract PayoutManager {
 
         IERC20 _rewardAsset,
         uint256 _totalRewardAmount
-    ) public returns (uint256) {
+    ) public returns (uint256 payoutId) {
+        // input validations
+        require(_totalAssetAmount > 0, "PayoutManager: cannot create payout without holders");
+        require(_totalRewardAmount > 0, "PayoutManager: cannot create payout without reward");
+        require(_assetSnapshotMerkleDepth > 0, "PayoutManager: Merkle tree depth cannot be zero");
+
+        address payoutOwner = msg.sender;
+
         // verify that payout owner approved enough reward asset
-        require(_totalRewardAmount >= _rewardAsset.allowance(msg.sender, address(this)), "PayoutManager: insufficient reward asset allowance");
+        require(_totalRewardAmount <= _rewardAsset.allowance(payoutOwner, address(this)), "PayoutManager: insufficient reward asset allowance");
 
         // transfer reward asset
-        _rewardAsset.transferFrom(msg.sender, address(this), _totalRewardAmount);
+        _rewardAsset.transferFrom(payoutOwner, address(this), _totalRewardAmount);
 
         // create payout
         Payout memory payout = Payout(
             currentPayoutId,
-            msg.sender, // payout owner
-            false, // payout is not cancelled
+            payoutOwner,
+            false, // payout is not canceled
             _asset,
             _totalAssetAmount,
             _ignoredAssetAddresses,
@@ -139,24 +146,26 @@ contract PayoutManager {
 
         // store payout
         payoutsById[payout.payoutId] = payout;
+        payoutsByAssetAddress[address(_asset)].push(payout.payoutId);
+
         currentPayoutId += 1;
 
-        emit PayoutCreated(payout.payoutId, _asset, _rewardAsset, _totalRewardAmount);
+        emit PayoutCreated(payout.payoutId, payoutOwner, _asset, _rewardAsset, _totalRewardAmount);
 
         return payout.payoutId;
     }
 
-    function cancelPayout(uint256 _payoutId) public payoutExists(_payoutId) payoutOwnerOnly(_payoutId) payoutNotCancelled(_payoutId) {
+    function cancelPayout(uint256 _payoutId) public payoutExists(_payoutId) payoutOwnerOnly(_payoutId) payoutNotCanceled(_payoutId) {
         Payout storage payout = payoutsById[_payoutId];
 
         // transfer all remaining reward funds to the payout owner
         payout.rewardAsset.transfer(payout.payoutOwner, payout.remainingRewardAmount);
 
-        // set remaining reward funds to 0 and mark payment as cancelled
+        // set remaining reward funds to 0 and mark payment as canceled
         payout.remainingRewardAmount = 0;
         payout.isCanceled = true;
 
-        emit PayoutCancelled(_payoutId, payout.asset);
+        emit PayoutCanceled(_payoutId, payout.asset);
     }
 
     function claim(
@@ -164,7 +173,7 @@ contract PayoutManager {
         address _wallet,
         uint256 _balance,
         bytes32[] memory _proof
-    ) public payoutExists(_payoutId) payoutNotCancelled(_payoutId) payoutNotClaimed(_payoutId, _wallet) {
+    ) public payoutExists(_payoutId) payoutNotCanceled(_payoutId) payoutNotClaimed(_payoutId, _wallet) {
         Payout storage payout = payoutsById[_payoutId];
 
         // validate Merkle proof to check if payout should be made for (address, balance) pair
