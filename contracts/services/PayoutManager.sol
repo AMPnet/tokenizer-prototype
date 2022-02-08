@@ -7,8 +7,6 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 contract PayoutManager {
 
-    using SafeMath for uint256;
-
     //------------------------
     //  STRUCTS
     //------------------------
@@ -51,7 +49,6 @@ contract PayoutManager {
     //  CONSTRUCTOR
     //------------------------
     constructor(IMerkleTreePathValidator _merkleTreePathValidator) {
-        require(address(_merkleTreePathValidator) != address(0), "FaucetService: invalid Merkle tree path validator");
         merkleTreePathValidator = _merkleTreePathValidator;
     }
 
@@ -125,9 +122,6 @@ contract PayoutManager {
         // verify that payout owner approved enough reward asset
         require(_totalRewardAmount <= _rewardAsset.allowance(payoutOwner, address(this)), "PayoutManager: insufficient reward asset allowance");
 
-        // transfer reward asset
-        _rewardAsset.transferFrom(payoutOwner, address(this), _totalRewardAmount);
-
         // create payout
         Payout memory payout = Payout(
             currentPayoutId,
@@ -150,6 +144,9 @@ contract PayoutManager {
 
         currentPayoutId += 1;
 
+        // transfer reward asset
+        _rewardAsset.transferFrom(payoutOwner, address(this), _totalRewardAmount);
+
         emit PayoutCreated(payout.payoutId, payoutOwner, _asset, _rewardAsset, _totalRewardAmount);
 
         return payout.payoutId;
@@ -158,12 +155,15 @@ contract PayoutManager {
     function cancelPayout(uint256 _payoutId) public payoutExists(_payoutId) payoutOwnerOnly(_payoutId) payoutNotCanceled(_payoutId) {
         Payout storage payout = payoutsById[_payoutId];
 
-        // transfer all remaining reward funds to the payout owner
-        payout.rewardAsset.transfer(payout.payoutOwner, payout.remainingRewardAmount);
+        // store remaining funds into local variable to send them later
+        uint256 remainingRewardAmount = payout.remainingRewardAmount;
 
         // set remaining reward funds to 0 and mark payment as canceled
         payout.remainingRewardAmount = 0;
         payout.isCanceled = true;
+
+        // transfer all remaining reward funds to the payout owner
+        payout.rewardAsset.transfer(payout.payoutOwner, remainingRewardAmount);
 
         emit PayoutCanceled(_payoutId, payout.asset);
     }
@@ -195,19 +195,19 @@ contract PayoutManager {
         // here we can do the multiplication first:
         //   (payout.totalRewardAmount * _balance) / payout.totalAssetAmount
         // which gives us the highest possible precision
-        uint256 payoutAmount = payout.totalRewardAmount.mul(_balance).div(payout.totalAssetAmount);
+        uint256 payoutAmount = (payout.totalRewardAmount * _balance) / payout.totalAssetAmount;
 
         // in practice this should never happen, but we want to make sure that one payout cannot use funds from another payout
         require(payoutAmount <= payout.remainingRewardAmount, "PayoutManager: not enough funds to issue payout");
 
-        // send reward funds
-        payout.rewardAsset.transfer(_wallet, payoutAmount);
-
         // lower remaining reward funds for the payout
-        payout.remainingRewardAmount = payout.remainingRewardAmount.sub(payoutAmount);
+        payout.remainingRewardAmount = payout.remainingRewardAmount - payoutAmount;
 
         // mark payout as claimed
         payoutClaims[_payoutId][_wallet] = true;
+
+        // send reward funds
+        payout.rewardAsset.transfer(_wallet, payoutAmount);
 
         emit PayoutClaimed(_payoutId, _wallet, _balance, payoutAmount);
     }

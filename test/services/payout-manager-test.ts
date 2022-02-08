@@ -9,8 +9,6 @@ import * as helpers from "../../util/helpers";
 describe("Payout Manager test", function () {
 
     //////// CONTRACTS ////////
-
-    //////// CONTRACTS ////////
     let merkleTreePathValidatorService: MerkleTreePathValidator;
     let payoutManager: PayoutManager;
     let asset1: IERC20;
@@ -231,7 +229,7 @@ describe("Payout Manager test", function () {
     });
 
     it('should create single payout and claim rewards', async function() {
-        let ownerAddress = await payoutOwner1.getAddress();
+        const ownerAddress = await payoutOwner1.getAddress();
 
         // transfer reward token to payoutOwner1
         await rewardAsset.connect(assetDistributor).transfer(ownerAddress, oneToOneReward);
@@ -239,7 +237,7 @@ describe("Payout Manager test", function () {
         // payoutOwner1 approves reward for payout
         await rewardAsset.connect(payoutOwner1).approve(payoutManager.address, oneToOneReward);
 
-        let payout: Payout = {
+        const payout: Payout = {
             id: 0,
             owner: ownerAddress,
             canceled: false,
@@ -249,17 +247,17 @@ describe("Payout Manager test", function () {
         }
 
         // payoutOwner1 creates payout for asset1
-        let createPayout = preparePayout(payoutOwner1, payout);
+        const createPayout = preparePayout(payoutOwner1, payout);
 
         // verify PayoutCreated event data
         await verifyCreatePayoutEvent(createPayout, payout);
 
         // verify payout info by ID
-        let payoutInfo = await payoutManager.getPayoutInfo(payout.id);
+        const payoutInfo = await payoutManager.getPayoutInfo(payout.id);
         verifyPayoutInfo(payoutInfo, payout);
 
         // verify payout info per asset
-        let assetPayouts = await payoutManager.getPayoutsForAsset(asset1.address);
+        const assetPayouts = await payoutManager.getPayoutsForAsset(asset1.address);
         expect(assetPayouts.length).to.be.equal(1);
         verifyPayoutInfo(assetPayouts[0], payout);
 
@@ -270,19 +268,19 @@ describe("Payout Manager test", function () {
         
         // verify claimed rewards
         for (let i = 0; i < holders.length; i++) {
-            let balance = await rewardAsset.balanceOf(holders[i]);
+            const balance = await rewardAsset.balanceOf(holders[i]);
             expect(balance).to.be.equal(balances[i]);
         }
 
         // verify remaining reward amount is now zero
-        let afterPayoutInfo = await payoutManager.getPayoutInfo(payout.id);
+        const afterPayoutInfo = await payoutManager.getPayoutInfo(payout.id);
         verifyPayoutInfo(afterPayoutInfo, {...payout, remainingReward: 0});
     });
 
     it('should create multiple payouts and claim rewards', async function() {
-        let ownerAddress1 = await payoutOwner1.getAddress();
-        let ownerAddress2 = await payoutOwner2.getAddress();
-        let ownerAddress3 = await payoutOwner3.getAddress();
+        const ownerAddress1 = await payoutOwner1.getAddress();
+        const ownerAddress2 = await payoutOwner2.getAddress();
+        const ownerAddress3 = await payoutOwner3.getAddress();
 
         // transfer reward token to payoutOwners
         await rewardAsset.connect(assetDistributor).transfer(ownerAddress1, oneToOneReward * 3); // one payout with 1:1 and one with 2:1
@@ -294,7 +292,7 @@ describe("Payout Manager test", function () {
         await rewardAsset.connect(payoutOwner2).approve(payoutManager.address, oneToOneReward);
         await rewardAsset.connect(payoutOwner3).approve(payoutManager.address, oneToOneReward);
 
-        let payout1: Payout = {
+        const payout1: Payout = {
             id: 0,
             owner: ownerAddress1,
             canceled: false,
@@ -302,7 +300,7 @@ describe("Payout Manager test", function () {
             totalReward: oneToOneReward,
             remainingReward: oneToOneReward
         }
-        let payout2: Payout = {
+        const payout2: Payout = {
             id: 1,
             owner: ownerAddress1,
             canceled: false,
@@ -310,7 +308,7 @@ describe("Payout Manager test", function () {
             totalReward: twoToOneReward,
             remainingReward: twoToOneReward
         }
-        let payout3: Payout = {
+        const payout3: Payout = {
             id: 2,
             owner: ownerAddress2,
             canceled: false,
@@ -318,7 +316,7 @@ describe("Payout Manager test", function () {
             totalReward: oneToOneReward,
             remainingReward: oneToOneReward
         }
-        let payout4: Payout = {
+        const payout4: Payout = {
             id: 3,
             owner: ownerAddress3,
             canceled: false,
@@ -328,10 +326,10 @@ describe("Payout Manager test", function () {
         }
 
         // payoutOwners create payouts for assets
-        let createPayout1 = preparePayout(payoutOwner1, payout1);
-        let createPayout2 = preparePayout(payoutOwner1, payout2);
-        let createPayout3 = preparePayout(payoutOwner2, payout3);
-        let createPayout4 = preparePayout(payoutOwner3, payout4);
+        const createPayout1 = preparePayout(payoutOwner1, payout1);
+        const createPayout2 = preparePayout(payoutOwner1, payout2);
+        const createPayout3 = preparePayout(payoutOwner2, payout3);
+        const createPayout4 = preparePayout(payoutOwner3, payout4);
 
         // verify PayoutCreated event data
         await verifyCreatePayoutEvent(createPayout1, payout1);
@@ -340,25 +338,25 @@ describe("Payout Manager test", function () {
         await verifyCreatePayoutEvent(createPayout4, payout4);
 
         // verify payout infos by IDs
-        let payoutInfo1 = await payoutManager.getPayoutInfo(payout1.id);
+        const payoutInfo1 = await payoutManager.getPayoutInfo(payout1.id);
         verifyPayoutInfo(payoutInfo1, payout1);
 
-        let payoutInfo2 = await payoutManager.getPayoutInfo(payout2.id);
+        const payoutInfo2 = await payoutManager.getPayoutInfo(payout2.id);
         verifyPayoutInfo(payoutInfo2, payout2);
 
-        let payoutInfo3 = await payoutManager.getPayoutInfo(payout3.id);
+        const payoutInfo3 = await payoutManager.getPayoutInfo(payout3.id);
         verifyPayoutInfo(payoutInfo3, payout3);
 
-        let payoutInfo4 = await payoutManager.getPayoutInfo(payout4.id);
+        const payoutInfo4 = await payoutManager.getPayoutInfo(payout4.id);
         verifyPayoutInfo(payoutInfo4, payout4);
 
         // verify payout infos per asset
-        let asset1Payouts = await payoutManager.getPayoutsForAsset(asset1.address);
+        const asset1Payouts = await payoutManager.getPayoutsForAsset(asset1.address);
         expect(asset1Payouts.length).to.be.equal(2);
         verifyPayoutInfo(asset1Payouts[0], payout1);
         verifyPayoutInfo(asset1Payouts[1], payout3);
 
-        let asset2Payouts = await payoutManager.getPayoutsForAsset(asset2.address);
+        const asset2Payouts = await payoutManager.getPayoutsForAsset(asset2.address);
         expect(asset2Payouts.length).to.be.equal(2);
         verifyPayoutInfo(asset2Payouts[0], payout2);
         verifyPayoutInfo(asset2Payouts[1], payout4);
@@ -374,26 +372,26 @@ describe("Payout Manager test", function () {
         
         // verify claimed rewards
         for (let i = 0; i < holders.length; i++) {
-            let balance = await rewardAsset.balanceOf(holders[i]);
+            const balance = await rewardAsset.balanceOf(holders[i]);
             expect(balance).to.be.equal(balances[i] * 5);
         }
 
         // verify remaining reward amount is now zero
-        let afterPayoutInfo1 = await payoutManager.getPayoutInfo(payout1.id);
+        const afterPayoutInfo1 = await payoutManager.getPayoutInfo(payout1.id);
         verifyPayoutInfo(afterPayoutInfo1, {...payout1, remainingReward: 0});
 
-        let afterPayoutInfo2 = await payoutManager.getPayoutInfo(payout2.id);
+        const afterPayoutInfo2 = await payoutManager.getPayoutInfo(payout2.id);
         verifyPayoutInfo(afterPayoutInfo2, {...payout2, remainingReward: 0});
 
-        let afterPayoutInfo3 = await payoutManager.getPayoutInfo(payout3.id);
+        const afterPayoutInfo3 = await payoutManager.getPayoutInfo(payout3.id);
         verifyPayoutInfo(afterPayoutInfo3, {...payout3, remainingReward: 0});
 
-        let afterPayoutInfo4 = await payoutManager.getPayoutInfo(payout4.id);
+        const afterPayoutInfo4 = await payoutManager.getPayoutInfo(payout4.id);
         verifyPayoutInfo(afterPayoutInfo4, {...payout4, remainingReward: 0});
     });
 
     it('should cancel payout which did not issue any rewards yet', async function() {
-        let ownerAddress = await payoutOwner1.getAddress();
+        const ownerAddress = await payoutOwner1.getAddress();
 
         // transfer reward token to payoutOwner1
         await rewardAsset.connect(assetDistributor).transfer(ownerAddress, oneToOneReward);
@@ -401,7 +399,7 @@ describe("Payout Manager test", function () {
         // payoutOwner1 approves reward for payout
         await rewardAsset.connect(payoutOwner1).approve(payoutManager.address, oneToOneReward);
 
-        let payout: Payout = {
+        const payout: Payout = {
             id: 0,
             owner: ownerAddress,
             canceled: false,
@@ -411,22 +409,22 @@ describe("Payout Manager test", function () {
         }
 
         // payoutOwner1 creates payout for asset1
-        let createPayout = preparePayout(payoutOwner1, payout);
+        const createPayout = preparePayout(payoutOwner1, payout);
 
         // verify PayoutCreated event data
         await verifyCreatePayoutEvent(createPayout, payout);
 
         // verify payout info by ID
-        let payoutInfo = await payoutManager.getPayoutInfo(payout.id);
+        const payoutInfo = await payoutManager.getPayoutInfo(payout.id);
         verifyPayoutInfo(payoutInfo, payout);
 
         // verify payout info per asset
-        let assetPayouts = await payoutManager.getPayoutsForAsset(asset1.address);
+        const assetPayouts = await payoutManager.getPayoutsForAsset(asset1.address);
         expect(assetPayouts.length).to.be.equal(1);
         verifyPayoutInfo(assetPayouts[0], payout);
 
         // cancel payout
-        let cencelPayout = payoutManager.connect(payoutOwner1).cancelPayout(payout.id);
+        const cencelPayout = payoutManager.connect(payoutOwner1).cancelPayout(payout.id);
 
         // verify cancel payout event
         await expect(cencelPayout).to.emit(payoutManager, "PayoutCanceled").withArgs(
@@ -435,16 +433,16 @@ describe("Payout Manager test", function () {
         );
 
         // verify funds are returned to owner
-        let ownerBalance = await rewardAsset.balanceOf(ownerAddress);
+        const ownerBalance = await rewardAsset.balanceOf(ownerAddress);
         expect(ownerBalance).to.be.equal(oneToOneReward);
 
         // verify remaining reward amount is now zero and payout is canceled
-        let afterPayoutInfo = await payoutManager.getPayoutInfo(payout.id);
+        const afterPayoutInfo = await payoutManager.getPayoutInfo(payout.id);
         verifyPayoutInfo(afterPayoutInfo, {...payout, canceled: true, remainingReward: 0});
     });
 
     it('should cancel payout after some rewards have already been issued', async function() {
-        let ownerAddress = await payoutOwner1.getAddress();
+        const ownerAddress = await payoutOwner1.getAddress();
 
         // transfer reward token to payoutOwner1
         await rewardAsset.connect(assetDistributor).transfer(ownerAddress, oneToOneReward);
@@ -452,7 +450,7 @@ describe("Payout Manager test", function () {
         // payoutOwner1 approves reward for payout
         await rewardAsset.connect(payoutOwner1).approve(payoutManager.address, oneToOneReward);
 
-        let payout: Payout = {
+        const payout: Payout = {
             id: 0,
             owner: ownerAddress,
             canceled: false,
@@ -462,17 +460,17 @@ describe("Payout Manager test", function () {
         }
 
         // payoutOwner1 creates payout for asset1
-        let createPayout = preparePayout(payoutOwner1, payout);
+        const createPayout = preparePayout(payoutOwner1, payout);
 
         // verify PayoutCreated event data
         await verifyCreatePayoutEvent(createPayout, payout);
 
         // verify payout info by ID
-        let payoutInfo = await payoutManager.getPayoutInfo(payout.id);
+        const payoutInfo = await payoutManager.getPayoutInfo(payout.id);
         verifyPayoutInfo(payoutInfo, payout);
 
         // verify payout info per asset
-        let assetPayouts = await payoutManager.getPayoutsForAsset(asset1.address);
+        const assetPayouts = await payoutManager.getPayoutsForAsset(asset1.address);
         expect(assetPayouts.length).to.be.equal(1);
         verifyPayoutInfo(assetPayouts[0], payout);
 
@@ -480,11 +478,11 @@ describe("Payout Manager test", function () {
         await payoutManager.connect(alice).claim(payout.id, holders[0], balances[0], proofs[0]);
         
         // verify claimed reward
-        let balance = await rewardAsset.balanceOf(holders[0]);
+        const balance = await rewardAsset.balanceOf(holders[0]);
         expect(balance).to.be.equal(balances[0]);
 
         // cancel payout
-        let cencelPayout = payoutManager.connect(payoutOwner1).cancelPayout(payout.id);
+        const cencelPayout = payoutManager.connect(payoutOwner1).cancelPayout(payout.id);
 
         // verify cancel payout event
         await expect(cencelPayout).to.emit(payoutManager, "PayoutCanceled").withArgs(
@@ -493,21 +491,21 @@ describe("Payout Manager test", function () {
         );
 
         // verify funds are returned to owner
-        let ownerBalance = await rewardAsset.balanceOf(ownerAddress);
+        const ownerBalance = await rewardAsset.balanceOf(ownerAddress);
         expect(ownerBalance).to.be.equal(oneToOneReward - balances[0]); // minus claimed reward
 
         // verify remaining reward amount is now zero and payout is canceled
-        let afterPayoutInfo = await payoutManager.getPayoutInfo(payout.id);
+        const afterPayoutInfo = await payoutManager.getPayoutInfo(payout.id);
         verifyPayoutInfo(afterPayoutInfo, {...payout, canceled: true, remainingReward: 0});
     });
 
     it('should not be able to cancel non-existent payout', async function() {
-        let cencelPayout = payoutManager.connect(payoutOwner1).cancelPayout(123);
+        const cencelPayout = payoutManager.connect(payoutOwner1).cancelPayout(123);
         await expect(cencelPayout).to.be.revertedWith("PayoutManager: payout with specified ID doesn't exist");
     });
 
     it('should not be able to cancel payout for non-owner', async function() {
-        let ownerAddress = await payoutOwner1.getAddress();
+        const ownerAddress = await payoutOwner1.getAddress();
 
         // transfer reward token to payoutOwner1
         await rewardAsset.connect(assetDistributor).transfer(ownerAddress, oneToOneReward);
@@ -515,7 +513,7 @@ describe("Payout Manager test", function () {
         // payoutOwner1 approves reward for payout
         await rewardAsset.connect(payoutOwner1).approve(payoutManager.address, oneToOneReward);
 
-        let payout: Payout = {
+        const payout: Payout = {
             id: 0,
             owner: ownerAddress,
             canceled: false,
@@ -525,18 +523,18 @@ describe("Payout Manager test", function () {
         }
 
         // payoutOwner1 creates payout for asset1
-        let createPayout = preparePayout(payoutOwner1, payout);
+        const createPayout = preparePayout(payoutOwner1, payout);
 
         // verify PayoutCreated event data
         await verifyCreatePayoutEvent(createPayout, payout);
 
         // verify that other user cannot cancel payout
-        let cencelPayout = payoutManager.connect(alice).cancelPayout(payout.id);
+        const cencelPayout = payoutManager.connect(alice).cancelPayout(payout.id);
         await expect(cencelPayout).to.be.revertedWith("PayoutManager: requesting address is not payout owner");
     });
 
     it('should not be able to cancel already canceled payout', async function() {
-        let ownerAddress = await payoutOwner1.getAddress();
+        const ownerAddress = await payoutOwner1.getAddress();
 
         // transfer reward token to payoutOwner1
         await rewardAsset.connect(assetDistributor).transfer(ownerAddress, oneToOneReward);
@@ -544,7 +542,7 @@ describe("Payout Manager test", function () {
         // payoutOwner1 approves reward for payout
         await rewardAsset.connect(payoutOwner1).approve(payoutManager.address, oneToOneReward);
 
-        let payout: Payout = {
+        const payout: Payout = {
             id: 0,
             owner: ownerAddress,
             canceled: false,
@@ -554,13 +552,13 @@ describe("Payout Manager test", function () {
         }
 
         // payoutOwner1 creates payout for asset1
-        let createPayout = preparePayout(payoutOwner1, payout);
+        const createPayout = preparePayout(payoutOwner1, payout);
 
         // verify PayoutCreated event data
         await verifyCreatePayoutEvent(createPayout, payout);
 
         // cancel payout
-        let cencelPayout = payoutManager.connect(payoutOwner1).cancelPayout(payout.id);
+        const cencelPayout = payoutManager.connect(payoutOwner1).cancelPayout(payout.id);
 
         // verify cancel payout event
         await expect(cencelPayout).to.emit(payoutManager, "PayoutCanceled").withArgs(
@@ -569,21 +567,21 @@ describe("Payout Manager test", function () {
         );
 
         // verify funds are returned to owner
-        let ownerBalance = await rewardAsset.balanceOf(ownerAddress);
+        const ownerBalance = await rewardAsset.balanceOf(ownerAddress);
         expect(ownerBalance).to.be.equal(oneToOneReward);
 
         // verify that payout cannot be canceled again
-        let cencelPayoutAgain = payoutManager.connect(payoutOwner1).cancelPayout(payout.id);
+        const cencelPayoutAgain = payoutManager.connect(payoutOwner1).cancelPayout(payout.id);
         await expect(cencelPayoutAgain).to.be.revertedWith("PayoutManager: payout with specified ID is canceled");
     });
 
     it('should not allow claim for non-existent payout', async function() {
-        let claim = payoutManager.connect(alice).claim(123, holders[0], balances[0], proofs[0]);
+        const claim = payoutManager.connect(alice).claim(123, holders[0], balances[0], proofs[0]);
         await expect(claim).to.be.revertedWith("PayoutManager: payout with specified ID doesn't exist");
     });
 
     it('should not allow claim for canceled payout', async function() {
-        let ownerAddress = await payoutOwner1.getAddress();
+        const ownerAddress = await payoutOwner1.getAddress();
 
         // transfer reward token to payoutOwner1
         await rewardAsset.connect(assetDistributor).transfer(ownerAddress, oneToOneReward);
@@ -591,7 +589,7 @@ describe("Payout Manager test", function () {
         // payoutOwner1 approves reward for payout
         await rewardAsset.connect(payoutOwner1).approve(payoutManager.address, oneToOneReward);
 
-        let payout: Payout = {
+        const payout: Payout = {
             id: 0,
             owner: ownerAddress,
             canceled: false,
@@ -601,22 +599,22 @@ describe("Payout Manager test", function () {
         }
 
         // payoutOwner1 creates payout for asset1
-        let createPayout = preparePayout(payoutOwner1, payout);
+        const createPayout = preparePayout(payoutOwner1, payout);
 
         // verify PayoutCreated event data
         await verifyCreatePayoutEvent(createPayout, payout);
 
         // verify payout info by ID
-        let payoutInfo = await payoutManager.getPayoutInfo(payout.id);
+        const payoutInfo = await payoutManager.getPayoutInfo(payout.id);
         verifyPayoutInfo(payoutInfo, payout);
 
         // verify payout info per asset
-        let assetPayouts = await payoutManager.getPayoutsForAsset(asset1.address);
+        const assetPayouts = await payoutManager.getPayoutsForAsset(asset1.address);
         expect(assetPayouts.length).to.be.equal(1);
         verifyPayoutInfo(assetPayouts[0], payout);
 
         // cancel payout
-        let cencelPayout = payoutManager.connect(payoutOwner1).cancelPayout(payout.id);
+        const cencelPayout = payoutManager.connect(payoutOwner1).cancelPayout(payout.id);
 
         // verify cancel payout event
         await expect(cencelPayout).to.emit(payoutManager, "PayoutCanceled").withArgs(
@@ -625,20 +623,20 @@ describe("Payout Manager test", function () {
         );
 
         // verify funds are returned to owner
-        let ownerBalance = await rewardAsset.balanceOf(ownerAddress);
+        const ownerBalance = await rewardAsset.balanceOf(ownerAddress);
         expect(ownerBalance).to.be.equal(oneToOneReward);
 
         // verify remaining reward amount is now zero and payout is canceled
-        let afterPayoutInfo = await payoutManager.getPayoutInfo(payout.id);
+        const afterPayoutInfo = await payoutManager.getPayoutInfo(payout.id);
         verifyPayoutInfo(afterPayoutInfo, {...payout, canceled: true, remainingReward: 0});
 
         // verify that rewards cannot be claimed
-        let claim = payoutManager.connect(alice).claim(payout.id, holders[0], balances[0], proofs[0]);
+        const claim = payoutManager.connect(alice).claim(payout.id, holders[0], balances[0], proofs[0]);
         await expect(claim).to.be.revertedWith("PayoutManager: payout with specified ID is canceled");
     });
 
     it('should not allow multiple claim for single payout', async function() {
-        let ownerAddress = await payoutOwner1.getAddress();
+        const ownerAddress = await payoutOwner1.getAddress();
 
         // transfer reward token to payoutOwner1
         await rewardAsset.connect(assetDistributor).transfer(ownerAddress, oneToOneReward);
@@ -646,7 +644,7 @@ describe("Payout Manager test", function () {
         // payoutOwner1 approves reward for payout
         await rewardAsset.connect(payoutOwner1).approve(payoutManager.address, oneToOneReward);
 
-        let payout: Payout = {
+        const payout: Payout = {
             id: 0,
             owner: ownerAddress,
             canceled: false,
@@ -656,17 +654,17 @@ describe("Payout Manager test", function () {
         }
 
         // payoutOwner1 creates payout for asset1
-        let createPayout = preparePayout(payoutOwner1, payout);
+        const createPayout = preparePayout(payoutOwner1, payout);
 
         // verify PayoutCreated event data
         await verifyCreatePayoutEvent(createPayout, payout);
 
         // verify payout info by ID
-        let payoutInfo = await payoutManager.getPayoutInfo(payout.id);
+        const payoutInfo = await payoutManager.getPayoutInfo(payout.id);
         verifyPayoutInfo(payoutInfo, payout);
 
         // verify payout info per asset
-        let assetPayouts = await payoutManager.getPayoutsForAsset(asset1.address);
+        const assetPayouts = await payoutManager.getPayoutsForAsset(asset1.address);
         expect(assetPayouts.length).to.be.equal(1);
         verifyPayoutInfo(assetPayouts[0], payout);
 
@@ -674,12 +672,12 @@ describe("Payout Manager test", function () {
         await payoutManager.connect(alice).claim(payout.id, holders[0], balances[0], proofs[0]);
 
         // verify that reward cannot be claimed again
-        let claim = payoutManager.connect(alice).claim(payout.id, holders[0], balances[0], proofs[0]);
+        const claim = payoutManager.connect(alice).claim(payout.id, holders[0], balances[0], proofs[0]);
         await expect(claim).to.be.revertedWith("PayoutManager: payout with specified ID is already claimed for specified wallet");
     });
 
     it('should not allow claim for account included in payout with incorrect balance', async function() {
-        let ownerAddress = await payoutOwner1.getAddress();
+        const ownerAddress = await payoutOwner1.getAddress();
 
         // transfer reward token to payoutOwner1
         await rewardAsset.connect(assetDistributor).transfer(ownerAddress, oneToOneReward);
@@ -687,7 +685,7 @@ describe("Payout Manager test", function () {
         // payoutOwner1 approves reward for payout
         await rewardAsset.connect(payoutOwner1).approve(payoutManager.address, oneToOneReward);
 
-        let payout: Payout = {
+        const payout: Payout = {
             id: 0,
             owner: ownerAddress,
             canceled: false,
@@ -697,27 +695,27 @@ describe("Payout Manager test", function () {
         }
 
         // payoutOwner1 creates payout for asset1
-        let createPayout = preparePayout(payoutOwner1, payout);
+        const createPayout = preparePayout(payoutOwner1, payout);
 
         // verify PayoutCreated event data
         await verifyCreatePayoutEvent(createPayout, payout);
 
         // verify payout info by ID
-        let payoutInfo = await payoutManager.getPayoutInfo(payout.id);
+        const payoutInfo = await payoutManager.getPayoutInfo(payout.id);
         verifyPayoutInfo(payoutInfo, payout);
 
         // verify payout info per asset
-        let assetPayouts = await payoutManager.getPayoutsForAsset(asset1.address);
+        const assetPayouts = await payoutManager.getPayoutsForAsset(asset1.address);
         expect(assetPayouts.length).to.be.equal(1);
         verifyPayoutInfo(assetPayouts[0], payout);
 
         // verify that incorrect reward amount cannot be claimed
-        let claim = payoutManager.connect(alice).claim(payout.id, holders[0], balances[0] * 2, proofs[0]);
+        const claim = payoutManager.connect(alice).claim(payout.id, holders[0], balances[0] * 2, proofs[0]);
         await expect(claim).to.be.revertedWith("PayoutManager: requested (address, blaance) pair is not contained in specified payout");
     });
 
     it('should not allow claim for account not included in payout', async function() {
-        let ownerAddress = await payoutOwner1.getAddress();
+        const ownerAddress = await payoutOwner1.getAddress();
 
         // transfer reward token to payoutOwner1
         await rewardAsset.connect(assetDistributor).transfer(ownerAddress, oneToOneReward);
@@ -725,7 +723,7 @@ describe("Payout Manager test", function () {
         // payoutOwner1 approves reward for payout
         await rewardAsset.connect(payoutOwner1).approve(payoutManager.address, oneToOneReward);
 
-        let payout: Payout = {
+        const payout: Payout = {
             id: 0,
             owner: ownerAddress,
             canceled: false,
@@ -735,23 +733,23 @@ describe("Payout Manager test", function () {
         }
 
         // payoutOwner1 creates payout for asset1
-        let createPayout = preparePayout(payoutOwner1, payout);
+        const createPayout = preparePayout(payoutOwner1, payout);
 
         // verify PayoutCreated event data
         await verifyCreatePayoutEvent(createPayout, payout);
 
         // verify payout info by ID
-        let payoutInfo = await payoutManager.getPayoutInfo(payout.id);
+        const payoutInfo = await payoutManager.getPayoutInfo(payout.id);
         verifyPayoutInfo(payoutInfo, payout);
 
         // verify payout info per asset
-        let assetPayouts = await payoutManager.getPayoutsForAsset(asset1.address);
+        const assetPayouts = await payoutManager.getPayoutsForAsset(asset1.address);
         expect(assetPayouts.length).to.be.equal(1);
         verifyPayoutInfo(assetPayouts[0], payout);
 
         // verify that account not included in payout cannot claim reward
-        let nonIncludedAddress = await alice.getAddress();
-        let claim = payoutManager.connect(alice).claim(payout.id, nonIncludedAddress, 2500, proofs[0]);
+        const nonIncludedAddress = await alice.getAddress();
+        const claim = payoutManager.connect(alice).claim(payout.id, nonIncludedAddress, 2500, proofs[0]);
         await expect(claim).to.be.revertedWith("PayoutManager: requested (address, blaance) pair is not contained in specified payout");
     });
 })
