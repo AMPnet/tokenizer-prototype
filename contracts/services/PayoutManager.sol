@@ -22,6 +22,7 @@ contract PayoutManager {
         bytes32 assetSnapshotMerkleRoot; // Merkle root hash of asset holdings in the snapshot, without ignored addresses
         uint256 assetSnapshotMerkleDepth; // depth of snapshot Merkle tree
         uint256 assetSnapshotBlockNumber; // snapshot block number
+        string assetSnapshotMerkleIpfsHash; // IPFS hash of stored asset snapshot Merkle tree
 
         IERC20 rewardAsset; // asset issued as payout reward
         uint256 totalRewardAmount; // total amount of reward asset in this payout
@@ -108,6 +109,7 @@ contract PayoutManager {
         bytes32 _assetSnapshotMerkleRoot,
         uint256 _assetSnapshotMerkleDepth,
         uint256 _assetSnapshotBlockNumber,
+        string memory _assetSnapshotMerkleIpfsHash,
 
         IERC20 _rewardAsset,
         uint256 _totalRewardAmount
@@ -133,6 +135,7 @@ contract PayoutManager {
             _assetSnapshotMerkleRoot,
             _assetSnapshotMerkleDepth,
             _assetSnapshotBlockNumber,
+            _assetSnapshotMerkleIpfsHash,
             _rewardAsset,
             _totalRewardAmount,
             _totalRewardAmount // remaining reward amount is initially equal to total reward amount

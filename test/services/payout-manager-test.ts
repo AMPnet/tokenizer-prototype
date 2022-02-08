@@ -75,6 +75,7 @@ describe("Payout Manager test", function () {
     ];
     const merkleRoot = "0xccd102c8ad222de27fa4463a41bcae172e4d4b0eddeeaa4dafe4bb979aa68c3c";
     const merkleDepth = 3;
+    const ipfsHash = "test-ipfs-hash";
     const blockNumber = 123;
     const totalAssetAmount = 1000 + 2000 + 3000 + 4000 + 5000 + 6000 + 7000;
     const oneToOneReward = totalAssetAmount;
@@ -100,6 +101,7 @@ describe("Payout Manager test", function () {
         assetSnapshotMerkleRoot: string;
         assetSnapshotMerkleDepth: BigNumber;
         assetSnapshotBlockNumber: BigNumber;
+        assetSnapshotMerkleIpfsHash: string;
         rewardAsset: string;
         totalRewardAmount: BigNumber;
         remainingRewardAmount: BigNumber;
@@ -113,6 +115,7 @@ describe("Payout Manager test", function () {
             merkleRoot,
             merkleDepth,
             blockNumber,
+            ipfsHash,
             rewardAsset.address,
             payout.totalReward
         );
@@ -138,6 +141,7 @@ describe("Payout Manager test", function () {
         expect(payoutInfo.assetSnapshotMerkleRoot).to.be.equal(merkleRoot);
         expect(payoutInfo.assetSnapshotMerkleDepth).to.be.equal(merkleDepth);
         expect(payoutInfo.assetSnapshotBlockNumber).to.be.equal(blockNumber);
+        expect(payoutInfo.assetSnapshotMerkleIpfsHash).to.be.equal(ipfsHash);
         expect(payoutInfo.rewardAsset).to.be.equal(rewardAsset.address);
         expect(payoutInfo.totalRewardAmount).to.be.equal(expected.totalReward);
         expect(payoutInfo.remainingRewardAmount).to.be.equal(expected.remainingReward);
@@ -176,6 +180,7 @@ describe("Payout Manager test", function () {
             merkleRoot,
             merkleDepth,
             blockNumber,
+            ipfsHash,
             rewardAsset.address,
             oneToOneReward
         );
@@ -191,6 +196,7 @@ describe("Payout Manager test", function () {
             merkleRoot,
             merkleDepth,
             blockNumber,
+            ipfsHash,
             rewardAsset.address,
             0 // total reward amount
         );
@@ -206,6 +212,7 @@ describe("Payout Manager test", function () {
             merkleRoot,
             0, // Merkle depth
             blockNumber,
+            ipfsHash,
             rewardAsset.address,
             oneToOneReward
         );
@@ -221,6 +228,7 @@ describe("Payout Manager test", function () {
             merkleRoot,
             merkleDepth,
             blockNumber,
+            ipfsHash,
             rewardAsset.address,
             oneToOneReward
         );
