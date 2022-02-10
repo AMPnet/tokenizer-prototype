@@ -3,7 +3,6 @@ pragma solidity ^0.8.0;
 
 import "./IMerkleTreePathValidator.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 contract PayoutManager {
 
@@ -79,8 +78,16 @@ contract PayoutManager {
     //------------------------
     //  READ-ONLY FUNCTIONS
     //------------------------
+    function getCurrentPayoutId() public view returns (uint256) {
+        return currentPayoutId;
+    }
+
     function getPayoutInfo(uint256 _payoutId) public view payoutExists(_payoutId) returns (Payout memory) {
         return payoutsById[_payoutId];
+    }
+
+    function getPayoutIdsForAsset(address _assetAddress) public view returns (uint256[] memory) {
+        return payoutsByAssetAddress[_assetAddress];
     }
 
     function getPayoutsForAsset(address _assetAddress) public view returns (Payout[] memory) {
@@ -188,7 +195,7 @@ contract PayoutManager {
             _proof
         );
 
-        require(containsNode, "PayoutManager: requested (address, blaance) pair is not contained in specified payout");
+        require(containsNode, "PayoutManager: requested (address, balance) pair is not contained in specified payout");
 
         // calculate reward amount based on percentage of asset holding:
         //   (_balance / payout.totalAssetAmount) gives the holding percentage

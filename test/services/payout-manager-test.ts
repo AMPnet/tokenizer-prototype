@@ -264,6 +264,11 @@ describe("Payout Manager test", function () {
         const payoutInfo = await payoutManager.getPayoutInfo(payout.id);
         verifyPayoutInfo(payoutInfo, payout);
 
+        // verify payout IDs per asset
+        const assetPayoutIds = await payoutManager.getPayoutIdsForAsset(asset1.address);
+        expect(assetPayoutIds.length).to.be.equal(1);
+        expect(assetPayoutIds.map(n => n.toNumber())).to.have.members([payout.id]);
+
         // verify payout info per asset
         const assetPayouts = await payoutManager.getPayoutsForAsset(asset1.address);
         expect(assetPayouts.length).to.be.equal(1);
@@ -358,6 +363,16 @@ describe("Payout Manager test", function () {
         const payoutInfo4 = await payoutManager.getPayoutInfo(payout4.id);
         verifyPayoutInfo(payoutInfo4, payout4);
 
+        // verify payout IDs per asset
+        const asset1PayoutIds = await payoutManager.getPayoutIdsForAsset(asset1.address);
+        expect(asset1PayoutIds.length).to.be.equal(2);
+        expect(asset1PayoutIds.map(n => n.toNumber())).to.have.members([payout1.id, payout3.id]);
+
+        // verify payout IDs per asset
+        const asset2PayoutIds = await payoutManager.getPayoutIdsForAsset(asset2.address);
+        expect(asset2PayoutIds.length).to.be.equal(2);
+        expect(asset2PayoutIds.map(n => n.toNumber())).to.have.members([payout2.id, payout4.id]);
+
         // verify payout infos per asset
         const asset1Payouts = await payoutManager.getPayoutsForAsset(asset1.address);
         expect(asset1Payouts.length).to.be.equal(2);
@@ -426,6 +441,11 @@ describe("Payout Manager test", function () {
         const payoutInfo = await payoutManager.getPayoutInfo(payout.id);
         verifyPayoutInfo(payoutInfo, payout);
 
+        // verify payout IDs per asset
+        const assetPayoutIds = await payoutManager.getPayoutIdsForAsset(asset1.address);
+        expect(assetPayoutIds.length).to.be.equal(1);
+        expect(assetPayoutIds.map(n => n.toNumber())).to.have.members([payout.id]);
+
         // verify payout info per asset
         const assetPayouts = await payoutManager.getPayoutsForAsset(asset1.address);
         expect(assetPayouts.length).to.be.equal(1);
@@ -476,6 +496,11 @@ describe("Payout Manager test", function () {
         // verify payout info by ID
         const payoutInfo = await payoutManager.getPayoutInfo(payout.id);
         verifyPayoutInfo(payoutInfo, payout);
+
+        // verify payout IDs per asset
+        const assetPayoutIds = await payoutManager.getPayoutIdsForAsset(asset1.address);
+        expect(assetPayoutIds.length).to.be.equal(1);
+        expect(assetPayoutIds.map(n => n.toNumber())).to.have.members([payout.id]);
 
         // verify payout info per asset
         const assetPayouts = await payoutManager.getPayoutsForAsset(asset1.address);
@@ -616,6 +641,11 @@ describe("Payout Manager test", function () {
         const payoutInfo = await payoutManager.getPayoutInfo(payout.id);
         verifyPayoutInfo(payoutInfo, payout);
 
+        // verify payout IDs per asset
+        const assetPayoutIds = await payoutManager.getPayoutIdsForAsset(asset1.address);
+        expect(assetPayoutIds.length).to.be.equal(1);
+        expect(assetPayoutIds.map(n => n.toNumber())).to.have.members([payout.id]);
+
         // verify payout info per asset
         const assetPayouts = await payoutManager.getPayoutsForAsset(asset1.address);
         expect(assetPayouts.length).to.be.equal(1);
@@ -671,6 +701,11 @@ describe("Payout Manager test", function () {
         const payoutInfo = await payoutManager.getPayoutInfo(payout.id);
         verifyPayoutInfo(payoutInfo, payout);
 
+        // verify payout IDs per asset
+        const assetPayoutIds = await payoutManager.getPayoutIdsForAsset(asset1.address);
+        expect(assetPayoutIds.length).to.be.equal(1);
+        expect(assetPayoutIds.map(n => n.toNumber())).to.have.members([payout.id]);
+
         // verify payout info per asset
         const assetPayouts = await payoutManager.getPayoutsForAsset(asset1.address);
         expect(assetPayouts.length).to.be.equal(1);
@@ -712,6 +747,11 @@ describe("Payout Manager test", function () {
         const payoutInfo = await payoutManager.getPayoutInfo(payout.id);
         verifyPayoutInfo(payoutInfo, payout);
 
+        // verify payout IDs per asset
+        const assetPayoutIds = await payoutManager.getPayoutIdsForAsset(asset1.address);
+        expect(assetPayoutIds.length).to.be.equal(1);
+        expect(assetPayoutIds.map(n => n.toNumber())).to.have.members([payout.id]);
+
         // verify payout info per asset
         const assetPayouts = await payoutManager.getPayoutsForAsset(asset1.address);
         expect(assetPayouts.length).to.be.equal(1);
@@ -719,7 +759,7 @@ describe("Payout Manager test", function () {
 
         // verify that incorrect reward amount cannot be claimed
         const claim = payoutManager.connect(alice).claim(payout.id, holders[0], balances[0] * 2, proofs[0]);
-        await expect(claim).to.be.revertedWith("PayoutManager: requested (address, blaance) pair is not contained in specified payout");
+        await expect(claim).to.be.revertedWith("PayoutManager: requested (address, balance) pair is not contained in specified payout");
     });
 
     it('should not allow claim for account not included in payout', async function() {
@@ -750,6 +790,11 @@ describe("Payout Manager test", function () {
         const payoutInfo = await payoutManager.getPayoutInfo(payout.id);
         verifyPayoutInfo(payoutInfo, payout);
 
+        // verify payout IDs per asset
+        const assetPayoutIds = await payoutManager.getPayoutIdsForAsset(asset1.address);
+        expect(assetPayoutIds.length).to.be.equal(1);
+        expect(assetPayoutIds.map(n => n.toNumber())).to.have.members([payout.id]);
+
         // verify payout info per asset
         const assetPayouts = await payoutManager.getPayoutsForAsset(asset1.address);
         expect(assetPayouts.length).to.be.equal(1);
@@ -758,6 +803,6 @@ describe("Payout Manager test", function () {
         // verify that account not included in payout cannot claim reward
         const nonIncludedAddress = await alice.getAddress();
         const claim = payoutManager.connect(alice).claim(payout.id, nonIncludedAddress, 2500, proofs[0]);
-        await expect(claim).to.be.revertedWith("PayoutManager: requested (address, blaance) pair is not contained in specified payout");
+        await expect(claim).to.be.revertedWith("PayoutManager: requested (address, balance) pair is not contained in specified payout");
     });
 })
