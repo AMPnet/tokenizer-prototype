@@ -1,6 +1,7 @@
 // @ts-ignore
 import { ethers } from "hardhat";
 import { Contract, Signer, BigNumber } from "ethers";
+import { QueryService } from "../typechain";
 import * as filters from "./filters";
 
 const config = {
@@ -310,6 +311,65 @@ export async function createAsset(
   }
   throw new Error("Asset creation transaction failed.");
 }
+
+/**
+ * Creates an AssetTransferable.
+ * An asset has to be created before the crowdfunding campaign with the predefined token supply.
+ * The whole supply is automatically owned by the token creator.
+ *
+ * @param from Creator's signer object
+ * @param issuer Asset's issuer contract instance
+ * @param initialTokenSupply Total number of tokens to be created. Not changeable afterwards.
+ * @param whitelistRequiredForTransfer If set to true, tokens will be transferable only between the whitelisted addresses
+ * @param name Asset token name (For example APPLE INC.)
+ * @param symbol Asset token symbol/ticker (For example APPL)
+ * @param info Asset info ipfs hash providing more than just a name and the ticker (if necessary)
+ * @param assetTransferableFactory AssetTransferable factory contract (predeployed and sitting at well known address)
+ * @returns Contract instance of the deployed asset token, already connected to the owner's signer object
+ */
+ export async function createAssetTransferable(
+  owner: String,
+  issuer: Contract,
+  mappedName: String,
+  initialTokenSupply: Number,
+  whitelistRequiredForRevenueClaim: boolean,
+  whitelistRequiredForLiquidationClaim: boolean,
+  name: String,
+  symbol: String,
+  info: String,
+  assetTransferableFactory: Contract,
+  nameRegistry: Contract,
+  apxRegistry: Contract
+): Promise<Contract> {
+  const createAssetTx = await assetTransferableFactory.create([
+      owner,
+      issuer.address,
+      apxRegistry.address,
+      mappedName,
+      nameRegistry.address,
+      ethers.utils.parseEther(initialTokenSupply.toString()),
+      whitelistRequiredForRevenueClaim,
+      whitelistRequiredForLiquidationClaim,
+      name,
+      symbol,
+      info
+    ]
+  );
+  const receipt = await ethers.provider.waitForTransaction(createAssetTx.hash);
+  for (const log of receipt.logs) {
+    try {
+      const parsedLog = assetTransferableFactory.interface.parseLog(log);
+      if (parsedLog.name == "AssetTransferableCreated") {
+        const ownerAddress = parsedLog.args.creator;
+        const assetAddress = parsedLog.args.asset;
+        console.log(`\nAssetTransferable deployed\n\tAt address: ${assetAddress}\n\tOwner: ${ownerAddress}`);
+        return (await ethers.getContractAt("AssetTransferable", assetAddress));
+      }
+    } catch (_) {}
+  }
+  throw new Error("AssetTransferable creation transaction failed.");
+}
+
 
 /**
  * Creates the crowdfunding campaign contract.
@@ -935,4 +995,35 @@ export async function queryCampaignsForIssuerInvestor(
   nameRegistry: Contract
 ): Promise<Array<Object>> {
   return queryService.getCampaignsForIssuerInvestor(issuer.address, investor, [ cfManagerFactory.address ], nameRegistry.address);
+}
+
+export async function queryIssuerForAssetBalances(
+  queryService: Contract,
+  issuer: Contract,
+  investor: string,
+  assetFactories: string[],
+  campaignFactories: string[]
+): Promise<AssetBalance[]> {
+  return queryService.getAssetBalancesForIssuer(issuer.address, investor, assetFactories, campaignFactories)
+}
+
+interface AssetCommonState {
+  flavor: string;
+  version: string;
+  contractAddress: string;
+  owner: string;
+  info: string;
+  name: string;
+  symbol: string;
+  totalSupply: BigNumber;
+  decimals: BigNumber;
+  issuer: string;
+}
+interface AssetBalance {
+  contractAddress: string;
+  decimals: number;
+  name: string;
+  symbol: string;
+  balance: BigNumber;
+  assetCommonState: AssetCommonState
 }
