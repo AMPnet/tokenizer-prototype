@@ -16,7 +16,7 @@ import "../tokens/erc20/IToken.sol";
 contract QueryService is IVersioned {
 
     string constant public FLAVOR = "QueryServiceV1";
-    string constant public VERSION = "1.0.18";
+    string constant public VERSION = "1.0.29";
 
     function flavor() external pure override returns (string memory) { return FLAVOR; }
     function version() external pure override returns (string memory) { return VERSION; } 
@@ -350,6 +350,42 @@ contract QueryService is IVersioned {
         return response; 
     }
 
+    function getAssetBalancesForIssuer(
+        address issuer,
+        address investor,
+        address[] memory assetFactories,
+        address[] memory campaignFactories
+    ) public view returns (Structs.AssetBalance[] memory) {
+        // CALCULATE RESPONSE SIZE
+        uint256 responseItemsCount = countAssets(issuer, investor, assetFactories);
+        if (responseItemsCount == 0) { return new Structs.AssetBalance[](0); }
+
+        // BUILD RESPONSE
+        Structs.AssetBalance[] memory response = new Structs.AssetBalance[](responseItemsCount);
+        uint256 nextResponseItemIndex = 0;
+        for (uint256 i = 0; i < assetFactories.length; i++) {
+            address[] memory instances = IAssetFactoryCommon(assetFactories[i]).getInstancesForIssuer(issuer);
+            for (uint256 j = 0; j < instances.length; j++) {
+                IToken token = IToken(instances[j]);
+                uint256 tokenBalance = token.balanceOf(investor);
+                if (IToken(instances[j]).balanceOf(investor) > 0) { 
+                    response[nextResponseItemIndex] = Structs.AssetBalance(
+                        instances[j],
+                        token.decimals(),
+                        token.name(),
+                        token.symbol(),
+                        tokenBalance,
+                        IAssetCommon(instances[j]).commonState()
+                    );
+                    nextResponseItemIndex++;
+                }
+            }
+        }
+
+        // RETURN RESPONSE
+        return response;
+    }
+
     function tokenValue(
         uint256 tokenAmount,
         IAssetCommon token,
@@ -361,6 +397,27 @@ contract QueryService is IVersioned {
             * (10 ** stablecoin.decimals())
             / token.priceDecimalsPrecision()
             / (10 ** IToken(address(token)).decimals());
+    }
+
+    function countAssets(
+        address issuer,
+        address investor,
+        address[] memory assetFactories
+    ) public view returns (uint256) {
+        if (assetFactories.length == 0) { return 0; }
+
+        // COUNT TOTAL RESPONSE SIZE
+        uint256 responseItemsCount = 0;
+        for (uint256 i = 0; i < assetFactories.length; i++) {
+            address[] memory instances = IAssetFactoryCommon(assetFactories[i]).getInstancesForIssuer(issuer);
+            for (uint256 j = 0; j < instances.length; j++) {
+                if (IToken(instances[j]).balanceOf(investor) > 0) { 
+                    responseItemsCount++;
+                }
+            }
+        }
+
+        return responseItemsCount;
     }
 
 }

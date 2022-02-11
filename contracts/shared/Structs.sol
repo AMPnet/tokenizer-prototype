@@ -252,6 +252,15 @@ contract Structs {
         uint256 liquidationTimestamp;
         uint256 liquidationFundsClaimed;
     }
+    
+    struct AssetBalance {
+        address contractAddress;
+        uint8 decimals;
+        string name;
+        string symbol;
+        uint256 balance;
+        AssetCommonState assetCommonState;
+    }
 
     struct IssuerState {
         string flavor;
