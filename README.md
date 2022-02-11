@@ -89,6 +89,10 @@ List of factory contracts:
 - CfManagerSoftcapVestingFactory
 - PayoutManagerFactory.sol
 
+## Deployment addresses
+
+The addresses of deployed contracts are stored and tracked in [deployments.ts](./deployments.ts)
+
 ## Local development with [Remix](https://remix-project.org/) (in browser)
 
 1. Open a link between localhost and Remix:
