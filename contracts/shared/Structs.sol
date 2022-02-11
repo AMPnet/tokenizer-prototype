@@ -35,6 +35,40 @@ contract Structs {
         AssetCommonState asset;
         string mappedName;
     }
+        
+    struct CampaignFactoryParams {
+        address owner;
+        string mappedName;
+        address assetAddress;
+        address issuerAddress;
+        address paymentMethod;
+        uint256 initialPricePerToken;
+        uint256 tokenPricePrecision;
+        uint256 softCap;
+        uint256 minInvestment;
+        uint256 maxInvestment;
+        bool whitelistRequired;
+        string info;
+        address nameRegistry;
+        address feeManager;
+    }
+
+    struct CampaignConstructor {
+        string contractFlavor;
+        string contractVersion;
+        address owner;
+        address asset;
+        address issuer;
+        address paymentMethod;
+        uint256 tokenPrice;
+        uint256 tokenPricePrecision;
+        uint256 softCap;
+        uint256 minInvestment;
+        uint256 maxInvestment;
+        bool whitelistRequired;
+        string info;
+        address feeManager;
+    }
 
     struct CampaignCommonState {
         string flavor;
@@ -272,6 +306,7 @@ contract Structs {
         address issuer;
         address stablecoin;
         uint256 tokenPrice;
+        uint256 tokenPricePrecision;
         uint256 softCap;
         uint256 minInvestment;
         uint256 maxInvestment;

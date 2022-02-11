@@ -215,18 +215,24 @@ contract DeployerService is IVersioned {
                 request.assetInfo
             )
         ));
-        ICfManagerSoftcap campaign = ICfManagerSoftcap(request.cfManagerSoftcapFactory.create(
-            address(this),
-            request.cfManagerMappedName,
-            address(asset),
-            request.cfManagerPricePerToken,
-            request.cfManagerSoftcap,
-            request.cfManagerSoftcapMinInvestment,
-            request.cfManagerSoftcapMaxInvestment,
-            request.cfManagerWhitelistRequired,
-            request.cfManagerInfo,
-            request.nameRegistry,
-            request.feeManager
+        ICfManagerSoftcap campaign = ICfManagerSoftcap(
+            request.cfManagerSoftcapFactory.create(
+                Structs.CampaignFactoryParams(
+                    address(this),
+                    request.cfManagerMappedName,
+                    address(asset),
+                    address(0), // used only when creating campaign for preixisting assets
+                    address(0), // used only when creating campaignn for preixisting assets
+                    request.cfManagerPricePerToken,
+                    0, // used only when creating campaignn for preixisting assets
+                    request.cfManagerSoftcap,
+                    request.cfManagerSoftcapMinInvestment,
+                    request.cfManagerSoftcapMaxInvestment,
+                    request.cfManagerWhitelistRequired,
+                    request.cfManagerInfo,
+                    request.nameRegistry,
+                    request.feeManager
+                )
         ));
 
         // Whitelist owners
@@ -268,18 +274,24 @@ contract DeployerService is IVersioned {
                 request.assetInfo
             )
         ));
-        ICfManagerSoftcap campaign = ICfManagerSoftcap(request.cfManagerSoftcapFactory.create(
-            address(this),
-            request.cfManagerMappedName,
-            address(asset),
-            request.cfManagerPricePerToken,
-            request.cfManagerSoftcap,
-            request.cfManagerSoftcapMinInvestment,
-            request.cfManagerSoftcapMaxInvestment,
-            request.cfManagerWhitelistRequired,
-            request.cfManagerInfo,
-            request.nameRegistry,
-            request.feeManager
+        ICfManagerSoftcap campaign = ICfManagerSoftcap(
+            request.cfManagerSoftcapFactory.create(
+                Structs.CampaignFactoryParams(
+                    address(this),
+                    request.cfManagerMappedName,
+                    address(asset),
+                    address(0), // used only when creating campaign for preixisting assets
+                    address(0), // used only when creating campaign for preixisting assets
+                    request.cfManagerPricePerToken,
+                    0, // used only when creating campaign for preixisting assets
+                    request.cfManagerSoftcap,
+                    request.cfManagerSoftcapMinInvestment,
+                    request.cfManagerSoftcapMaxInvestment,
+                    request.cfManagerWhitelistRequired,
+                    request.cfManagerInfo,
+                    request.nameRegistry,
+                    request.feeManager
+                )
         ));
 
         // Transfer tokens to sell to the campaign, transfer the rest to the asset owner's wallet
@@ -327,18 +339,25 @@ contract DeployerService is IVersioned {
             )
         );
 
-        ICfManagerSoftcap campaign = ICfManagerSoftcap(request.cfManagerSoftcapFactory.create(
-            address(this),
-            request.cfManagerMappedName,
-            address(asset),
-            request.cfManagerPricePerToken,
-            request.cfManagerSoftcap,
-            request.cfManagerSoftcapMinInvestment,
-            request.cfManagerSoftcapMaxInvestment,
-            request.cfManagerWhitelistRequired,
-            request.cfManagerInfo,
-            request.nameRegistry,
-            request.feeManager
+        ICfManagerSoftcap campaign = ICfManagerSoftcap(
+            request.cfManagerSoftcapFactory.create(
+                Structs.CampaignFactoryParams(
+                    address(this),
+                    request.cfManagerMappedName,
+                    address(asset),
+                    address(0), // used only when creating campaign for preixisting assets
+                    address(0), // used only when creating campaign for preixisting assets
+                    request.cfManagerPricePerToken,
+                    0, // used only when creating campaign for preixisting assets
+                    request.cfManagerSoftcap,
+                    request.cfManagerSoftcapMinInvestment,
+                    request.cfManagerSoftcapMaxInvestment,
+                    request.cfManagerWhitelistRequired,
+                    request.cfManagerInfo,
+                    request.nameRegistry,
+                    request.feeManager
+                )
+
         ));
 
         // Whitelist issuer owner
@@ -384,18 +403,24 @@ contract DeployerService is IVersioned {
                     request.assetInfo
                 )
         ));
-        ICfManagerSoftcap campaign = ICfManagerSoftcap(request.cfManagerSoftcapFactory.create(
-            address(this),
-            request.cfManagerMappedName,
-            address(asset),
-            request.cfManagerPricePerToken,
-            request.cfManagerSoftcap,
-            request.cfManagerSoftcapMinInvestment,
-            request.cfManagerSoftcapMaxInvestment,
-            request.cfManagerWhitelistRequired,
-            request.cfManagerInfo,
-            request.nameRegistry,
-            request.feeManager
+        ICfManagerSoftcap campaign = ICfManagerSoftcap(
+            request.cfManagerSoftcapFactory.create(
+                Structs.CampaignFactoryParams(
+                    address(this),
+                    request.cfManagerMappedName,
+                    address(asset),
+                    address(0), // used only when creating campaign for preixisting assets
+                    address(0), // used only when creating campaign for preixisting assets
+                    request.cfManagerPricePerToken,
+                    0, // used only when creating campaign for preixisting assets
+                    request.cfManagerSoftcap,
+                    request.cfManagerSoftcapMinInvestment,
+                    request.cfManagerSoftcapMaxInvestment,
+                    request.cfManagerWhitelistRequired,
+                    request.cfManagerInfo,
+                    request.nameRegistry,
+                    request.feeManager
+                )
         ));
 
         // Transfer tokens to sell to the campaign, transfer the rest to the asset owner's wallet
@@ -428,18 +453,24 @@ contract DeployerService is IVersioned {
                 )
             )
         );
-        ICfManagerSoftcapVesting campaign = ICfManagerSoftcapVesting(request.cfManagerSoftcapVestingFactory.create(
-            address(this),
-            request.cfManagerMappedName,
-            address(asset),
-            request.cfManagerPricePerToken,
-            request.cfManagerSoftcap,
-            request.cfManagerSoftcapMinInvestment,
-            request.cfManagerSoftcapMaxInvestment,
-            request.cfManagerWhitelistRequired,
-            request.cfManagerInfo,
-            request.nameRegistry,
-            request.feeManager
+        ICfManagerSoftcapVesting campaign = ICfManagerSoftcapVesting(
+            request.cfManagerSoftcapVestingFactory.create(
+                Structs.CampaignFactoryParams(
+                    address(this),
+                    request.cfManagerMappedName,
+                    address(asset),
+                    address(0), // used only when creating campaign for preixisting assets
+                    address(0), // used only when creating campaign for preixisting assets
+                    request.cfManagerPricePerToken,
+                    0, // used only when creating campaign for preixisting assets
+                    request.cfManagerSoftcap,
+                    request.cfManagerSoftcapMinInvestment,
+                    request.cfManagerSoftcapMaxInvestment,
+                    request.cfManagerWhitelistRequired,
+                    request.cfManagerInfo,
+                    request.nameRegistry,
+                    request.feeManager
+                )
         ));
 
         // Transfer tokens to sell to the campaign, transfer the rest to the asset owner's wallet
