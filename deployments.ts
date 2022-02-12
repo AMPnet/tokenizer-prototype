@@ -16,7 +16,7 @@ export const Mumbai: TokenizerConfig = {
     deployerService: '0xEE5ac09500968b1b11AFEbfd9af64e50a734db37',
     nameRegistry: '0x5771E32E4aC5Db8b06DfAD4774E2a5358cc90FF5',
     feeManager: '0xC74f47030aedEBa155a65921E62e8B3C0Bf77140',
-    queryService: '0xBF98A3d8D66CdC80Aa964296AAe7aD13905BC506',
+    queryService: '0xf05E598F841709e980c9F3eF4D8818b161E18D32',
     walletApproverService: '0x9D320608c28ecB79daE1c9E778A75040eC7F7d79',
     investService: '0x6da35932606866801762cBEC8698BD684d9D1699',
 }
@@ -39,7 +39,7 @@ export const Matic: TokenizerConfig = {
     deployerService: '0x1D736776bF08726753fb8d5960d34F3e179af133',
     nameRegistry: '0xeB186b3C94e66e0f1CFe525D9187fb6933e8c91A',
     feeManager: '0x7c6912280D9c28e42c208bE79ccb2c8fC71Bd7EA',
-    queryService: '0x00d3759D4B7C4163e987E10eb46d0Ae2771B40B5',
+    queryService: '0x4A37374Ae69aC637be890539bb8D851518c08e74',
     walletApproverService: '0xeD249D3b3cfe53f0FA655f8814Baff404AA0B27c',
     investService: '0xa1C7cAF622cfc35C53c786A9564F71b58CAE477a',
 }
