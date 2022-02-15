@@ -38,6 +38,18 @@ export async function deployFeeManager(deployer: Signer, owner: string, treasury
   return feeManager;
 }
 
+export async function deployPayoutManager(deployer: Signer, confirmations: number = config.confirmationsForDeploy): Promise<Contract> {
+  const MerkleTreePathValidator = await ethers.getContractFactory("MerkleTreePathValidator", deployer);
+  const merkleTreePathValidator = await MerkleTreePathValidator.deploy();
+  await ethers.provider.waitForTransaction(merkleTreePathValidator.deployTransaction.hash, confirmations)
+  console.log(`\nMerkleTreePathValidator deployed\n\tAt address: ${merkleTreePathValidator.address}`);
+  const PayoutManager = await ethers.getContractFactory("PayoutManager", deployer);
+  const payoutManager = await PayoutManager.deploy(merkleTreePathValidator.address);
+  await ethers.provider.waitForTransaction(payoutManager.deployTransaction.hash, confirmations)
+  console.log(`\nPayoutManager deployed\n\tAt address: ${payoutManager.address}`);
+  return payoutManager;
+}
+
 export async function deployMirroredToken(deployer: Signer, name: string, symbol: string, originalToken: string, confirmations: number = config.confirmationsForDeploy): Promise<Contract> {
   const MirroredToken = await ethers.getContractFactory("MirroredToken", deployer);
   const mirroredToken = await MirroredToken.deploy(name, symbol, originalToken);
