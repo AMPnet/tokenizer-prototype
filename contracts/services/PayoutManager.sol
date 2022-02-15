@@ -111,8 +111,7 @@ contract PayoutManager is IPayoutManager {
         Payout memory payout = Payout(
             currentPayoutId,
             payoutOwner,
-            _createPayout.payoutName,
-            _createPayout.payoutDescriptionIpfsHash,
+            _createPayout.payoutInfo,
             false, // payout is not canceled
             _createPayout.asset,
             _createPayout.totalAssetAmount,

@@ -73,8 +73,7 @@ describe("Payout Manager test", function () {
             "0x8cc9d677e018a88d1759c1e895897d137102bed87a8ef5ab7f68bfb3a5054d98"
         ]
     ];
-    const payoutName = "payout-name";
-    const payoutDescriptionIpfsHash = "description-ipfs-hash";
+    const payoutInfoIpfsHash = "payout-info-ipfs-hash";
     const merkleRoot = "0xccd102c8ad222de27fa4463a41bcae172e4d4b0eddeeaa4dafe4bb979aa68c3c";
     const merkleDepth = 3;
     const merkleIpfsHash = "merkle-ipfs-hash";
@@ -96,8 +95,7 @@ describe("Payout Manager test", function () {
     interface PayoutInfo {
         payoutId: BigNumber;
         payoutOwner: string;
-        payoutName: string;
-        payoutDescriptionIpfsHash: string;
+        payoutInfo: string;
         isCanceled: boolean;
         asset: string;
         totalAssetAmount: BigNumber;
@@ -116,8 +114,7 @@ describe("Payout Manager test", function () {
             asset: payout.asset,
             totalAssetAmount: totalAssetAmount,
             ignoredAssetAddresses: ignoredAddresses,
-            payoutName: payoutName,
-            payoutDescriptionIpfsHash: payoutDescriptionIpfsHash,
+            payoutInfo: payoutInfoIpfsHash,
             assetSnapshotMerkleRoot: merkleRoot,
             assetSnapshotMerkleDepth: merkleDepth,
             assetSnapshotBlockNumber: blockNumber,
@@ -140,8 +137,7 @@ describe("Payout Manager test", function () {
     function verifyPayoutInfo(payoutInfo: PayoutInfo, expected: Payout) {
         expect(payoutInfo.payoutId).to.be.equal(expected.id);
         expect(payoutInfo.payoutOwner).to.be.equal(expected.owner);
-        expect(payoutInfo.payoutName).to.be.equal(payoutName);
-        expect(payoutInfo.payoutDescriptionIpfsHash).to.be.equal(payoutDescriptionIpfsHash);
+        expect(payoutInfo.payoutInfo).to.be.equal(payoutInfoIpfsHash);
         expect(payoutInfo.isCanceled).to.be.equal(expected.canceled);
         expect(payoutInfo.asset).to.be.equal(expected.asset);
         expect(payoutInfo.totalAssetAmount).to.be.equal(totalAssetAmount);
@@ -185,8 +181,7 @@ describe("Payout Manager test", function () {
             asset: asset1.address,
             totalAssetAmount: 0,
             ignoredAssetAddresses: ignoredAddresses,
-            payoutName: payoutName,
-            payoutDescriptionIpfsHash: payoutDescriptionIpfsHash,
+            payoutInfo: payoutInfoIpfsHash,
             assetSnapshotMerkleRoot: merkleRoot,
             assetSnapshotMerkleDepth: merkleDepth,
             assetSnapshotBlockNumber: blockNumber,
@@ -203,8 +198,7 @@ describe("Payout Manager test", function () {
             asset: asset1.address,
             totalAssetAmount: totalAssetAmount,
             ignoredAssetAddresses: ignoredAddresses,
-            payoutName: payoutName,
-            payoutDescriptionIpfsHash: payoutDescriptionIpfsHash,
+            payoutInfo: payoutInfoIpfsHash,
             assetSnapshotMerkleRoot: merkleRoot,
             assetSnapshotMerkleDepth: merkleDepth,
             assetSnapshotBlockNumber: blockNumber,
@@ -221,8 +215,7 @@ describe("Payout Manager test", function () {
             asset: asset1.address,
             totalAssetAmount: totalAssetAmount,
             ignoredAssetAddresses: ignoredAddresses,
-            payoutName: payoutName,
-            payoutDescriptionIpfsHash: payoutDescriptionIpfsHash,
+            payoutInfo: payoutInfoIpfsHash,
             assetSnapshotMerkleRoot: merkleRoot,
             assetSnapshotMerkleDepth: 0,
             assetSnapshotBlockNumber: blockNumber,
@@ -239,8 +232,7 @@ describe("Payout Manager test", function () {
             asset: asset1.address,
             totalAssetAmount: totalAssetAmount,
             ignoredAssetAddresses: ignoredAddresses,
-            payoutName: payoutName,
-            payoutDescriptionIpfsHash: payoutDescriptionIpfsHash,
+            payoutInfo: payoutInfoIpfsHash,
             assetSnapshotMerkleRoot: merkleRoot,
             assetSnapshotMerkleDepth: merkleDepth,
             assetSnapshotBlockNumber: blockNumber,

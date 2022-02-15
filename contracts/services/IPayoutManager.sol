@@ -11,8 +11,7 @@ interface IPayoutManager {
     struct Payout {
         uint256 payoutId; // ID of this payout
         address payoutOwner; // address which created this payout
-        string payoutName; // name of the payout (optional)
-        string payoutDescriptionIpfsHash; // IPFS hash of the payout description (optional)
+        string payoutInfo; // payout info (or IPFS hash for info)
         bool isCanceled; // determines if this payout is canceled
 
         IERC20 asset; // asset for which payout is being made
@@ -34,8 +33,7 @@ interface IPayoutManager {
         uint256 totalAssetAmount;
         address[] ignoredAssetAddresses;
 
-        string payoutName;
-        string payoutDescriptionIpfsHash;
+        string payoutInfo;
 
         bytes32 assetSnapshotMerkleRoot;
         uint256 assetSnapshotMerkleDepth;
