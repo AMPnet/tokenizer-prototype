@@ -1,32 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "./IPayoutManager.sol";
 import "./IMerkleTreePathValidator.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-contract PayoutManager {
-
-    //------------------------
-    //  STRUCTS
-    //------------------------
-    struct Payout {
-        uint256 payoutId; // ID of this payout
-        address payoutOwner; // address which created this payout
-        bool isCanceled; // determines if this payout is canceled
-
-        IERC20 asset; // asset for which payout is being made
-        uint256 totalAssetAmount; // sum of all asset holdings in the snapshot, minus ignored asset address holdings
-        address[] ignoredAssetAddresses; // addresses which aren't included in the payout
-
-        bytes32 assetSnapshotMerkleRoot; // Merkle root hash of asset holdings in the snapshot, without ignored addresses
-        uint256 assetSnapshotMerkleDepth; // depth of snapshot Merkle tree
-        uint256 assetSnapshotBlockNumber; // snapshot block number
-        string assetSnapshotMerkleIpfsHash; // IPFS hash of stored asset snapshot Merkle tree
-
-        IERC20 rewardAsset; // asset issued as payout reward
-        uint256 totalRewardAmount; // total amount of reward asset in this payout
-        uint256 remainingRewardAmount; // remaining reward asset amount in this payout
-    }
+contract PayoutManager is IPayoutManager {
 
     //------------------------
     //  STATE
@@ -36,7 +15,8 @@ contract PayoutManager {
     uint256 private currentPayoutId = 0; // current payout ID, incremental - if some payout exists, it will always be smaller than this value
     mapping(uint256 => Payout) private payoutsById;
     mapping(address => uint256[]) private payoutsByAssetAddress;
-    mapping(uint256 => mapping(address => bool)) private payoutClaims;
+    mapping(address => uint256[]) private payoutsByOwnerAddress;
+    mapping(uint256 => mapping(address => uint256)) private payoutClaims;
 
     //------------------------
     //  EVENTS
@@ -71,26 +51,26 @@ contract PayoutManager {
     }
 
     modifier payoutNotClaimed(uint256 _payoutId, address _wallet) {
-        require(payoutClaims[_payoutId][_wallet] == false, "PayoutManager: payout with specified ID is already claimed for specified wallet");
+        require(payoutClaims[_payoutId][_wallet] == 0, "PayoutManager: payout with specified ID is already claimed for specified wallet");
         _;
     }
 
     //------------------------
     //  READ-ONLY FUNCTIONS
     //------------------------
-    function getCurrentPayoutId() public view returns (uint256) {
+    function getCurrentPayoutId() public view override returns (uint256) {
         return currentPayoutId;
     }
 
-    function getPayoutInfo(uint256 _payoutId) public view payoutExists(_payoutId) returns (Payout memory) {
+    function getPayoutInfo(uint256 _payoutId) public view override payoutExists(_payoutId) returns (Payout memory) {
         return payoutsById[_payoutId];
     }
 
-    function getPayoutIdsForAsset(address _assetAddress) public view returns (uint256[] memory) {
+    function getPayoutIdsForAsset(address _assetAddress) public view override returns (uint256[] memory) {
         return payoutsByAssetAddress[_assetAddress];
     }
 
-    function getPayoutsForAsset(address _assetAddress) public view returns (Payout[] memory) {
+    function getPayoutsForAsset(address _assetAddress) public view override returns (Payout[] memory) {
         uint256[] memory payoutIds = payoutsByAssetAddress[_assetAddress];
         Payout[] memory assetPayouts = new Payout[](payoutIds.length);
 
@@ -101,68 +81,78 @@ contract PayoutManager {
         return assetPayouts;
     }
 
-    function hasClaimedFunds(uint256 _payoutId, address _wallet) public view payoutExists(_payoutId) returns (bool) {
+    function getPayoutIdsForOwner(address _ownerAddress) public view override returns (uint256[] memory) {
+        return payoutsByOwnerAddress[_ownerAddress];
+    }
+
+    function getPayoutsForOwner(address _ownerAddress) public view override returns (Payout[] memory) {
+        uint256[] memory payoutIds = payoutsByOwnerAddress[_ownerAddress];
+        Payout[] memory ownerPayouts = new Payout[](payoutIds.length);
+
+        for (uint i = 0; i < payoutIds.length; i++) {
+            ownerPayouts[i] = payoutsById[payoutIds[i]];
+        }
+
+        return ownerPayouts;
+    }
+
+    function getAmountOfClaimedFunds(uint256 _payoutId, address _wallet) public view override payoutExists(_payoutId) returns (uint256) {
         return payoutClaims[_payoutId][_wallet];
+    }
+
+    function hasClaimedFunds(uint256 _payoutId, address _wallet) public view override payoutExists(_payoutId) returns (bool) {
+        return payoutClaims[_payoutId][_wallet] > 0;
     }
 
     //------------------------
     //  STATE CHANGE FUNCTIONS
     //------------------------
-    function createPayout(
-        IERC20 _asset,
-        uint256 _totalAssetAmount,
-        address[] memory _ignoredAssetAddresses,
-
-        bytes32 _assetSnapshotMerkleRoot,
-        uint256 _assetSnapshotMerkleDepth,
-        uint256 _assetSnapshotBlockNumber,
-        string memory _assetSnapshotMerkleIpfsHash,
-
-        IERC20 _rewardAsset,
-        uint256 _totalRewardAmount
-    ) public returns (uint256 payoutId) {
+    function createPayout(CreatePayout memory _createPayout) public override returns (uint256 payoutId) {
         // input validations
-        require(_totalAssetAmount > 0, "PayoutManager: cannot create payout without holders");
-        require(_totalRewardAmount > 0, "PayoutManager: cannot create payout without reward");
-        require(_assetSnapshotMerkleDepth > 0, "PayoutManager: Merkle tree depth cannot be zero");
+        require(_createPayout.totalAssetAmount > 0, "PayoutManager: cannot create payout without holders");
+        require(_createPayout.totalRewardAmount > 0, "PayoutManager: cannot create payout without reward");
+        require(_createPayout.assetSnapshotMerkleDepth > 0, "PayoutManager: Merkle tree depth cannot be zero");
 
         address payoutOwner = msg.sender;
 
         // verify that payout owner approved enough reward asset
-        require(_totalRewardAmount <= _rewardAsset.allowance(payoutOwner, address(this)), "PayoutManager: insufficient reward asset allowance");
+        require(_createPayout.totalRewardAmount <= _createPayout.rewardAsset.allowance(payoutOwner, address(this)), "PayoutManager: insufficient reward asset allowance");
 
         // create payout
         Payout memory payout = Payout(
             currentPayoutId,
             payoutOwner,
+            _createPayout.payoutName,
+            _createPayout.payoutDescriptionIpfsHash,
             false, // payout is not canceled
-            _asset,
-            _totalAssetAmount,
-            _ignoredAssetAddresses,
-            _assetSnapshotMerkleRoot,
-            _assetSnapshotMerkleDepth,
-            _assetSnapshotBlockNumber,
-            _assetSnapshotMerkleIpfsHash,
-            _rewardAsset,
-            _totalRewardAmount,
-            _totalRewardAmount // remaining reward amount is initially equal to total reward amount
+            _createPayout.asset,
+            _createPayout.totalAssetAmount,
+            _createPayout.ignoredAssetAddresses,
+            _createPayout.assetSnapshotMerkleRoot,
+            _createPayout.assetSnapshotMerkleDepth,
+            _createPayout.assetSnapshotBlockNumber,
+            _createPayout.assetSnapshotMerkleIpfsHash,
+            _createPayout.rewardAsset,
+            _createPayout.totalRewardAmount,
+            _createPayout.totalRewardAmount // remaining reward amount is initially equal to total reward amount
         );
 
         // store payout
         payoutsById[payout.payoutId] = payout;
-        payoutsByAssetAddress[address(_asset)].push(payout.payoutId);
+        payoutsByAssetAddress[address(_createPayout.asset)].push(payout.payoutId);
+        payoutsByOwnerAddress[payoutOwner].push(payout.payoutId);
 
         currentPayoutId += 1;
 
         // transfer reward asset
-        _rewardAsset.transferFrom(payoutOwner, address(this), _totalRewardAmount);
+        _createPayout.rewardAsset.transferFrom(payoutOwner, address(this), _createPayout.totalRewardAmount);
 
-        emit PayoutCreated(payout.payoutId, payoutOwner, _asset, _rewardAsset, _totalRewardAmount);
+        emit PayoutCreated(payout.payoutId, payoutOwner, _createPayout.asset, _createPayout.rewardAsset, _createPayout.totalRewardAmount);
 
         return payout.payoutId;
     }
 
-    function cancelPayout(uint256 _payoutId) public payoutExists(_payoutId) payoutOwnerOnly(_payoutId) payoutNotCanceled(_payoutId) {
+    function cancelPayout(uint256 _payoutId) public override payoutExists(_payoutId) payoutOwnerOnly(_payoutId) payoutNotCanceled(_payoutId) {
         Payout storage payout = payoutsById[_payoutId];
 
         // store remaining funds into local variable to send them later
@@ -183,7 +173,9 @@ contract PayoutManager {
         address _wallet,
         uint256 _balance,
         bytes32[] memory _proof
-    ) public payoutExists(_payoutId) payoutNotCanceled(_payoutId) payoutNotClaimed(_payoutId, _wallet) {
+    ) public override payoutExists(_payoutId) payoutNotCanceled(_payoutId) payoutNotClaimed(_payoutId, _wallet) {
+        require(_balance > 0, "PayoutManager: Payout cannot be made for account with zero balance");
+
         Payout storage payout = payoutsById[_payoutId];
 
         // validate Merkle proof to check if payout should be made for (address, balance) pair
@@ -213,8 +205,8 @@ contract PayoutManager {
         // lower remaining reward funds for the payout
         payout.remainingRewardAmount = payout.remainingRewardAmount - payoutAmount;
 
-        // mark payout as claimed
-        payoutClaims[_payoutId][_wallet] = true;
+        // set claimed amount for payout
+        payoutClaims[_payoutId][_wallet] = payoutAmount;
 
         // send reward funds
         payout.rewardAsset.transfer(_wallet, payoutAmount);
