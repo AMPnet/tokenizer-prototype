@@ -73,9 +73,10 @@ describe("Payout Manager test", function () {
             "0x8cc9d677e018a88d1759c1e895897d137102bed87a8ef5ab7f68bfb3a5054d98"
         ]
     ];
+    const payoutInfoIpfsHash = "payout-info-ipfs-hash";
     const merkleRoot = "0xccd102c8ad222de27fa4463a41bcae172e4d4b0eddeeaa4dafe4bb979aa68c3c";
     const merkleDepth = 3;
-    const ipfsHash = "test-ipfs-hash";
+    const merkleIpfsHash = "merkle-ipfs-hash";
     const blockNumber = 123;
     const totalAssetAmount = 1000 + 2000 + 3000 + 4000 + 5000 + 6000 + 7000;
     const oneToOneReward = totalAssetAmount;
@@ -94,6 +95,7 @@ describe("Payout Manager test", function () {
     interface PayoutInfo {
         payoutId: BigNumber;
         payoutOwner: string;
+        payoutInfo: string;
         isCanceled: boolean;
         asset: string;
         totalAssetAmount: BigNumber;
@@ -108,17 +110,18 @@ describe("Payout Manager test", function () {
     }
 
     function preparePayout(owner: Signer, payout: Payout): Promise<ContractTransaction> {
-        return payoutManager.connect(owner).createPayout(
-            payout.asset,
-            totalAssetAmount,
-            ignoredAddresses,
-            merkleRoot,
-            merkleDepth,
-            blockNumber,
-            ipfsHash,
-            rewardAsset.address,
-            payout.totalReward
-        );
+        return payoutManager.connect(owner).createPayout({
+            asset: payout.asset,
+            totalAssetAmount: totalAssetAmount,
+            ignoredAssetAddresses: ignoredAddresses,
+            payoutInfo: payoutInfoIpfsHash,
+            assetSnapshotMerkleRoot: merkleRoot,
+            assetSnapshotMerkleDepth: merkleDepth,
+            assetSnapshotBlockNumber: blockNumber,
+            assetSnapshotMerkleIpfsHash: merkleIpfsHash,
+            rewardAsset: rewardAsset.address,
+            totalRewardAmount: payout.totalReward
+        });
     }
 
     async function verifyCreatePayoutEvent(createPayout: Promise<ContractTransaction>, expected: Payout) {
@@ -134,6 +137,7 @@ describe("Payout Manager test", function () {
     function verifyPayoutInfo(payoutInfo: PayoutInfo, expected: Payout) {
         expect(payoutInfo.payoutId).to.be.equal(expected.id);
         expect(payoutInfo.payoutOwner).to.be.equal(expected.owner);
+        expect(payoutInfo.payoutInfo).to.be.equal(payoutInfoIpfsHash);
         expect(payoutInfo.isCanceled).to.be.equal(expected.canceled);
         expect(payoutInfo.asset).to.be.equal(expected.asset);
         expect(payoutInfo.totalAssetAmount).to.be.equal(totalAssetAmount);
@@ -141,7 +145,7 @@ describe("Payout Manager test", function () {
         expect(payoutInfo.assetSnapshotMerkleRoot).to.be.equal(merkleRoot);
         expect(payoutInfo.assetSnapshotMerkleDepth).to.be.equal(merkleDepth);
         expect(payoutInfo.assetSnapshotBlockNumber).to.be.equal(blockNumber);
-        expect(payoutInfo.assetSnapshotMerkleIpfsHash).to.be.equal(ipfsHash);
+        expect(payoutInfo.assetSnapshotMerkleIpfsHash).to.be.equal(merkleIpfsHash);
         expect(payoutInfo.rewardAsset).to.be.equal(rewardAsset.address);
         expect(payoutInfo.totalRewardAmount).to.be.equal(expected.totalReward);
         expect(payoutInfo.remainingRewardAmount).to.be.equal(expected.remainingReward);
@@ -173,65 +177,69 @@ describe("Payout Manager test", function () {
     });
 
     it('should not allow creation of payout without asset holders', async function() {
-        const createPayout = payoutManager.connect(payoutOwner1).createPayout(
-            asset1.address,
-            0, // total asset amount
-            ignoredAddresses,
-            merkleRoot,
-            merkleDepth,
-            blockNumber,
-            ipfsHash,
-            rewardAsset.address,
-            oneToOneReward
-        );
+        const createPayout = payoutManager.connect(payoutOwner1).createPayout({
+            asset: asset1.address,
+            totalAssetAmount: 0,
+            ignoredAssetAddresses: ignoredAddresses,
+            payoutInfo: payoutInfoIpfsHash,
+            assetSnapshotMerkleRoot: merkleRoot,
+            assetSnapshotMerkleDepth: merkleDepth,
+            assetSnapshotBlockNumber: blockNumber,
+            assetSnapshotMerkleIpfsHash: merkleIpfsHash,
+            rewardAsset: rewardAsset.address,
+            totalRewardAmount: oneToOneReward
+        });
 
         await expect(createPayout).to.be.revertedWith("PayoutManager: cannot create payout without holders");
     });
 
     it('should not allow creation of payout without reward', async function() {
-        const createPayout = payoutManager.connect(payoutOwner1).createPayout(
-            asset1.address,
-            totalAssetAmount,
-            ignoredAddresses,
-            merkleRoot,
-            merkleDepth,
-            blockNumber,
-            ipfsHash,
-            rewardAsset.address,
-            0 // total reward amount
-        );
+        const createPayout = payoutManager.connect(payoutOwner1).createPayout({
+            asset: asset1.address,
+            totalAssetAmount: totalAssetAmount,
+            ignoredAssetAddresses: ignoredAddresses,
+            payoutInfo: payoutInfoIpfsHash,
+            assetSnapshotMerkleRoot: merkleRoot,
+            assetSnapshotMerkleDepth: merkleDepth,
+            assetSnapshotBlockNumber: blockNumber,
+            assetSnapshotMerkleIpfsHash: merkleIpfsHash,
+            rewardAsset: rewardAsset.address,
+            totalRewardAmount: 0
+        });
 
         await expect(createPayout).to.be.revertedWith("PayoutManager: cannot create payout without reward");
     });
 
     it('should not allow creation of payout with zero-depth Merkle tree', async function() {
-        const createPayout = payoutManager.connect(payoutOwner1).createPayout(
-            asset1.address,
-            totalAssetAmount,
-            ignoredAddresses,
-            merkleRoot,
-            0, // Merkle depth
-            blockNumber,
-            ipfsHash,
-            rewardAsset.address,
-            oneToOneReward
-        );
+        const createPayout = payoutManager.connect(payoutOwner1).createPayout({
+            asset: asset1.address,
+            totalAssetAmount: totalAssetAmount,
+            ignoredAssetAddresses: ignoredAddresses,
+            payoutInfo: payoutInfoIpfsHash,
+            assetSnapshotMerkleRoot: merkleRoot,
+            assetSnapshotMerkleDepth: 0,
+            assetSnapshotBlockNumber: blockNumber,
+            assetSnapshotMerkleIpfsHash: merkleIpfsHash,
+            rewardAsset: rewardAsset.address,
+            totalRewardAmount: oneToOneReward
+        });
 
         await expect(createPayout).to.be.revertedWith("PayoutManager: Merkle tree depth cannot be zero");
     });
 
     it('should not allow creation of payout with insufficient approved reward asset amount', async function() {
-        const createPayout = payoutManager.connect(payoutOwner1).createPayout(
-            asset1.address,
-            totalAssetAmount,
-            ignoredAddresses,
-            merkleRoot,
-            merkleDepth,
-            blockNumber,
-            ipfsHash,
-            rewardAsset.address,
-            oneToOneReward
-        );
+        const createPayout = payoutManager.connect(payoutOwner1).createPayout({
+            asset: asset1.address,
+            totalAssetAmount: totalAssetAmount,
+            ignoredAssetAddresses: ignoredAddresses,
+            payoutInfo: payoutInfoIpfsHash,
+            assetSnapshotMerkleRoot: merkleRoot,
+            assetSnapshotMerkleDepth: merkleDepth,
+            assetSnapshotBlockNumber: blockNumber,
+            assetSnapshotMerkleIpfsHash: merkleIpfsHash,
+            rewardAsset: rewardAsset.address,
+            totalRewardAmount: oneToOneReward
+        });
 
         await expect(createPayout).to.be.revertedWith("PayoutManager: insufficient reward asset allowance");
     });
@@ -273,6 +281,16 @@ describe("Payout Manager test", function () {
         const assetPayouts = await payoutManager.getPayoutsForAsset(asset1.address);
         expect(assetPayouts.length).to.be.equal(1);
         verifyPayoutInfo(assetPayouts[0], payout);
+
+        // verify payout IDs per owner
+        const ownerPayoutIds = await payoutManager.getPayoutIdsForOwner(ownerAddress);
+        expect(ownerPayoutIds.length).to.be.equal(1);
+        expect(ownerPayoutIds.map(n => n.toNumber())).to.have.members([payout.id]);
+
+        // verify payout info per owner
+        const ownerPayouts = await payoutManager.getPayoutsForOwner(ownerAddress);
+        expect(ownerPayouts.length).to.be.equal(1);
+        verifyPayoutInfo(ownerPayouts[0], payout);
 
         // claim rewards for all accounts in the payout
         for (let i = 0; i < holders.length; i++) {
@@ -368,7 +386,6 @@ describe("Payout Manager test", function () {
         expect(asset1PayoutIds.length).to.be.equal(2);
         expect(asset1PayoutIds.map(n => n.toNumber())).to.have.members([payout1.id, payout3.id]);
 
-        // verify payout IDs per asset
         const asset2PayoutIds = await payoutManager.getPayoutIdsForAsset(asset2.address);
         expect(asset2PayoutIds.length).to.be.equal(2);
         expect(asset2PayoutIds.map(n => n.toNumber())).to.have.members([payout2.id, payout4.id]);
@@ -383,6 +400,33 @@ describe("Payout Manager test", function () {
         expect(asset2Payouts.length).to.be.equal(2);
         verifyPayoutInfo(asset2Payouts[0], payout2);
         verifyPayoutInfo(asset2Payouts[1], payout4);
+
+        // verify payout IDs per owner
+        const owner1PayoutIds = await payoutManager.getPayoutIdsForOwner(ownerAddress1);
+        expect(owner1PayoutIds.length).to.be.equal(2);
+        expect(owner1PayoutIds.map(n => n.toNumber())).to.have.members([payout1.id, payout2.id]);
+
+        const owner2PayoutIds = await payoutManager.getPayoutIdsForOwner(ownerAddress2);
+        expect(owner2PayoutIds.length).to.be.equal(1);
+        expect(owner2PayoutIds.map(n => n.toNumber())).to.have.members([payout3.id]);
+
+        const owner3PayoutIds = await payoutManager.getPayoutIdsForOwner(ownerAddress3);
+        expect(owner3PayoutIds.length).to.be.equal(1);
+        expect(owner3PayoutIds.map(n => n.toNumber())).to.have.members([payout4.id]);
+
+        // verify payout info per owner
+        const owner1Payouts = await payoutManager.getPayoutsForOwner(ownerAddress1);
+        expect(owner1Payouts.length).to.be.equal(2);
+        verifyPayoutInfo(owner1Payouts[0], payout1);
+        verifyPayoutInfo(owner1Payouts[1], payout2);
+
+        const owner2Payouts = await payoutManager.getPayoutsForOwner(ownerAddress2);
+        expect(owner2Payouts.length).to.be.equal(1);
+        verifyPayoutInfo(owner2Payouts[0], payout3);
+
+        const owner3Payouts = await payoutManager.getPayoutsForOwner(ownerAddress3);
+        expect(owner3Payouts.length).to.be.equal(1);
+        verifyPayoutInfo(owner3Payouts[0], payout4);
 
         // claim rewards for all accounts in payouts
         for (let i = 0; i < holders.length; i++) {
@@ -451,6 +495,16 @@ describe("Payout Manager test", function () {
         expect(assetPayouts.length).to.be.equal(1);
         verifyPayoutInfo(assetPayouts[0], payout);
 
+        // verify payout IDs per owner
+        const ownerPayoutIds = await payoutManager.getPayoutIdsForOwner(ownerAddress);
+        expect(ownerPayoutIds.length).to.be.equal(1);
+        expect(ownerPayoutIds.map(n => n.toNumber())).to.have.members([payout.id]);
+
+        // verify payout info per owner
+        const ownerPayouts = await payoutManager.getPayoutsForOwner(ownerAddress);
+        expect(ownerPayouts.length).to.be.equal(1);
+        verifyPayoutInfo(ownerPayouts[0], payout);
+
         // cancel payout
         const cencelPayout = payoutManager.connect(payoutOwner1).cancelPayout(payout.id);
 
@@ -501,6 +555,16 @@ describe("Payout Manager test", function () {
         const assetPayoutIds = await payoutManager.getPayoutIdsForAsset(asset1.address);
         expect(assetPayoutIds.length).to.be.equal(1);
         expect(assetPayoutIds.map(n => n.toNumber())).to.have.members([payout.id]);
+
+        // verify payout IDs per owner
+        const ownerPayoutIds = await payoutManager.getPayoutIdsForOwner(ownerAddress);
+        expect(ownerPayoutIds.length).to.be.equal(1);
+        expect(ownerPayoutIds.map(n => n.toNumber())).to.have.members([payout.id]);
+
+        // verify payout info per owner
+        const ownerPayouts = await payoutManager.getPayoutsForOwner(ownerAddress);
+        expect(ownerPayouts.length).to.be.equal(1);
+        verifyPayoutInfo(ownerPayouts[0], payout);
 
         // verify payout info per asset
         const assetPayouts = await payoutManager.getPayoutsForAsset(asset1.address);
@@ -651,6 +715,16 @@ describe("Payout Manager test", function () {
         expect(assetPayouts.length).to.be.equal(1);
         verifyPayoutInfo(assetPayouts[0], payout);
 
+        // verify payout IDs per owner
+        const ownerPayoutIds = await payoutManager.getPayoutIdsForOwner(ownerAddress);
+        expect(ownerPayoutIds.length).to.be.equal(1);
+        expect(ownerPayoutIds.map(n => n.toNumber())).to.have.members([payout.id]);
+
+        // verify payout info per owner
+        const ownerPayouts = await payoutManager.getPayoutsForOwner(ownerAddress);
+        expect(ownerPayouts.length).to.be.equal(1);
+        verifyPayoutInfo(ownerPayouts[0], payout);
+
         // cancel payout
         const cencelPayout = payoutManager.connect(payoutOwner1).cancelPayout(payout.id);
 
@@ -711,12 +785,75 @@ describe("Payout Manager test", function () {
         expect(assetPayouts.length).to.be.equal(1);
         verifyPayoutInfo(assetPayouts[0], payout);
 
+        // verify payout IDs per owner
+        const ownerPayoutIds = await payoutManager.getPayoutIdsForOwner(ownerAddress);
+        expect(ownerPayoutIds.length).to.be.equal(1);
+        expect(ownerPayoutIds.map(n => n.toNumber())).to.have.members([payout.id]);
+
+        // verify payout info per owner
+        const ownerPayouts = await payoutManager.getPayoutsForOwner(ownerAddress);
+        expect(ownerPayouts.length).to.be.equal(1);
+        verifyPayoutInfo(ownerPayouts[0], payout);
+
         // claim reward for account included in the payout
         await payoutManager.connect(alice).claim(payout.id, holders[0], balances[0], proofs[0]);
 
         // verify that reward cannot be claimed again
         const claim = payoutManager.connect(alice).claim(payout.id, holders[0], balances[0], proofs[0]);
         await expect(claim).to.be.revertedWith("PayoutManager: payout with specified ID is already claimed for specified wallet");
+    });
+
+    it('should not allow claim for account with zero balance in payout', async function() {
+        const ownerAddress = await payoutOwner1.getAddress();
+
+        // transfer reward token to payoutOwner1
+        await rewardAsset.connect(assetDistributor).transfer(ownerAddress, oneToOneReward);
+
+        // payoutOwner1 approves reward for payout
+        await rewardAsset.connect(payoutOwner1).approve(payoutManager.address, oneToOneReward);
+
+        const payout: Payout = {
+            id: 0,
+            owner: ownerAddress,
+            canceled: false,
+            asset: asset1.address,
+            totalReward: oneToOneReward,
+            remainingReward: oneToOneReward
+        }
+
+        // payoutOwner1 creates payout for asset1
+        const createPayout = preparePayout(payoutOwner1, payout);
+
+        // verify PayoutCreated event data
+        await verifyCreatePayoutEvent(createPayout, payout);
+
+        // verify payout info by ID
+        const payoutInfo = await payoutManager.getPayoutInfo(payout.id);
+        verifyPayoutInfo(payoutInfo, payout);
+
+        // verify payout IDs per asset
+        const assetPayoutIds = await payoutManager.getPayoutIdsForAsset(asset1.address);
+        expect(assetPayoutIds.length).to.be.equal(1);
+        expect(assetPayoutIds.map(n => n.toNumber())).to.have.members([payout.id]);
+
+        // verify payout info per asset
+        const assetPayouts = await payoutManager.getPayoutsForAsset(asset1.address);
+        expect(assetPayouts.length).to.be.equal(1);
+        verifyPayoutInfo(assetPayouts[0], payout);
+
+        // verify payout IDs per owner
+        const ownerPayoutIds = await payoutManager.getPayoutIdsForOwner(ownerAddress);
+        expect(ownerPayoutIds.length).to.be.equal(1);
+        expect(ownerPayoutIds.map(n => n.toNumber())).to.have.members([payout.id]);
+
+        // verify payout info per owner
+        const ownerPayouts = await payoutManager.getPayoutsForOwner(ownerAddress);
+        expect(ownerPayouts.length).to.be.equal(1);
+        verifyPayoutInfo(ownerPayouts[0], payout);
+
+        // verify that zero reward amount cannot be claimed
+        const claim = payoutManager.connect(alice).claim(payout.id, holders[0], 0, proofs[0]);
+        await expect(claim).to.be.revertedWith("PayoutManager: Payout cannot be made for account with zero balance");
     });
 
     it('should not allow claim for account included in payout with incorrect balance', async function() {
@@ -756,6 +893,16 @@ describe("Payout Manager test", function () {
         const assetPayouts = await payoutManager.getPayoutsForAsset(asset1.address);
         expect(assetPayouts.length).to.be.equal(1);
         verifyPayoutInfo(assetPayouts[0], payout);
+
+        // verify payout IDs per owner
+        const ownerPayoutIds = await payoutManager.getPayoutIdsForOwner(ownerAddress);
+        expect(ownerPayoutIds.length).to.be.equal(1);
+        expect(ownerPayoutIds.map(n => n.toNumber())).to.have.members([payout.id]);
+
+        // verify payout info per owner
+        const ownerPayouts = await payoutManager.getPayoutsForOwner(ownerAddress);
+        expect(ownerPayouts.length).to.be.equal(1);
+        verifyPayoutInfo(ownerPayouts[0], payout);
 
         // verify that incorrect reward amount cannot be claimed
         const claim = payoutManager.connect(alice).claim(payout.id, holders[0], balances[0] * 2, proofs[0]);
@@ -799,6 +946,16 @@ describe("Payout Manager test", function () {
         const assetPayouts = await payoutManager.getPayoutsForAsset(asset1.address);
         expect(assetPayouts.length).to.be.equal(1);
         verifyPayoutInfo(assetPayouts[0], payout);
+
+        // verify payout IDs per owner
+        const ownerPayoutIds = await payoutManager.getPayoutIdsForOwner(ownerAddress);
+        expect(ownerPayoutIds.length).to.be.equal(1);
+        expect(ownerPayoutIds.map(n => n.toNumber())).to.have.members([payout.id]);
+
+        // verify payout info per owner
+        const ownerPayouts = await payoutManager.getPayoutsForOwner(ownerAddress);
+        expect(ownerPayouts.length).to.be.equal(1);
+        verifyPayoutInfo(ownerPayouts[0], payout);
 
         // verify that account not included in payout cannot claim reward
         const nonIncludedAddress = await alice.getAddress();
