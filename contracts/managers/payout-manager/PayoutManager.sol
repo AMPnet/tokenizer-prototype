@@ -3,9 +3,13 @@ pragma solidity ^0.8.0;
 
 import "./IPayoutManager.sol";
 import "./IMerkleTreePathValidator.sol";
+import "../../shared/IVersioned.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract PayoutManager is IPayoutManager {
+
+    string constant public FLAVOR = "PayoutManagerV1";
+    string constant public VERSION = "1.0.29";
 
     //------------------------
     //  STATE
@@ -51,6 +55,10 @@ contract PayoutManager is IPayoutManager {
     //------------------------
     //  READ-ONLY FUNCTIONS
     //------------------------
+    function flavor() external pure override returns (string memory) { return FLAVOR; }
+    
+    function version() external pure override returns (string memory) { return VERSION; }
+
     function getCurrentPayoutId() public view override returns (uint256) {
         return currentPayoutId;
     }
