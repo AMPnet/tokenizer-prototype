@@ -47,6 +47,13 @@ interface IPayoutManager {
     }
 
     //------------------------
+    //  EVENTS
+    //------------------------
+    event PayoutCreated(uint256 payoutId, address indexed payoutOwner, IERC20 asset, IERC20 rewardAsset, uint256 totalRewardAmount);
+    event PayoutCanceled(uint256 payoutId, IERC20 asset);
+    event PayoutClaimed(uint256 payoutId, address indexed wallet, uint256 balance, uint256 payoutAmount);
+
+    //------------------------
     //  READ-ONLY FUNCTIONS
     //------------------------
     function getCurrentPayoutId() external view returns (uint256);
@@ -56,7 +63,6 @@ interface IPayoutManager {
     function getPayoutIdsForOwner(address _ownerAddress) external view returns (uint256[] memory);
     function getPayoutsForOwner(address _ownerAddress) external view returns (Payout[] memory);
     function getAmountOfClaimedFunds(uint256 _payoutId, address _wallet) external view returns (uint256);
-    function hasClaimedFunds(uint256 _payoutId, address _wallet) external view returns (bool);
 
     //------------------------
     //  STATE CHANGE FUNCTIONS

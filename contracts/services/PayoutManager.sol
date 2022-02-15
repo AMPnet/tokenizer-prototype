@@ -19,13 +19,6 @@ contract PayoutManager is IPayoutManager {
     mapping(uint256 => mapping(address => uint256)) private payoutClaims;
 
     //------------------------
-    //  EVENTS
-    //------------------------
-    event PayoutCreated(uint256 payoutId, address indexed payoutOwner, IERC20 asset, IERC20 rewardAsset, uint256 totalRewardAmount);
-    event PayoutCanceled(uint256 payoutId, IERC20 asset);
-    event PayoutClaimed(uint256 payoutId, address indexed wallet, uint256 balance, uint256 payoutAmount);
-
-    //------------------------
     //  CONSTRUCTOR
     //------------------------
     constructor(IMerkleTreePathValidator _merkleTreePathValidator) {
@@ -98,10 +91,6 @@ contract PayoutManager is IPayoutManager {
 
     function getAmountOfClaimedFunds(uint256 _payoutId, address _wallet) public view override payoutExists(_payoutId) returns (uint256) {
         return payoutClaims[_payoutId][_wallet];
-    }
-
-    function hasClaimedFunds(uint256 _payoutId, address _wallet) public view override payoutExists(_payoutId) returns (bool) {
-        return payoutClaims[_payoutId][_wallet] > 0;
     }
 
     //------------------------
