@@ -206,8 +206,8 @@ async function main() {
             process.env.FAUCET_SERVICE_BALANCE_THRESHOLD_FOR_REWARD
         );
 
-    const deployerService: Contract = (process.env.DEPLOYER) ?
-        await ethers.getContractAt("DeployerService", process.env.DEPLOYER) :
+    const deployerService: Contract = (process.env.DEPLOYER_SERVICE) ?
+        await ethers.getContractAt("DeployerService", process.env.DEPLOYER_SERVICE) :
         await helpers.deployDeployerService(deployer);
 
     const queryService: Contract = (process.env.QUERY_SERVICE) ?
