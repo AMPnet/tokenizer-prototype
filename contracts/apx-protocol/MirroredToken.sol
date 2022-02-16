@@ -6,9 +6,8 @@ import "./IMirroredToken.sol";
 import "../asset/IAsset.sol";
 import "../shared/Structs.sol";
 import "../tokens/erc20/ERC20.sol";
-import "../tokens/erc20/ERC20Snapshot.sol";
 
-contract MirroredToken is IMirroredToken, ERC20Snapshot {
+contract MirroredToken is IMirroredToken, ERC20 {
     using SafeERC20 for IERC20;
 
     string constant public FLAVOR = "MirroredTokenV1";

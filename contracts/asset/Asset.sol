@@ -7,12 +7,11 @@ import "../apx-protocol/IMirroredToken.sol";
 import "../apx-protocol/IApxAssetsRegistry.sol";
 import "../tokens/erc20/IToken.sol";
 import "../tokens/erc20/ERC20.sol";
-import "../tokens/erc20/ERC20Snapshot.sol";
 import "../shared/IIssuerCommon.sol";
 import "../shared/ICampaignCommon.sol";
 import "../shared/Structs.sol";
 
-contract Asset is IAsset, ERC20Snapshot {
+contract Asset is IAsset, ERC20 {
     using SafeERC20 for IERC20;
 
     //------------------------
@@ -260,11 +259,7 @@ contract Asset is IAsset, ERC20Snapshot {
         state.liquidationFundsClaimed += liquidationFundsShare;
         emit ClaimLiquidationShare(investor, liquidationFundsShare, block.timestamp);
     }
-
-    function snapshot() external override returns (uint256) {
-        return _snapshot();
-    }
-
+    
     function migrateApxRegistry(address newRegistry) external override {
         require(msg.sender == state.apxRegistry, "Asset: Only apxRegistry can call this function.");
         state.apxRegistry = newRegistry;

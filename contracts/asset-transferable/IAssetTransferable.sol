@@ -16,7 +16,6 @@ interface IAssetTransferable is IAssetCommon {
     function setIssuerStatus(bool status) external;
     function liquidate() external;
     function claimLiquidationShare(address investor) external;
-    function snapshot() external returns (uint256);
     function migrateApxRegistry(address newRegistry) external;
 
     // Read

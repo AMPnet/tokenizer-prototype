@@ -17,7 +17,6 @@ interface IAsset is IAssetCommon, IApxAsset {
     function setIssuerStatus(bool status) external;
     function liquidate() external;
     function claimLiquidationShare(address investor) external;
-    function snapshot() external returns (uint256);
 
     // Read
 
