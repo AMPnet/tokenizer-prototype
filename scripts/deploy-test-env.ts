@@ -202,6 +202,10 @@ async function main() {
     const investService: Contract = (process.env.INVEST_SERVICE) ?
         await ethers.getContractAt("InvestService", process.env.INVEST_SERVICE) :
         await helpers.deployInvestService(deployer);
+    
+    const payoutService: Contract = (process.env.PAYOUT_SERVICE) ?
+        await ethers.getContractAt("PayoutService", process.env.PAYOUT_SERVICE) :
+        await helpers.deployPayoutService(deployer);
 }
 
 main()

@@ -1,7 +1,6 @@
 // @ts-ignore
 import { ethers } from "hardhat";
 import { Contract, Signer, BigNumber } from "ethers";
-import { QueryService } from "../typechain";
 import * as filters from "./filters";
 
 const config = {
@@ -85,7 +84,8 @@ export async function deployServices(deployer: Signer, masterWalletApprover: str
     await deployDeployerService(deployer),
     await deployQueryService(deployer),
     await deployInvestService(deployer),
-    await deployFaucetService(deployer, masterWalletApprover, [ ], rewardPerApprove, balanceThresholdForReward)
+    await deployFaucetService(deployer, masterWalletApprover, [ ], rewardPerApprove, balanceThresholdForReward),
+    await deployPayoutService(deployer)
   ];
 }
 
@@ -145,6 +145,17 @@ export async function deployFaucetService(
   await ethers.provider.waitForTransaction(faucetService.deployTransaction.hash, confirmations)
   console.log(`\nFaucet service deployed\n\tAt address: ${faucetService.address}\n\tReward per approval: ${reward} ETH\n\tBalance threshold for reward: ${balanceThresholdForReward} ETH`);
   return faucetService;
+}
+
+export async function deployPayoutService(
+  deployer: Signer,
+  confirmations: number = config.confirmationsForDeploy
+): Promise<Contract> {
+  const PayoutService = await ethers.getContractFactory("PayoutService", deployer);
+  const payoutService = await PayoutService.deploy();
+  await ethers.provider.waitForTransaction(payoutService.deployTransaction.hash, confirmations);
+  console.log(`\nPayout service deployed\n\tAt address: ${payoutService.address}`);
+  return payoutService;
 }
 
 export async function deployIssuerFactory(deployer: Signer, oldFactory: string = ethers.constants.AddressZero, confirmations: number = config.confirmationsForDeploy): Promise<Contract> {

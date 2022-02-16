@@ -3,7 +3,14 @@ import { ethers } from "hardhat";
 import { Contract, Signer } from "ethers";
 import * as helpers from "../util/helpers";
 import * as deployerServiceUtil from "../util/deployer-service";
-import { CfManagerSoftcap, CfManagerSoftcapVesting, InvestService, Issuer, WalletApproverService } from "../typechain";
+import {
+    CfManagerSoftcap,
+    CfManagerSoftcapVesting,
+    InvestService,
+    Issuer,
+    PayoutService,
+    WalletApproverService
+} from "../typechain";
 
 export class TestData {
 
@@ -20,6 +27,7 @@ export class TestData {
     deployerService: Contract;
     queryService: Contract;
     investService: InvestService;
+    payoutService: PayoutService;
 
     ////////// APX //////////
     apxRegistry: Contract;
@@ -115,6 +123,7 @@ export class TestData {
         this.deployerService = services[1];
         this.queryService = services[2];
         this.investService = services[3] as InvestService;
+        this.payoutService = services[4] as PayoutService;
     }
 
     async deployIssuerAssetTransferableCampaign() {

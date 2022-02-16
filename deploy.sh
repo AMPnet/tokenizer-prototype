@@ -47,6 +47,7 @@ export FAUCET_SERVICE_ALLOWED_CALLERS=                  # provide this param if 
 export FAUCET_SERVICE_REWARD_PER_APPROVE=               # provide this param if FAUCET_SERVICE field empty (value is ETH, decimals are allowed)
 export FAUCET_SERVICE_BALANCE_THRESHOLD_FOR_REWARD=     # provide this param if FAUCET_SERVICE field empty (value is ETH, decimals are allowed)
 export INVEST_SERVICE=
+export PAYOUT_SERVICE=
 
 ######################################## Mirrored token definition ########################################
 # > Load existing MirroredToken at given address
@@ -92,6 +93,7 @@ FAUCET_SERVICE_ALLOWED_CALLERS=${FAUCET_SERVICE_ALLOWED_CALLERS}
 FAUCET_SERVICE_REWARD_PER_APPROVE=${FAUCET_SERVICE_REWARD_PER_APPROVE}
 FAUCET_SERVICE_BALANCE_THRESHOLD_FOR_REWARD=${FAUCET_SERVICE_BALANCE_THRESHOLD_FOR_REWARD}
 INVEST_SERVICE=${INVEST_SERVICE}
+PAYOUT_SERVICE=${PAYOUT_SERVICE}
 MIRRORED_TOKEN=${MIRRORED_TOKEN}
 MIRRORED_TOKEN_NAME=${MIRRORED_TOKEN_NAME}
 MIRRORED_TOKEN_SYMBOL=${MIRRORED_TOKEN_SYMBOL}
