@@ -17,7 +17,7 @@ contract PayoutManager is IPayoutManager {
     IMerkleTreePathValidator private merkleTreePathValidator;
 
     uint256 private currentPayoutId = 0; // current payout ID, incremental - if some payout exists, it will always be smaller than this value
-    mapping(uint256 => Payout) private payoutsById;
+    mapping(uint256 => Structs.Payout) private payoutsById;
     mapping(address => uint256[]) private payoutsByAssetAddress;
     mapping(address => uint256[]) private payoutsByOwnerAddress;
     mapping(uint256 => mapping(address => uint256)) private payoutClaims;
@@ -63,7 +63,7 @@ contract PayoutManager is IPayoutManager {
         return currentPayoutId;
     }
 
-    function getPayoutInfo(uint256 _payoutId) public view override payoutExists(_payoutId) returns (Payout memory) {
+    function getPayoutInfo(uint256 _payoutId) public view override payoutExists(_payoutId) returns (Structs.Payout memory) {
         return payoutsById[_payoutId];
     }
 
@@ -71,9 +71,9 @@ contract PayoutManager is IPayoutManager {
         return payoutsByAssetAddress[_assetAddress];
     }
 
-    function getPayoutsForAsset(address _assetAddress) public view override returns (Payout[] memory) {
+    function getPayoutsForAsset(address _assetAddress) public view override returns (Structs.Payout[] memory) {
         uint256[] memory payoutIds = payoutsByAssetAddress[_assetAddress];
-        Payout[] memory assetPayouts = new Payout[](payoutIds.length);
+        Structs.Payout[] memory assetPayouts = new Structs.Payout[](payoutIds.length);
 
         for (uint i = 0; i < payoutIds.length; i++) {
             assetPayouts[i] = payoutsById[payoutIds[i]];
@@ -86,9 +86,9 @@ contract PayoutManager is IPayoutManager {
         return payoutsByOwnerAddress[_ownerAddress];
     }
 
-    function getPayoutsForOwner(address _ownerAddress) public view override returns (Payout[] memory) {
+    function getPayoutsForOwner(address _ownerAddress) public view override returns (Structs.Payout[] memory) {
         uint256[] memory payoutIds = payoutsByOwnerAddress[_ownerAddress];
-        Payout[] memory ownerPayouts = new Payout[](payoutIds.length);
+        Structs.Payout[] memory ownerPayouts = new Structs.Payout[](payoutIds.length);
 
         for (uint i = 0; i < payoutIds.length; i++) {
             ownerPayouts[i] = payoutsById[payoutIds[i]];
@@ -116,7 +116,7 @@ contract PayoutManager is IPayoutManager {
         require(_createPayout.totalRewardAmount <= _createPayout.rewardAsset.allowance(payoutOwner, address(this)), "PayoutManager: insufficient reward asset allowance");
 
         // create payout
-        Payout memory payout = Payout(
+        Structs.Payout memory payout = Structs.Payout(
             currentPayoutId,
             payoutOwner,
             _createPayout.payoutInfo,
@@ -149,7 +149,7 @@ contract PayoutManager is IPayoutManager {
     }
 
     function cancelPayout(uint256 _payoutId) public override payoutExists(_payoutId) payoutOwnerOnly(_payoutId) payoutNotCanceled(_payoutId) {
-        Payout storage payout = payoutsById[_payoutId];
+        Structs.Payout storage payout = payoutsById[_payoutId];
 
         // store remaining funds into local variable to send them later
         uint256 remainingRewardAmount = payout.remainingRewardAmount;
@@ -172,7 +172,7 @@ contract PayoutManager is IPayoutManager {
     ) public override payoutExists(_payoutId) payoutNotCanceled(_payoutId) payoutNotClaimed(_payoutId, _wallet) {
         require(_balance > 0, "PayoutManager: Payout cannot be made for account with zero balance");
 
-        Payout storage payout = payoutsById[_payoutId];
+        Structs.Payout storage payout = payoutsById[_payoutId];
 
         // validate Merkle proof to check if payout should be made for (address, balance) pair
         bool containsNode = merkleTreePathValidator.containsNode(
