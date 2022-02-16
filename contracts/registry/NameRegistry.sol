@@ -19,8 +19,6 @@ contract NameRegistry is INameRegistry {
     mapping (address => string) private assetAddressToNameMap;
     mapping (string => address) private campaignNameToAddressMap;
     mapping (address => string) private campaignAddressToNameMap;
-    mapping (string => address) private snapshotDistributorNameToAddressMap;
-    mapping (address => string) private snapshotDistributorAddressToNameMap;
 
     //------------------------
     //  EVENTS
@@ -30,7 +28,6 @@ contract NameRegistry is INameRegistry {
     event MapIssuer(address indexed caller, string name, address instance, uint256 timestamp);
     event MapAsset(address indexed caller, string name, address instance, uint256 timestamp);
     event MapCampaign(address indexed caller, string name, address instance, uint256 timestamp);
-    event MapSnapshotDistributor(address indexed caller, string name, address instance, uint256 timestamp);
 
     //------------------------
     //  CONSTRUCTOR
@@ -84,12 +81,6 @@ contract NameRegistry is INameRegistry {
         emit MapCampaign(msg.sender, name, instance, block.timestamp);
     }
 
-    function mapSnapshotDistributor(string memory name, address instance) external override whitelistedFactoryOnly {
-        snapshotDistributorNameToAddressMap[name] = instance;
-        snapshotDistributorAddressToNameMap[instance] = name;
-        emit MapSnapshotDistributor(msg.sender, name, instance, block.timestamp);
-    }
-
     //-----------------------------
     //  INameRegistry IMPL - READ
     //-----------------------------
@@ -119,14 +110,6 @@ contract NameRegistry is INameRegistry {
 
     function getCampaignName(address campaign) external view override returns (string memory) {
         return campaignAddressToNameMap[campaign];
-    }
-
-    function getSnapshotDistributor(string memory name) external view override returns (address) {
-        return snapshotDistributorNameToAddressMap[name];
-    }
-
-    function getSnapshotDistributorName(address distributor) external view override returns (string memory) {
-            return snapshotDistributorAddressToNameMap[distributor];
     }
 
     //------------------------

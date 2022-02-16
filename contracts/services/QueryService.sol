@@ -6,7 +6,6 @@ import "../shared/ICampaignFactoryCommon.sol";
 import "../shared/IAssetFactoryCommon.sol";
 import "../shared/IIssuerFactoryCommon.sol";
 import "../shared/ICampaignCommon.sol";
-import "../shared/ISnapshotDistributorCommon.sol";
 import "../shared/IAssetCommon.sol";
 import "../shared/IIssuerCommon.sol";
 import "../shared/IVersioned.sol";
@@ -105,24 +104,6 @@ contract QueryService is IVersioned {
         return Structs.CampaignCommonStateWithName(
             ICampaignCommon(campaign).commonState(),
             nameRegistry.getCampaignName(campaign)
-        );
-    }
-
-    function getSnapshotDistributorForName(
-        string memory distributorName,
-        INameRegistry nameRegistry
-    ) public view returns (Structs.SnapshotDistributorCommonStateWithName memory) {
-        address distributor = nameRegistry.getSnapshotDistributor(distributorName);
-        return getSnapshotDistributor(distributor, nameRegistry);
-    }
-
-    function getSnapshotDistributor(
-        address distributor,
-        INameRegistry nameRegistry
-    ) public view returns (Structs.SnapshotDistributorCommonStateWithName memory) {
-        return Structs.SnapshotDistributorCommonStateWithName(
-            ISnapshotDistributorCommon(distributor).commonState(),
-            nameRegistry.getSnapshotDistributorName(distributor)
         );
     }
 

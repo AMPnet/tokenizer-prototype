@@ -64,22 +64,6 @@ contract Structs {
         uint256 tokenValue;
     }
 
-    struct SnapshotDistributorCommonStateWithName {
-        SnapshotDistributorCommonState distributor;
-        string mappedName;
-    }
-
-    struct SnapshotDistributorCommonState {
-        string flavor;
-        string version;
-        address contractAddress;
-        address owner;
-        string info;
-        address asset;
-        uint256 totalPayoutsCreated;
-        uint256 totalPayoutsAmount;
-    }
-
     struct TokenSaleInfo {
         address cfManager;
         uint256 tokenAmount;
@@ -350,18 +334,7 @@ contract Structs {
         bool revoked;
         address feeManager;
     }
-
-    struct Payout {
-        uint256 snapshotId;
-        string description;
-        address token;
-        uint256 amount;
-        uint256 totalReleased;
-        uint256 totalClaimsCount;
-        uint256 ignoredAmount;
-        address[] ignoredWallets;
-    }
-
+    
     struct InfoEntry {
         string info;
         uint256 timestamp;
