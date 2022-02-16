@@ -98,32 +98,7 @@ export async function getCrowdfundingCampaignTransactions(wallet: string, issuer
     return transactions;
 }
 
-export async function getSnapshotDistributorTransactions(wallet: string, issuer: Contract, snapshotDistributorFactory: Contract): Promise<Array<Transaction>> {
-    const transactions = [];
-    const snapshotDistributorInstanceAddresses = await snapshotDistributorFactory.getInstancesForIssuer(issuer.address);
-    const snapshotDistributorInstancesPromisifed: [Promise<Contract>] = snapshotDistributorInstanceAddresses.map(async (address: string) => {
-      return ethers.getContractAt("SnapshotDistributor", address);
-    });
-    const snapshotDistributorInstances = await Promise.all(snapshotDistributorInstancesPromisifed);
-    const snapshotDistributorInstancesScanActions = snapshotDistributorInstances.map(async (snapshotDistributor: Contract) => {
-        const filterRevenueShare = await snapshotDistributor.queryFilter(snapshotDistributor.filters.Release(wallet));
-        if (filterRevenueShare) {
-          for (const event of filterRevenueShare) {
-            transactions.push({
-              type: "REVENUE-SHARE",
-              from: event.address,
-              to: event.args?.investor,
-              amount: event.args?.amount.toString(),
-              asset: event.args?.asset,
-              payoutId: event.args?.payoutId.toNumber(),
-              timestamp: toDateTime(event.args?.timestamp)
-            });
-          }
-        }
-    });
-    await Promise.all(snapshotDistributorInstancesScanActions);
-    return transactions;
-}
+//TODO: implement getPayoutManagerTransactions(wallet, issuer)
 
 function toDateTime(unixTimestamp: BigNumberish): Date {
     const bn = BigNumber.from(unixTimestamp.toString())
