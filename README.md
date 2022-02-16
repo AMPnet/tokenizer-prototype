@@ -4,11 +4,10 @@ AMPnet Crowdfunding Platform v1.0 written in Solidity language.
 
 ## Contract types
 
-There are 4 different logical units provided in the contracts package:
-- Issuer
+There are 3 different logical units provided in the contracts package:
+- Issuer (Token Issuer)
 - Asset (Token)
-- Campaign
-- Snapshot Distributor
+- Campaign (Token Sale)
 
 ## Issuer
 
@@ -79,15 +78,15 @@ These three when combined can support for almost any of the required token unloc
 
 ## Factories
 
-Each of the 4 different contracts can and will be deployed by calling its factory contract's <i>create()</i> method. That way, we can have official factory contracts deployed on the chain at known addresses and we can be sure that all the contracts created this way weren't tampered with. Every factory holds addresses of all the instances ever created by calling their <i>create()</i> function. It's easy to check for the contract with address A if it was created by an official factory or not.
+Each of the 3 different contracts can and will be deployed by calling its factory contract's <i>create()</i> method. That way, we can have official factory contracts deployed on the chain at known addresses and we can be sure that all the contracts created this way weren't tampered with. Every factory holds addresses of all the instances ever created by calling their <i>create()</i> function. It's easy to check for the contract with address A if it was created by an official factory or not.
 
 List of factory contracts:
 - AssetFactory
 - AssetSimpleFactory
+- AssetTransferableFactory
 - IssuerFactory
 - CfManagerSoftcapFactory
 - CfManagerSoftcapVestingFactory
-- PayoutManagerFactory.sol
 
 ## Deployment addresses
 
@@ -100,4 +99,3 @@ The addresses of deployed contracts are stored and tracked in [deployments.ts](.
 npm run remix-dev
 ```
 2. Open [Remix](https://remix.ethereum.org), go to *Workspaces*, select *-connect to localhost-*, and your local files will be in sync with your Remix workspace.
-g
