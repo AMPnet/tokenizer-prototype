@@ -17,10 +17,7 @@ import "../managers/crowdfunding-softcap-vesting/ICfManagerSoftcapVestingFactory
 import "../tokens/erc20/IToken.sol";
 import "../shared/IVersioned.sol";
 
-contract DeployerService is IVersioned {
-
-    string constant public FLAVOR = "DeployerServiceV1";
-    string constant public VERSION = "1.0.21";
+interface IDeployerService is IVersioned {
 
     event DeployIssuerAssetCampaign(
         address caller,
@@ -186,10 +183,24 @@ contract DeployerService is IVersioned {
         address feeManager;
     }
 
+
+    function deployIssuerAssetCampaign(DeployIssuerAssetCampaignRequest memory request) external;
+    function deployAssetCampaign(DeployAssetCampaignRequest memory request) external;
+    function deployIssuerAssetTransferableCampaign(DeployIssuerAssetTransferableCampaignRequest memory request) external;
+    function deployAssetTransferableCampaign(DeployAssetTransferableCampaignRequest memory request) external;
+    function deployAssetSimpleCampaignVesting(DeployAssetSimpleCampaignVestingRequest memory request) external;
+
+}
+
+contract DeployerService is IDeployerService {
+
+    string constant public FLAVOR = "DeployerServiceV1";
+    string constant public VERSION = "1.0.21";
+
     function flavor() external pure override returns (string memory) { return FLAVOR; }
     function version() external pure override returns (string memory) { return VERSION; } 
  
-    function deployIssuerAssetCampaign(DeployIssuerAssetCampaignRequest memory request) external {
+    function deployIssuerAssetCampaign(DeployIssuerAssetCampaignRequest memory request) external override {
         // Deploy contracts
         IIssuer issuer = IIssuer(request.issuerFactory.create(
             address(this),
@@ -250,7 +261,7 @@ contract DeployerService is IVersioned {
         emit DeployIssuerAssetCampaign(msg.sender, address(issuer), address(asset), address(campaign), block.timestamp);
     }
 
-    function deployAssetCampaign(DeployAssetCampaignRequest memory request) external {
+    function deployAssetCampaign(DeployAssetCampaignRequest memory request) external override {
         // Deploy contracts
         IAsset asset = IAsset(request.assetFactory.create(
             Structs.AssetFactoryParams(
@@ -299,7 +310,7 @@ contract DeployerService is IVersioned {
 
     function deployIssuerAssetTransferableCampaign(
         DeployIssuerAssetTransferableCampaignRequest memory request
-    ) external {
+    ) external override {
         // Deploy contracts
         IIssuer issuer = IIssuer(request.issuerFactory.create(
             address(this),
@@ -366,7 +377,7 @@ contract DeployerService is IVersioned {
         );
     }
 
-    function deployAssetTransferableCampaign(DeployAssetTransferableCampaignRequest memory request) external {
+    function deployAssetTransferableCampaign(DeployAssetTransferableCampaignRequest memory request) external override {
         // Deploy contracts
         IAssetTransferable asset = IAssetTransferable(
             request.assetTransferableFactory.create(
@@ -412,7 +423,7 @@ contract DeployerService is IVersioned {
         emit DeployAssetCampaign(msg.sender, address(asset), address(campaign), block.timestamp);
     }
 
-    function deployAssetSimpleCampaignVesting(DeployAssetSimpleCampaignVestingRequest memory request) external {
+    function deployAssetSimpleCampaignVesting(DeployAssetSimpleCampaignVestingRequest memory request) external override {
         // Deploy contracts
         IAssetSimple asset = IAssetSimple(
             request.assetSimpleFactory.create(
