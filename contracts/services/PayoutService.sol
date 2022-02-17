@@ -34,7 +34,7 @@ contract PayoutService is IPayoutService {
     string constant public VERSION = "1.0.29";
 
     function flavor() external pure override returns (string memory) { return FLAVOR; }
-    function version() external pure override returns (string memory) { return VERSION; } 
+    function version() external pure override returns (string memory) { return VERSION; }
 
     function getPayoutsForIssuer(
         address issuer,
@@ -59,6 +59,7 @@ contract PayoutService is IPayoutService {
                 uint256[] memory payoutIds = payoutManagerInstance.getPayoutIdsForAsset(assetInstances[j]);
                 for (uint256 k = 0; k < payoutIds.length; k++) {
                     payoutsResponse[nextResponseItemIndex] = payoutManagerInstance.getPayoutInfo(payoutIds[k]);
+                    nextResponseItemIndex++;
                 }
             }
         }

@@ -9,6 +9,7 @@ import {
     InvestService,
     Issuer,
     PayoutService,
+    PayoutManager,
     WalletApproverService
 } from "../typechain";
 
@@ -33,6 +34,8 @@ export class TestData {
     apxRegistry: Contract;
     nameRegistry: Contract;
     feeManager: Contract;
+    merkleTreePathValidator: Contract;
+    payoutManager: PayoutManager;
 
     //////// SIGNERS ////////
     deployer: Signer;
@@ -112,6 +115,11 @@ export class TestData {
             await this.treasury.getAddress()
         );
 
+        this.merkleTreePathValidator = await helpers.deployMerkleTreePathValidator(this.deployer);
+        this.payoutManager = (
+            await helpers.deployPayoutManager(this.deployer, this.merkleTreePathValidator.address)
+        ) as PayoutManager;
+
         const walletApproverAddress = await this.walletApprover.getAddress();
         const services = await helpers.deployServices(
             this.deployer,
@@ -123,7 +131,7 @@ export class TestData {
         this.deployerService = services[1];
         this.queryService = services[2];
         this.investService = services[3] as InvestService;
-        this.payoutService = services[4] as PayoutService;
+        this.payoutService = services[5] as PayoutService;
     }
 
     async deployIssuerAssetTransferableCampaign() {
