@@ -925,8 +925,6 @@ export async function queryIssuerForAssetBalances(
   return queryService.getAssetBalancesForIssuer(issuer.address, investor, assetFactories, campaignFactories)
 }
 
-
-
 interface AssetCommonState {
   flavor: string;
   version: string;
