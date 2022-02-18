@@ -3,7 +3,15 @@ import { ethers } from "hardhat";
 import { Contract, Signer } from "ethers";
 import * as helpers from "../util/helpers";
 import * as deployerServiceUtil from "../util/deployer-service";
-import { CfManagerSoftcap, CfManagerSoftcapVesting, InvestService, Issuer, WalletApproverService } from "../typechain";
+import {
+    CfManagerSoftcap,
+    CfManagerSoftcapVesting,
+    InvestService,
+    Issuer,
+    PayoutService,
+    PayoutManager,
+    WalletApproverService
+} from "../typechain";
 
 export class TestData {
 
@@ -20,11 +28,14 @@ export class TestData {
     deployerService: Contract;
     queryService: Contract;
     investService: InvestService;
+    payoutService: PayoutService;
 
     ////////// APX //////////
     apxRegistry: Contract;
     nameRegistry: Contract;
     feeManager: Contract;
+    merkleTreePathValidator: Contract;
+    payoutManager: PayoutManager;
 
     //////// SIGNERS ////////
     deployer: Signer;
@@ -104,6 +115,11 @@ export class TestData {
             await this.treasury.getAddress()
         );
 
+        this.merkleTreePathValidator = await helpers.deployMerkleTreePathValidator(this.deployer);
+        this.payoutManager = (
+            await helpers.deployPayoutManager(this.deployer, this.merkleTreePathValidator.address)
+        ) as PayoutManager;
+
         const walletApproverAddress = await this.walletApprover.getAddress();
         const services = await helpers.deployServices(
             this.deployer,
@@ -115,6 +131,7 @@ export class TestData {
         this.deployerService = services[1];
         this.queryService = services[2];
         this.investService = services[3] as InvestService;
+        this.payoutService = services[5] as PayoutService;
     }
 
     async deployIssuerAssetTransferableCampaign() {

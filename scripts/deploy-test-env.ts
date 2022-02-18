@@ -36,9 +36,13 @@ async function main() {
             process.env.FEE_MANAGER_TREASURY
         );
     
+    const merkleTreePathValidator: Contract = (process.env.MERKLE_TREE_PATH_VALIDATOR) ?
+        await ethers.getContractAt("MerkleTreePathValidator", process.env.MERKLE_TREE_PATH_VALIDATOR) :
+        await helpers.deployMerkleTreePathValidator(deployer);
+
     const payoutManager: Contract = (process.env.PAYOUT_MANAGER) ?
         await ethers.getContractAt("PayoutManager", process.env.PAYOUT_MANAGER) :
-        await helpers.deployPayoutManager(deployer);
+        await helpers.deployPayoutManager(deployer, merkleTreePathValidator.address);
 
     const mirroredToken: Contract = (process.env.MIRRORED_TOKEN) ?
         await ethers.getContractAt("MirroredToken", process.env.MIRRORED_TOKEN) :
@@ -202,6 +206,10 @@ async function main() {
     const investService: Contract = (process.env.INVEST_SERVICE) ?
         await ethers.getContractAt("InvestService", process.env.INVEST_SERVICE) :
         await helpers.deployInvestService(deployer);
+    
+    const payoutService: Contract = (process.env.PAYOUT_SERVICE) ?
+        await ethers.getContractAt("PayoutService", process.env.PAYOUT_SERVICE) :
+        await helpers.deployPayoutService(deployer);
 }
 
 main()
