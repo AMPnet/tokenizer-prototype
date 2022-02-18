@@ -154,11 +154,11 @@ describe("Payout service tests", function () {
         expect(payoutsAfterCreation.length).to.be.equal(3);
         
         const assetBasicPayout: PayoutForIssuerItem = 
-            payoutsAfterCreation.filter(item => item.asset == assetBasic.address)[0];
+            payoutsAfterCreation.find(item => item.asset == assetBasic.address);
         const assetTransferablePayout: PayoutForIssuerItem = 
-            payoutsAfterCreation.filter(item => item.asset == assetTransferable.address)[0];
+            payoutsAfterCreation.find(item => item.asset == assetTransferable.address);
         const assetSimplePayout: PayoutForIssuerItem = 
-            payoutsAfterCreation.filter(item => item.asset == assetSimple.address)[0];
+            payoutsAfterCreation.find(item => item.asset == assetSimple.address);
         
         assertPayoutForIssuerResponse(
             expectedAssetSimplePayoutId,
@@ -252,10 +252,6 @@ describe("Payout service tests", function () {
         expect(fetchedPayoutForIssuerItem.rewardAsset).to.be.equal(expectedPayoutInfo.rewardAsset);
         expect(fetchedPayoutForIssuerItem.totalRewardAmount).to.be.equal(expectedPayoutInfo.totalRewardAmount);
         expect(fetchedPayoutForIssuerItem.remainingRewardAmount).to.be.equal(expectedPayoutInfo.totalRewardAmount);
-    }
-
-    async function createPayouts() {
-
     }
 
 })
