@@ -3,7 +3,6 @@ import {ethers} from "hardhat";
 import {expect} from "chai";
 import * as helpers from "../../util/helpers";
 import {TestData} from "../TestData";
-import { BigNumber } from "ethers";
 
 describe("Asset transferable - full test", function () {
 
@@ -113,62 +112,6 @@ describe("Asset transferable - full test", function () {
       expect(await testData.asset.balanceOf(janeAddress)).to.be.equal(expectedJaneTokenBalance);
       expect(await testData.asset.balanceOf(aliceAddress)).to.be.equal(expectedAliceTokenBalance);
 
-      //// Owner creates snapshot distributor, updates info once
-      const snapshotDistributorMappedName = "snapshot-distributor";
-      const snapshotDistributorInfoHash = "snapshot-distributor-info-hash";
-      const updatedSnapshotDistributorInfoHash = "updated-snapshot-distributor-info-hash";
-      const snapshotDistributor = await helpers.createSnapshotDistributor(
-          issuerOwnerAddress,
-          snapshotDistributorMappedName,
-          testData.asset,
-          snapshotDistributorInfoHash,
-          testData.snapshotDistributorFactory,
-          testData.nameRegistry
-      );
-      await helpers.setInfo(testData.issuerOwner, snapshotDistributor, updatedSnapshotDistributorInfoHash);
-
-      //// Distribute $300k revenue to the token holders using the snapshot distributor from the step before
-      //// Add self (project owner / distributor) to the ignored addresses when calculating distribution amounts
-      const payoutDescription = "WindFarm Mexico Q3/2021 revenue";
-      const revenueAmount = 300000;
-      const revenueAmountWei: BigNumber = await helpers.parseStablecoin(revenueAmount, testData.stablecoin);
-      await testData.stablecoin.transfer(issuerOwnerAddress, revenueAmountWei);
-      const balanceBeforePayout: BigNumber = await testData.stablecoin.balanceOf(issuerOwnerAddress);
-      expect(balanceBeforePayout).to.be.equal(revenueAmountWei.add(totalInvestment).sub(totalFee));
-      await helpers.createPayout(
-          testData.issuerOwner,
-          snapshotDistributor,
-          testData.stablecoin,
-          revenueAmount,
-          payoutDescription,
-          [ issuerOwnerAddress ]
-      );
-      const afterSharePayout = await testData.stablecoin.balanceOf(issuerOwnerAddress);
-      expect(afterSharePayout).to.be.equal(balanceBeforePayout.sub(revenueAmountWei));
-
-      //// Alice claims her revenue share by calling previously created SnapshotDistributor contract and providing the payoutId param (0 in this case)
-      //// SnapshotDistributor address has to be known upfront (can be found for one asset by scanning SnapshotDistributorCreated event for asset address)
-      //// Alice will receive 1/2 of the total revenue (or $150k) since Alice holds 100k tokens and Jane holds 100k tokens
-      //// (Jane and Alice are the only token holders other the token owner)
-      const snapshotId = 1;
-      const aliceBalanceBeforePayout = await testData.stablecoin.balanceOf(aliceAddress);
-      expect(aliceBalanceBeforePayout).to.be.equal(0);
-      const aliceRevenueShareWei = await helpers.parseStablecoin("150000", testData.stablecoin);    // (1/2) of the total revenue payed out
-      await helpers.claimRevenue(testData.alice, snapshotDistributor, snapshotId);
-      const aliceBalanceAfterPayout = await testData.stablecoin.balanceOf(aliceAddress);
-      expect(aliceBalanceAfterPayout).to.be.equal(aliceRevenueShareWei);                            // alice claims (1/2) of total revenue
-
-      //// Jane claims her revenue share by calling previously created SnapshotDistributor contract and providing the snapshotId param (0 in this case)
-      //// SnapshotDistributors address has to be known upfront (can be found for one asset by scanning SnapshotDistributorCreated event for asset address)
-      //// Jane will receive 1/2 of the total revenue (or $150k) since Jane holds 100k tokens and Alice holds 100k tokens
-      //// (Jane and Alice are the only token holders other the token owner)
-      const janeBalanceBeforePayout = await testData.stablecoin.balanceOf(janeAddress);
-      expect(janeBalanceBeforePayout).to.be.equal(0);
-      const janeRevenueShareWei = await helpers.parseStablecoin("150000", testData.stablecoin);     // (1/2) of the total revenue payed out
-      await helpers.claimRevenue(testData.jane, snapshotDistributor, snapshotId);
-      const janeBalanceAfterPayout = await testData.stablecoin.balanceOf(janeAddress);
-      expect(janeBalanceAfterPayout).to.be.equal(janeRevenueShareWei);                              // jane claims (1/2) of total revenue
-
       //// Asset is registered on the APX Registry and the market price is updated
       //// Asset in the APX registry is mapped to itself. This is because MirroredToken is not required since the asset
       //// is already transferable. But we still need it in the registry to be able to get price feed from the market.
@@ -205,7 +148,7 @@ describe("Asset transferable - full test", function () {
       const aliceLiquidationShareWei = await helpers.parseStablecoin(aliceLiquidationShare, testData.stablecoin);
       await helpers.claimLiquidationShare(testData.alice, testData.asset);
       const aliceBalanceAfterLiquidationClaim = await testData.stablecoin.balanceOf(aliceAddress);
-      expect(aliceBalanceAfterLiquidationClaim).to.be.equal(aliceRevenueShareWei.add(aliceLiquidationShareWei));
+      expect(aliceBalanceAfterLiquidationClaim).to.be.equal(aliceLiquidationShareWei);
       expect(await testData.asset.balanceOf(aliceAddress)).to.be.equal(0);
 
       //// Jane claims liquidation share
@@ -213,16 +156,12 @@ describe("Asset transferable - full test", function () {
       const janeLiquidationShareWei = await helpers.parseStablecoin(janeLiquidationShare, testData.stablecoin);
       await helpers.claimLiquidationShare(testData.jane, testData.asset);
       const janeBalanceAfterLiquidationClaim = await testData.stablecoin.balanceOf(janeAddress);
-      expect(janeBalanceAfterLiquidationClaim).to.be.equal(janeRevenueShareWei.add(janeLiquidationShareWei));
+      expect(janeBalanceAfterLiquidationClaim).to.be.equal(janeLiquidationShareWei);
       expect(await testData.asset.balanceOf(janeAddress)).to.be.equal(0);
 
       //// Fetch crowdfunding campaign state
       const fetchedCampaignState = await helpers.getCrowdfundingCampaignState(testData.cfManager);
       console.log("fetched crowdfunding campaign state", fetchedCampaignState);
-
-      //// Fetch snapshot distributor state
-      const fetchedSnapshotDistributorState = await helpers.getSnapshotDistributorState(snapshotDistributor);
-      console.log("fetched snapshot distributor state", fetchedSnapshotDistributorState);
 
       //// Fetch all the Issuer instances ever deployed
       const fetchedIssuerInstances = await helpers.fetchIssuerInstances(testData.issuerFactory);
@@ -251,20 +190,6 @@ describe("Asset transferable - full test", function () {
           await helpers.fetchCrowdfundingInstancesForAsset(testData.cfManagerFactory, CAMPAIGN_TYPE, testData.asset);
       console.log("fetched campaign instances for asset", fetchedCampaignInstancesForAsset);
 
-     //// Fetch all the SnapshotDistributors ever deployed
-     const fetchedSnapshotDistributorInstances = await helpers.fetchSnapshotDistributorInstances(testData.snapshotDistributorFactory);
-     console.log("fetched SnapshotDistributor instances", fetchedSnapshotDistributorInstances);
-
-     //// Fetch all the SnapshotDistributors for one Issuer
-     const fetchedSnapshotDistributorInstancesForIssuer =
-         await helpers.fetchSnapshotDistributorInstancesForIssuer(testData.snapshotDistributorFactory, testData.issuer);
-     console.log("fetched SnapshotDistributors instances for issuer", fetchedSnapshotDistributorInstancesForIssuer);
-
-     //// Fetch all the SnapshotDistributors for one Asset
-     const fetchedSnapshotDistributorInstancesForAsset =
-         await helpers.fetchSnapshotDistributorInstancesForAsset(testData.snapshotDistributorFactory, testData.asset);
-     console.log("fetched SnapshotDistributors instances for asset", fetchedSnapshotDistributorInstancesForAsset);
-  
       //// Fetch Issuer instance by id
       const fetchedIssuerById = await helpers.fetchIssuerStateById(testData.issuerFactory, 0);
       console.log("fetched issuer for id=0", fetchedIssuerById);
@@ -277,20 +202,15 @@ describe("Asset transferable - full test", function () {
       const fetchedCampaignById = await helpers.fetchCampaignStateById(testData.cfManagerFactory, CAMPAIGN_TYPE, 0);
       console.log("fetched campaign for id=0", fetchedCampaignById);
 
-     //// Fetch SnapshotDistributor instance by id
-     const fetchedSnapshotDistributorById =
-         await helpers.fetchSnapshotDistributorStateById(testData.snapshotDistributorFactory, 0);
-     console.log("fetched SnapshotDistributors for id=0", fetchedSnapshotDistributorById);
-
       //// Fetch alice tx history
       const aliceTxHistory = await helpers.fetchTxHistory(
-          aliceAddress, testData.issuer, testData.cfManagerFactory, CAMPAIGN_TYPE, testData.assetFactory, ASSET_TYPE, testData.snapshotDistributorFactory
+          aliceAddress, testData.issuer, testData.cfManagerFactory, CAMPAIGN_TYPE, testData.assetFactory, ASSET_TYPE
       );
       console.log("Alice tx history", aliceTxHistory);
 
       //// Fetch jane tx history
       const janeTxHistory = await helpers.fetchTxHistory(
-          janeAddress, testData.issuer, testData.cfManagerFactory, CAMPAIGN_TYPE, testData.assetFactory, ASSET_TYPE, testData.snapshotDistributorFactory
+          janeAddress, testData.issuer, testData.cfManagerFactory, CAMPAIGN_TYPE, testData.assetFactory, ASSET_TYPE
       );
       console.log("Alice tx history", janeTxHistory);
 

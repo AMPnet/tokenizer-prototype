@@ -3,7 +3,15 @@ import { ethers } from "hardhat";
 import { Contract, Signer } from "ethers";
 import * as helpers from "../util/helpers";
 import * as deployerServiceUtil from "../util/deployer-service";
-import { CfManagerSoftcap, CfManagerSoftcapVesting, InvestService, Issuer, WalletApproverService } from "../typechain";
+import {
+    CfManagerSoftcap,
+    CfManagerSoftcapVesting,
+    InvestService,
+    Issuer,
+    PayoutService,
+    PayoutManager,
+    WalletApproverService
+} from "../typechain";
 
 export class TestData {
 
@@ -14,18 +22,20 @@ export class TestData {
     assetSimpleFactory: Contract;
     cfManagerFactory: Contract;
     cfManagerVestingFactory: Contract;
-    snapshotDistributorFactory: Contract;
 
     //////// SERVICES ////////
     walletApproverService: WalletApproverService;
     deployerService: Contract;
     queryService: Contract;
     investService: InvestService;
+    payoutService: PayoutService;
 
     ////////// APX //////////
     apxRegistry: Contract;
     nameRegistry: Contract;
     feeManager: Contract;
+    merkleTreePathValidator: Contract;
+    payoutManager: PayoutManager;
 
     //////// SIGNERS ////////
     deployer: Signer;
@@ -87,7 +97,6 @@ export class TestData {
         this.assetSimpleFactory = factories[3];
         this.cfManagerFactory = factories[4];
         this.cfManagerVestingFactory = factories[5];
-        this.snapshotDistributorFactory = factories[6];
 
         this.apxRegistry = await helpers.deployApxRegistry(
             this.deployer,
@@ -106,6 +115,11 @@ export class TestData {
             await this.treasury.getAddress()
         );
 
+        this.merkleTreePathValidator = await helpers.deployMerkleTreePathValidator(this.deployer);
+        this.payoutManager = (
+            await helpers.deployPayoutManager(this.deployer, this.merkleTreePathValidator.address)
+        ) as PayoutManager;
+
         const walletApproverAddress = await this.walletApprover.getAddress();
         const services = await helpers.deployServices(
             this.deployer,
@@ -117,6 +131,7 @@ export class TestData {
         this.deployerService = services[1];
         this.queryService = services[2];
         this.investService = services[3] as InvestService;
+        this.payoutService = services[5] as PayoutService;
     }
 
     async deployIssuerAssetTransferableCampaign() {

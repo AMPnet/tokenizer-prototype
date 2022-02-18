@@ -10,7 +10,7 @@ import "../managers/ACfManager.sol";
 import "./QueryService.sol";
 import "../shared/Structs.sol";
 
-interface IInvestService {
+interface IInvestService is IVersioned {
     struct PendingInvestmentRecord {
         address investor;
         address campaign;
@@ -33,6 +33,8 @@ interface IInvestService {
         bool readyToInvest;
     }
 
+    event InvestFor(address indexed investor, address indexed campaign, uint256 amount, bool successful);
+
     function getPendingFor(
         address _user,
         address _issuer,
@@ -48,9 +50,7 @@ interface IInvestService {
     function investFor(InvestmentRecord[] calldata _investments) external;
 }
 
-contract InvestService is IVersioned, IInvestService {
-
-    event InvestFor(address indexed investor, address indexed campaign, uint256 amount, bool successful);
+contract InvestService is IInvestService {
 
     string constant public FLAVOR = "InvestServiceV1";
     string constant public VERSION = "1.0.2";

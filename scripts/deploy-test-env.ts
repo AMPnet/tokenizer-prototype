@@ -35,6 +35,14 @@ async function main() {
             process.env.FEE_MANAGER_OWNER,
             process.env.FEE_MANAGER_TREASURY
         );
+    
+    const merkleTreePathValidator: Contract = (process.env.MERKLE_TREE_PATH_VALIDATOR) ?
+        await ethers.getContractAt("MerkleTreePathValidator", process.env.MERKLE_TREE_PATH_VALIDATOR) :
+        await helpers.deployMerkleTreePathValidator(deployer);
+
+    const payoutManager: Contract = (process.env.PAYOUT_MANAGER) ?
+        await ethers.getContractAt("PayoutManager", process.env.PAYOUT_MANAGER) :
+        await helpers.deployPayoutManager(deployer, merkleTreePathValidator.address);
 
     const mirroredToken: Contract = (process.env.MIRRORED_TOKEN) ?
         await ethers.getContractAt("MirroredToken", process.env.MIRRORED_TOKEN) :
@@ -87,13 +95,6 @@ async function main() {
             process.env.NAME_REGISTRY ? process.env.CF_MANAGER_VESTING_FACTORY_OLD : addressZero
         );
 
-    const snapshotDistributorFactory: Contract = (process.env.SNAPSHOT_DISTRIBUTOR_FACTORY) ?
-        await ethers.getContractAt("SnapshotDistributorFactory", process.env.SNAPSHOT_DISTRIBUTOR_FACTORY) :
-        await helpers.deploySnapshotDistributorFactory(
-            deployer,
-            process.env.NAME_REGISTRY ? process.env.SNAPSHOT_DISTRIBUTOR_FACTORY_OLD : addressZero
-        );
-
     const nameRegistry: Contract = (process.env.NAME_REGISTRY) ?
         await ethers.getContractAt("NameRegistry", process.env.NAME_REGISTRY) :
         await helpers.deployNameRegistry(deployer, process.env.NAME_REGISTRY_OWNER, [
@@ -102,8 +103,7 @@ async function main() {
             assetTransferableFactory.address,
             assetSimpleFactory.address,
             cfManagerFactory.address,
-            cfManagerVestingFactory.address,
-            snapshotDistributorFactory.address
+            cfManagerVestingFactory.address
         ]);
 
     if (
@@ -171,17 +171,6 @@ async function main() {
             nameRegistry.address
         )
     }
-
-    if (
-        process.env.NAME_REGISTRY_OLD && !process.env.NAME_REGISTRY && 
-        process.env.SNAPSHOT_DISTRIBUTOR_FACTORY_OLD && process.env.SNAPSHOT_DISTRIBUTOR_FACTORY_OLD != addressZero
-    ) { 
-        await snapshotDistributorFactory.addInstancesForNewRegistry(
-            process.env.SNAPSHOT_DISTRIBUTOR_FACTORY_OLD,
-            process.env.NAME_REGISTRY_OLD,
-            nameRegistry.address
-        )
-    }
     
     const walletApprovers: string[] = (process.env.WALLET_APPROVER_ADDRESSES) ? 
         process.env.WALLET_APPROVER_ADDRESSES.split(",") : [ ]; 
@@ -206,8 +195,8 @@ async function main() {
             process.env.FAUCET_SERVICE_BALANCE_THRESHOLD_FOR_REWARD
         );
 
-    const deployerService: Contract = (process.env.DEPLOYER) ?
-        await ethers.getContractAt("DeployerService", process.env.DEPLOYER) :
+    const deployerService: Contract = (process.env.DEPLOYER_SERVICE) ?
+        await ethers.getContractAt("DeployerService", process.env.DEPLOYER_SERVICE) :
         await helpers.deployDeployerService(deployer);
 
     const queryService: Contract = (process.env.QUERY_SERVICE) ?
@@ -217,6 +206,10 @@ async function main() {
     const investService: Contract = (process.env.INVEST_SERVICE) ?
         await ethers.getContractAt("InvestService", process.env.INVEST_SERVICE) :
         await helpers.deployInvestService(deployer);
+    
+    const payoutService: Contract = (process.env.PAYOUT_SERVICE) ?
+        await ethers.getContractAt("PayoutService", process.env.PAYOUT_SERVICE) :
+        await helpers.deployPayoutService(deployer);
 }
 
 main()

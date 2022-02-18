@@ -6,14 +6,122 @@ import "../shared/ICampaignFactoryCommon.sol";
 import "../shared/IAssetFactoryCommon.sol";
 import "../shared/IIssuerFactoryCommon.sol";
 import "../shared/ICampaignCommon.sol";
-import "../shared/ISnapshotDistributorCommon.sol";
 import "../shared/IAssetCommon.sol";
 import "../shared/IIssuerCommon.sol";
 import "../shared/IVersioned.sol";
 import "../registry/INameRegistry.sol";
 import "../tokens/erc20/IToken.sol";
 
-contract QueryService is IVersioned {
+interface IQueryService is IVersioned {
+    function getIssuers(
+        address[] memory factories,
+        INameRegistry nameRegistry
+    ) external view returns (Structs.IssuerCommonStateWithName[] memory);
+
+    function getIssuerForName(
+        string memory issuerName,
+        INameRegistry nameRegistry
+    ) external view returns (Structs.IssuerCommonStateWithName memory);
+
+    function getIssuer(
+        address issuer,
+        INameRegistry nameRegistry
+    ) external view returns (Structs.IssuerCommonStateWithName memory);
+
+    function getAssetForName(
+        string memory assetName,
+        INameRegistry nameRegistry
+    ) external view returns (Structs.AssetCommonStateWithName memory);
+
+    function getAsset(
+        address asset,
+        INameRegistry nameRegistry
+    ) external view returns (Structs.AssetCommonStateWithName memory);
+
+    function getCampaignForName(
+        string memory campaignName,
+        INameRegistry nameRegistry
+    ) external view returns (Structs.CampaignCommonStateWithName memory);
+
+    function getCampaign(
+        address campaign,
+        INameRegistry nameRegistry
+    ) external view returns (Structs.CampaignCommonStateWithName memory);
+
+    function getCampaignsForIssuerName(
+        string memory issuerName,
+        address[] memory factories,
+        INameRegistry nameRegistry
+    ) external view returns (Structs.CampaignCommonStateWithName[] memory);
+
+    function getCampaignsForIssuer(
+        address issuer,
+        address[] memory factories,
+        INameRegistry nameRegistry
+    ) external view returns (Structs.CampaignCommonStateWithName[] memory);
+
+    function getCampaignForIssuerNameInvestor(
+        string memory issuerName,
+        address investor,
+        address[] memory factories,
+        INameRegistry nameRegistry
+    ) external view returns (Structs.CampaignCommonStateWithNameAndInvestment[] memory);
+
+    function getCampaignsForIssuerInvestor(
+        address issuer,
+        address investor,
+        address[] memory factories,
+        INameRegistry nameRegistry
+    ) external view returns (Structs.CampaignCommonStateWithNameAndInvestment[] memory);
+
+    function getCampaignsForAssetName(
+        string memory assetName,
+        address[] memory factories,
+        INameRegistry nameRegistry
+    ) external view returns (Structs.CampaignCommonStateWithName[] memory);
+
+    function getCampaignsForAsset(
+        address asset,
+        address[] memory factories,
+        INameRegistry nameRegistry
+    ) external view returns (Structs.CampaignCommonStateWithName[] memory);
+
+    function getCampaignsForAssetNameInvestor(
+        string memory assetName,
+        address investor,
+        address[] memory factories,
+        INameRegistry nameRegistry
+    ) external view returns (Structs.CampaignCommonStateWithNameAndInvestment[] memory);
+    
+    function getCampaignsForAssetInvestor(
+        address asset,
+        address investor,
+        address[] memory factories,
+        INameRegistry nameRegistry
+    ) external view returns (Structs.CampaignCommonStateWithNameAndInvestment[] memory);
+
+    function getAssetsForIssuerName(
+        string memory issuerName,
+        address[] memory factories,
+        INameRegistry nameRegistry
+    ) external view returns (Structs.AssetCommonStateWithName[] memory);
+
+    function getAssetsForIssuer(
+        address issuer,
+        address[] memory factories,
+        INameRegistry nameRegistry
+    ) external view returns (Structs.AssetCommonStateWithName[] memory);
+    
+    function getAssetBalancesForIssuer(
+        address issuer,
+        address investor,
+        address[] memory assetFactories,
+        address[] memory campaignFactories
+    ) external view returns (Structs.AssetBalance[] memory);
+
+}
+
+contract QueryService is IQueryService {
 
     string constant public FLAVOR = "QueryServiceV1";
     string constant public VERSION = "1.0.29";
@@ -24,7 +132,7 @@ contract QueryService is IVersioned {
     function getIssuers(
         address[] memory factories,
         INameRegistry nameRegistry
-    ) public view returns (Structs.IssuerCommonStateWithName[] memory) {
+    ) public view override returns (Structs.IssuerCommonStateWithName[] memory) {
         if (factories.length == 0) { return new Structs.IssuerCommonStateWithName[](0); }
         
         uint256 totalItems = 0;
@@ -57,7 +165,7 @@ contract QueryService is IVersioned {
     function getIssuerForName(
         string memory issuerName,
         INameRegistry nameRegistry
-    ) public view returns (Structs.IssuerCommonStateWithName memory) {
+    ) public view override returns (Structs.IssuerCommonStateWithName memory) {
         address issuer = nameRegistry.getIssuer(issuerName);
         return getIssuer(issuer, nameRegistry);
     }
@@ -65,7 +173,7 @@ contract QueryService is IVersioned {
     function getIssuer(
         address issuer,
         INameRegistry nameRegistry
-    ) public view returns (Structs.IssuerCommonStateWithName memory) {
+    ) public view override returns (Structs.IssuerCommonStateWithName memory) {
         return Structs.IssuerCommonStateWithName(
             IIssuerCommon(issuer).commonState(),
             nameRegistry.getIssuerName(issuer)
@@ -75,7 +183,7 @@ contract QueryService is IVersioned {
     function getAssetForName(
         string memory assetName,
         INameRegistry nameRegistry
-    ) public view returns (Structs.AssetCommonStateWithName memory) {
+    ) public view override returns (Structs.AssetCommonStateWithName memory) {
         address asset = nameRegistry.getAsset(assetName);
         return getAsset(asset, nameRegistry);
     }
@@ -83,7 +191,7 @@ contract QueryService is IVersioned {
     function getAsset(
         address asset,
         INameRegistry nameRegistry
-    ) public view returns (Structs.AssetCommonStateWithName memory) {
+    ) public view override returns (Structs.AssetCommonStateWithName memory) {
         return Structs.AssetCommonStateWithName(
             IAssetCommon(asset).commonState(),
             nameRegistry.getAssetName(asset)
@@ -93,7 +201,7 @@ contract QueryService is IVersioned {
     function getCampaignForName(
         string memory campaignName,
         INameRegistry nameRegistry
-    ) public view returns (Structs.CampaignCommonStateWithName memory) {
+    ) public view override returns (Structs.CampaignCommonStateWithName memory) {
         address campaign = nameRegistry.getCampaign(campaignName);
         return getCampaign(campaign, nameRegistry);
     }
@@ -101,28 +209,10 @@ contract QueryService is IVersioned {
     function getCampaign(
         address campaign,
         INameRegistry nameRegistry
-    ) public view returns (Structs.CampaignCommonStateWithName memory) {
+    ) public view override returns (Structs.CampaignCommonStateWithName memory) {
         return Structs.CampaignCommonStateWithName(
             ICampaignCommon(campaign).commonState(),
             nameRegistry.getCampaignName(campaign)
-        );
-    }
-
-    function getSnapshotDistributorForName(
-        string memory distributorName,
-        INameRegistry nameRegistry
-    ) public view returns (Structs.SnapshotDistributorCommonStateWithName memory) {
-        address distributor = nameRegistry.getSnapshotDistributor(distributorName);
-        return getSnapshotDistributor(distributor, nameRegistry);
-    }
-
-    function getSnapshotDistributor(
-        address distributor,
-        INameRegistry nameRegistry
-    ) public view returns (Structs.SnapshotDistributorCommonStateWithName memory) {
-        return Structs.SnapshotDistributorCommonStateWithName(
-            ISnapshotDistributorCommon(distributor).commonState(),
-            nameRegistry.getSnapshotDistributorName(distributor)
         );
     }
 
@@ -130,7 +220,7 @@ contract QueryService is IVersioned {
         string memory issuerName,
         address[] memory factories,
         INameRegistry nameRegistry
-    ) public view returns (Structs.CampaignCommonStateWithName[] memory) {
+    ) public view override returns (Structs.CampaignCommonStateWithName[] memory) {
         address issuer = nameRegistry.getIssuer(issuerName);
         return getCampaignsForIssuer(issuer, factories, nameRegistry);
     }
@@ -139,7 +229,7 @@ contract QueryService is IVersioned {
         address issuer,
         address[] memory factories,
         INameRegistry nameRegistry
-    ) public view returns (Structs.CampaignCommonStateWithName[] memory) {
+    ) public view override returns (Structs.CampaignCommonStateWithName[] memory) {
         if (factories.length == 0) { return new Structs.CampaignCommonStateWithName[](0); }
         
         uint256 totalItems = 0;
@@ -174,7 +264,7 @@ contract QueryService is IVersioned {
         address investor,
         address[] memory factories,
         INameRegistry nameRegistry
-    ) public view returns (Structs.CampaignCommonStateWithNameAndInvestment[] memory) {
+    ) public view override returns (Structs.CampaignCommonStateWithNameAndInvestment[] memory) {
         address issuer = nameRegistry.getIssuer(issuerName);
         return getCampaignsForIssuerInvestor(issuer, investor, factories, nameRegistry);
     }
@@ -184,7 +274,7 @@ contract QueryService is IVersioned {
         address investor,
         address[] memory factories,
         INameRegistry nameRegistry
-    ) public view returns (Structs.CampaignCommonStateWithNameAndInvestment[] memory) {
+    ) public view override returns (Structs.CampaignCommonStateWithNameAndInvestment[] memory) {
         if (factories.length == 0) { return new Structs.CampaignCommonStateWithNameAndInvestment[](0); }
         
         uint256 totalItems = 0;
@@ -220,7 +310,7 @@ contract QueryService is IVersioned {
         string memory assetName,
         address[] memory factories,
         INameRegistry nameRegistry
-    ) public view returns (Structs.CampaignCommonStateWithName[] memory) {
+    ) public view override returns (Structs.CampaignCommonStateWithName[] memory) {
         address asset = nameRegistry.getAsset(assetName);
         return getCampaignsForAsset(asset, factories, nameRegistry);
     }
@@ -229,7 +319,7 @@ contract QueryService is IVersioned {
         address asset,
         address[] memory factories,
         INameRegistry nameRegistry
-    ) public view returns (Structs.CampaignCommonStateWithName[] memory) {
+    ) public view override returns (Structs.CampaignCommonStateWithName[] memory) {
         if (factories.length == 0) { return new Structs.CampaignCommonStateWithName[](0); }
         
         uint256 totalItems = 0;
@@ -264,7 +354,7 @@ contract QueryService is IVersioned {
         address investor,
         address[] memory factories,
         INameRegistry nameRegistry
-    ) public view returns (Structs.CampaignCommonStateWithNameAndInvestment[] memory) {
+    ) public view override returns (Structs.CampaignCommonStateWithNameAndInvestment[] memory) {
         address asset = nameRegistry.getAsset(assetName);
         return getCampaignsForAssetInvestor(asset, investor, factories, nameRegistry);
     }
@@ -274,7 +364,7 @@ contract QueryService is IVersioned {
         address investor,
         address[] memory factories,
         INameRegistry nameRegistry
-    ) public view returns (Structs.CampaignCommonStateWithNameAndInvestment[] memory) {
+    ) public view override returns (Structs.CampaignCommonStateWithNameAndInvestment[] memory) {
         if (factories.length == 0) { return new Structs.CampaignCommonStateWithNameAndInvestment[](0); }
         
         uint256 totalItems = 0;
@@ -310,7 +400,7 @@ contract QueryService is IVersioned {
         string memory issuerName,
         address[] memory factories,
         INameRegistry nameRegistry
-    ) public view returns (Structs.AssetCommonStateWithName[] memory) {
+    ) public view override returns (Structs.AssetCommonStateWithName[] memory) {
         address issuer = nameRegistry.getIssuer(issuerName);
         return getAssetsForIssuer(issuer, factories, nameRegistry);
     }
@@ -320,7 +410,7 @@ contract QueryService is IVersioned {
         address issuer,
         address[] memory factories,
         INameRegistry nameRegistry
-    ) public view returns (Structs.AssetCommonStateWithName[] memory) {
+    ) public view override returns (Structs.AssetCommonStateWithName[] memory) {
         if (factories.length == 0) { return new Structs.AssetCommonStateWithName[](0); }
         
         uint256 totalItems = 0;
@@ -355,7 +445,7 @@ contract QueryService is IVersioned {
         address investor,
         address[] memory assetFactories,
         address[] memory campaignFactories
-    ) public view returns (Structs.AssetBalance[] memory) {
+    ) public view override returns (Structs.AssetBalance[] memory) {
         // CALCULATE RESPONSE SIZE
         uint256 responseItemsCount = countAssets(issuer, investor, assetFactories);
         if (responseItemsCount == 0) { return new Structs.AssetBalance[](0); }

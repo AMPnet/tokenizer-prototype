@@ -32,9 +32,6 @@ describe("Asset transferable - test function conditions", function () {
             testData.asset.connect(testData.assetManager).liquidate()
         ).to.be.revertedWith(modifierMessage);
         await expect(
-            testData.asset.connect(testData.assetManager).snapshot()
-        ).to.be.revertedWith(modifierMessage);
-        await expect(
             testData.asset.connect(testData.assetManager).migrateApxRegistry(testData.cfManager.address)
         ).to.be.revertedWith(modifierMessage);
     })
@@ -117,28 +114,6 @@ describe("Asset transferable - test function conditions", function () {
         await testData.apxRegistry.connect(testData.deployer).migrate(newApxRegistry.address, testData.asset.address)
         const newApxRegistryAddress = (await testData.asset.connect(testData.issuerOwner).getState()).apxRegistry
         expect(newApxRegistryAddress).to.be.equal(newApxRegistry.address)
-    })
-
-    it.skip('should fail to finalize not approved campaign', async function () {
-        // use smodit to mock owner
-        await expect(
-            testData.asset.connect(testData.alice).finalizeSale()
-        ).to.be.revertedWith("AssetTransferable: Campaign not approved.")
-    })
-
-    it.skip('should fail to finalize already finalized campaign', async function () {
-        // don't know how to test finalize sale
-        await testData.asset.connect(testData.issuerOwner).finalizeSale()
-        await expect(
-            testData.asset.connect(testData.issuerOwner).finalizeSale()
-        ).to.be.revertedWith("AssetTransferable: Campaign not finalized")
-    })
-
-    it.skip('should fail to claim zero liquidation funds', async function () {
-        // this case is not possible, not sure how to assert that it cannot happen
-        await expect(
-            testData.asset.connect(testData.alice).claimLiquidationShare(await testData.alice.getAddress())
-        ).to.be.revertedWith("AssetTransferable: no liquidation funds to claim")
     })
 
 })

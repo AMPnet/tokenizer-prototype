@@ -147,13 +147,13 @@ describe("Asset simple - full test with vesting schedule", function () {
 
       //// Fetch alice tx history
       const aliceTxHistory = await helpers.fetchTxHistory(
-          aliceAddress, testData.issuer, testData.cfManagerVestingFactory, CAMPAIGN_TYPE, testData.assetSimpleFactory, ASSET_TYPE, testData.snapshotDistributorFactory
+          aliceAddress, testData.issuer, testData.cfManagerVestingFactory, CAMPAIGN_TYPE, testData.assetSimpleFactory, ASSET_TYPE
       );
       console.log("Alice tx history", aliceTxHistory);
 
       //// Fetch jane tx history
       const janeTxHistory = await helpers.fetchTxHistory(
-          janeAddress, testData.issuer, testData.cfManagerVestingFactory, CAMPAIGN_TYPE, testData.assetSimpleFactory, ASSET_TYPE, testData.snapshotDistributorFactory
+          janeAddress, testData.issuer, testData.cfManagerVestingFactory, CAMPAIGN_TYPE, testData.assetSimpleFactory, ASSET_TYPE
       );
       console.log("Alice tx history", janeTxHistory);
 

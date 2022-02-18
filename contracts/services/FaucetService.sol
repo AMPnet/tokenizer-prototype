@@ -2,9 +2,26 @@
 pragma solidity ^0.8.0;
 
 import "../shared/IVersioned.sol";
-import "./IFaucetService.sol";
 
-contract FaucetService is IVersioned, IFaucetService {
+interface IFaucetService is IVersioned {
+    event UpdateCallerStatus(address indexed caller, address indexed approver, bool approved, uint256 timestamp);
+    event WalletFunded(address indexed caller, address indexed wallet, uint256 reward);
+    event UpdateRewardAmount(address indexed caller, uint256 oldAmount, uint256 newAmount, uint256 timestamp);
+    event UpdateBalanceThresholdForReward(address indexed caller, uint256 oldThreshold, uint256 newThreshold, uint256 timestamp);
+    event OwnershipChanged(address indexed oldOwner, address indexed newOwner, uint256 timestamp);
+    event Received(address indexed sender, uint256 amount, uint256 timestamp);
+    event Released(address indexed receiver, uint256 amount, uint256 timestamp);
+
+    function faucet(address payable[] calldata _wallets) external;
+    function updateRewardAmount(uint256 _newRewardAmount) external;
+    function updateBalanceThresholdForReward(uint256 _newBalanceThresholdForReward) external;
+    function updateCallerStatus(address _caller, bool _approved) external;
+    function transferOwnership(address _newOwner) external;
+    receive() external payable;
+    function release() external;
+}
+
+contract FaucetService is IFaucetService {
 
     string constant public FLAVOR = "FaucetServiceV1";
     string constant public VERSION = "1.0.26";
@@ -19,17 +36,6 @@ contract FaucetService is IVersioned, IFaucetService {
     mapping (address => bool) public allowedCallers;
     uint256 public rewardPerApprove;
     uint256 public balanceThresholdForReward;
-
-    //------------------------
-    //  EVENTS
-    //------------------------
-    event UpdateCallerStatus(address indexed caller, address indexed approver, bool approved, uint256 timestamp);
-    event WalletFunded(address indexed caller, address indexed wallet, uint256 reward);
-    event UpdateRewardAmount(address indexed caller, uint256 oldAmount, uint256 newAmount, uint256 timestamp);
-    event UpdateBalanceThresholdForReward(address indexed caller, uint256 oldThreshold, uint256 newThreshold, uint256 timestamp);
-    event OwnershipChanged(address indexed oldOwner, address indexed newOwner, uint256 timestamp);
-    event Received(address indexed sender, uint256 amount, uint256 timestamp);
-    event Released(address indexed receiver, uint256 amount, uint256 timestamp);
 
     //------------------------
     //  CONSTRUCTOR
