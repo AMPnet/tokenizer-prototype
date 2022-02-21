@@ -25,7 +25,7 @@ describe("Asset transferable - full test", function () {
       const CAMPAIGN_TYPE = "CfManagerSoftcap";
       const issuerOwnerAddress = await testData.issuerOwner.getAddress();
       const treasuryAddress = await testData.treasury.getAddress();
-      await testData.deployIssuerAssetTransferableCampaign()
+      await testData.deployIssuerAssetTransferableCampaign({campaignWhitelistRequired: true});
 
       //// Frank buys $100k USDC
       const frankAddress = await testData.frank.getAddress(); 

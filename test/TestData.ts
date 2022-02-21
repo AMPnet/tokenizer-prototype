@@ -10,7 +10,8 @@ import {
     Issuer,
     PayoutService,
     PayoutManager,
-    WalletApproverService
+    WalletApproverService,
+    FaucetService
 } from "../typechain";
 
 export class TestData {
@@ -28,6 +29,7 @@ export class TestData {
     deployerService: Contract;
     queryService: Contract;
     investService: InvestService;
+    faucetService: FaucetService;
     payoutService: PayoutService;
 
     ////////// APX //////////
@@ -72,6 +74,7 @@ export class TestData {
     campaignWhitelistRequired = true;       // only whitelisted wallets can invest
     campaignAnsName = "test-campaign";
     campaignInfoHash = "campaign-info-ipfs-hash";
+    faucetReward = "0.001"
 
     async deploy() {
         const accounts: Signer[] = await ethers.getSigners();
@@ -124,17 +127,18 @@ export class TestData {
         const services = await helpers.deployServices(
             this.deployer,
             walletApproverAddress,
-            "0.001",
+            this.faucetReward,
             "0"
         );
         this.walletApproverService = services[0] as WalletApproverService;
         this.deployerService = services[1];
         this.queryService = services[2];
         this.investService = services[3] as InvestService;
+        this.faucetService = services[4] as FaucetService;
         this.payoutService = services[5] as PayoutService;
     }
 
-    async deployIssuerAssetTransferableCampaign() {
+    async deployIssuerAssetTransferableCampaign(args: {campaignWhitelistRequired: boolean}) {
         //// Set the config for Issuer, Asset and Crowdfunding Campaign
         const issuerOwnerAddress = await this.issuerOwner.getAddress();
 
@@ -157,7 +161,7 @@ export class TestData {
             this.campaignMinInvestment,
             this.campaignMaxInvestment,
             this.maxTokensToBeSold,
-            this.campaignWhitelistRequired,
+            args.campaignWhitelistRequired,
             this.campaignInfoHash,
             this.apxRegistry.address,
             this.nameRegistry.address,

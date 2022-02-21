@@ -12,7 +12,7 @@ describe("Asset transferable - test function conditions", function () {
 
     beforeEach(async function () {
         await testData.deploy()
-        await testData.deployIssuerAssetTransferableCampaign()
+        await testData.deployIssuerAssetTransferableCampaign({campaignWhitelistRequired: true})
     });
 
     it(`should verify notLiquidated modifier`, async function () {
