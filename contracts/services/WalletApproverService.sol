@@ -42,7 +42,7 @@ interface IWalletApproverService is IVersioned {
 contract WalletApproverService is IWalletApproverService {
 
     string constant public FLAVOR = "WalletApproverServiceV1";
-    string constant public VERSION = "1.0.26";
+    string constant public VERSION = "1.0.30";
 
     function flavor() external pure override returns (string memory) { return FLAVOR; }
     function version() external pure override returns (string memory) { return VERSION; } 

@@ -124,7 +124,7 @@ interface IQueryService is IVersioned {
 contract QueryService is IQueryService {
 
     string constant public FLAVOR = "QueryServiceV1";
-    string constant public VERSION = "1.0.29";
+    string constant public VERSION = "1.0.30";
 
     function flavor() external pure override returns (string memory) { return FLAVOR; }
     function version() external pure override returns (string memory) { return VERSION; } 

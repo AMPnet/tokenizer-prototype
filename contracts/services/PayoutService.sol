@@ -31,7 +31,7 @@ interface IPayoutService is IVersioned {
 contract PayoutService is IPayoutService {
     
     string constant public FLAVOR = "PayoutServiceV1";
-    string constant public VERSION = "1.0.29";
+    string constant public VERSION = "1.0.30";
 
     function flavor() external pure override returns (string memory) { return FLAVOR; }
     function version() external pure override returns (string memory) { return VERSION; }

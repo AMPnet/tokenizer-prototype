@@ -195,7 +195,7 @@ interface IDeployerService is IVersioned {
 contract DeployerService is IDeployerService {
 
     string constant public FLAVOR = "DeployerServiceV1";
-    string constant public VERSION = "1.0.21";
+    string constant public VERSION = "1.0.30";
 
     function flavor() external pure override returns (string memory) { return FLAVOR; }
     function version() external pure override returns (string memory) { return VERSION; } 
