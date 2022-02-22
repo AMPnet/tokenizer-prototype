@@ -11,7 +11,7 @@ contract MirroredToken is IMirroredToken, ERC20 {
     using SafeERC20 for IERC20;
 
     string constant public FLAVOR = "MirroredTokenV1";
-    string constant public VERSION = "1.0.15";
+    string constant public VERSION = "1.0.30";
 
     //------------------------
     //  STATE

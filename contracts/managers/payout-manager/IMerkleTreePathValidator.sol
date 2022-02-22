@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-interface IMerkleTreePathValidator {
+import "../../shared/IVersioned.sol";
+
+interface IMerkleTreePathValidator is IVersioned {
 
     function containsNode(
         bytes32 merkleTreeRoot,

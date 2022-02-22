@@ -53,7 +53,7 @@ interface IInvestService is IVersioned {
 contract InvestService is IInvestService {
 
     string constant public FLAVOR = "InvestServiceV1";
-    string constant public VERSION = "1.0.2";
+    string constant public VERSION = "1.0.30";
 
     function flavor() external pure override returns (string memory) { return FLAVOR; }
 

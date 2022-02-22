@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 contract PayoutManager is IPayoutManager {
 
     string constant public FLAVOR = "PayoutManagerV1";
-    string constant public VERSION = "1.0.29";
+    string constant public VERSION = "1.0.30";
 
     //------------------------
     //  STATE
