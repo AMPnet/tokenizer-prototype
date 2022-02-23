@@ -43,7 +43,7 @@ export const Mumbai: TokenizerConfig = {
     payoutManager: '0x06608Ae976424dbF97E5130E26637AFE96fD8C07',
     merkleTreePathValidator: '0x9982bb7bD0160B869D8E6Ca7559e53B01D2165eb',
     payoutService: '0x1b2F2e06feB844693cF27d181690f3212AE6c8d6',
-    queryService: '0x5fa5b82d80bDaDb336536a9cEca6BeAc7D8258aa',
+    queryService: '0x743BFd8395b13157A3cE6b1D8c1aC172a20B4d4d',
     deployerService: '0x7EBb7d279Ff45Ba30698CC090a53c0EC05F89f81',
     emptyFactory: '0x3BE13506aF685EB2d2F6321700053f6395146522'
 }
@@ -93,7 +93,7 @@ export const Matic: TokenizerConfig = {
     payoutManager: '0x785e44E6bE12068216f513a460c490DAc9631aC5',
     merkleTreePathValidator: '0x743BFd8395b13157A3cE6b1D8c1aC172a20B4d4d',
     payoutService: '0x9982bb7bD0160B869D8E6Ca7559e53B01D2165eb',
-    queryService: '0xd02FE6ceD6Fa51185211F17ade09D173871F7767',
+    queryService: '0x05633b916e9ca43366f51fe7506126ceae0dc5d9',
     deployerService: '0xf47CF4f0E0cb0097d7C0955068bF98733586A87e',
     emptyFactory: '0xca07985612E7BD509C4a2BDc04e27D851cf50a92'
 }
