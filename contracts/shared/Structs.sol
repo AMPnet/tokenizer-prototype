@@ -32,6 +32,14 @@ contract Structs {
         address issuer;
     }
 
+    struct ERC20AssetCommonState {
+        address contractAddress;
+        uint256 decimals;
+        string name;
+        string symbol;
+        AssetCommonState commonState;
+    }
+
     struct AssetCommonStateWithName {
         AssetCommonState asset;
         string mappedName;

@@ -111,6 +111,12 @@ interface IQueryService is IVersioned {
         address[] memory factories,
         INameRegistry nameRegistry
     ) external view returns (Structs.AssetCommonStateWithName[] memory);
+
+    function getERC20AssetsForIssuer(
+        address issuer,
+        address[] memory assetFactories,
+        address[] memory campaignFactories
+    ) external view returns (Structs.ERC20AssetCommonState[] memory);
     
     function getAssetBalancesForIssuer(
         address issuer,
@@ -440,6 +446,37 @@ contract QueryService is IQueryService {
         return response; 
     }
 
+    function getERC20AssetsForIssuer(
+        address issuer,
+        address[] memory assetFactories,
+        address[] memory campaignFactories
+    ) public view override returns (Structs.ERC20AssetCommonState[] memory) {
+        // CALCULATE RESPONSE SIZE
+        uint256 responseItemsCount = countAssetsForIssuer(issuer, assetFactories);
+        if (responseItemsCount == 0) { return new Structs.ERC20AssetCommonState[](0); }
+
+        // BUILD RESPONSE
+        Structs.ERC20AssetCommonState[] memory response = new Structs.ERC20AssetCommonState[](responseItemsCount);
+        uint256 nextResponseItemIndex = 0;
+        for (uint256 i = 0; i < assetFactories.length; i++) {
+            address[] memory instances = IAssetFactoryCommon(assetFactories[i]).getInstancesForIssuer(issuer);
+            for (uint256 j = 0; j < instances.length; j++) {
+                IToken token = IToken(instances[j]);
+                response[nextResponseItemIndex] = Structs.ERC20AssetCommonState(
+                        instances[j],
+                        token.decimals(),
+                        token.name(),
+                        token.symbol(),
+                        IAssetCommon(instances[j]).commonState()
+                );
+                nextResponseItemIndex++;
+            }
+        }
+
+        // RETURN RESPONSE
+        return response;
+    }
+
     function getAssetBalancesForIssuer(
         address issuer,
         address investor,
@@ -447,7 +484,7 @@ contract QueryService is IQueryService {
         address[] memory campaignFactories
     ) public view override returns (Structs.AssetBalance[] memory) {
         // CALCULATE RESPONSE SIZE
-        uint256 responseItemsCount = countAssets(issuer, investor, assetFactories);
+        uint256 responseItemsCount = countAssetsForIssuerInvestor(issuer, investor, assetFactories);
         if (responseItemsCount == 0) { return new Structs.AssetBalance[](0); }
 
         // BUILD RESPONSE
@@ -489,7 +526,7 @@ contract QueryService is IQueryService {
             / (10 ** IToken(address(token)).decimals());
     }
 
-    function countAssets(
+    function countAssetsForIssuerInvestor(
         address issuer,
         address investor,
         address[] memory assetFactories
@@ -505,6 +542,21 @@ contract QueryService is IQueryService {
                     responseItemsCount++;
                 }
             }
+        }
+
+        return responseItemsCount;
+    }
+
+    function countAssetsForIssuer(
+        address issuer,
+        address[] memory assetFactories
+    ) public view returns (uint256) {
+        if (assetFactories.length == 0) { return 0; }
+
+        // COUNT TOTAL RESPONSE SIZE
+        uint256 responseItemsCount = 0;
+        for (uint256 i = 0; i < assetFactories.length; i++) {
+            responseItemsCount += IAssetFactoryCommon(assetFactories[i]).getInstancesForIssuer(issuer).length;
         }
 
         return responseItemsCount;
