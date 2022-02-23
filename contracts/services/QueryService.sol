@@ -112,7 +112,7 @@ interface IQueryService is IVersioned {
         INameRegistry nameRegistry
     ) external view returns (Structs.AssetCommonStateWithName[] memory);
 
-    function getAssetStatesForIssuer(
+    function getERC20AssetsForIssuer(
         address issuer,
         address[] memory assetFactories,
         address[] memory campaignFactories
@@ -446,7 +446,7 @@ contract QueryService is IQueryService {
         return response; 
     }
 
-    function getAssetStatesForIssuer(
+    function getERC20AssetsForIssuer(
         address issuer,
         address[] memory assetFactories,
         address[] memory campaignFactories

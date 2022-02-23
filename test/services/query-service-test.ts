@@ -72,10 +72,10 @@ describe("Query service tests", function () {
     });
 
 
-    it(`will return the correct response for getAssetStatesForIssuer`, async function () {
+    it(`will return the correct response for getERC20AssetsForIssuer`, async function () {
         const issuerOwnerAddress = await testData.issuerOwner.getAddress();
 
-        const emptyIssuerResponse = await testData.queryService.getAssetStatesForIssuer(
+        const emptyIssuerResponse = await testData.queryService.getERC20AssetsForIssuer(
             testData.issuer.address,
             [
                 testData.assetFactory.address,
@@ -85,9 +85,9 @@ describe("Query service tests", function () {
         );
         expect(emptyIssuerResponse.length).to.be.equal(0);
 
-        const assetBasicName = "Test Asset";
-        const assetBasicSymbol = "TA";
-        const assetBasicInfoHash = "info-hash";
+        const assetBasicName = "Test Asset Basic";
+        const assetBasicSymbol = "TAB";
+        const assetBasicInfoHash = "info-hash-tab";
         const assetBasicTotalSupply = 10000000;
         const assetBasicTotalSupplyWei = await ethers.utils.parseEther(assetBasicTotalSupply.toString());
         const assetBasic = await helpers.createAsset(
@@ -104,10 +104,9 @@ describe("Query service tests", function () {
             testData.apxRegistry
         );
 
-
-        const assetTransferableName = "Test Asset";
-        const assetTransferableSymbol = "TA";
-        const assetTransferableInfoHash = "info-hash";
+        const assetTransferableName = "Test Asset Transferable";
+        const assetTransferableSymbol = "TAT";
+        const assetTransferableInfoHash = "info-hash-tat";
         const assetTransferableTotalSupply = 10000000;
         const assetTransferableTotalSupplyWei = await ethers.utils.parseEther(assetTransferableTotalSupply.toString());
         const assetTransferable = await helpers.createAssetTransferable(
@@ -124,9 +123,9 @@ describe("Query service tests", function () {
             testData.apxRegistry
         );
 
-        const assetSimpleName = "Test Asset";
-        const assetSimpleSymbol = "TA";
-        const assetSimpleInfoHash = "info-hash";
+        const assetSimpleName = "Test Asset Simple";
+        const assetSimpleSymbol = "TAS";
+        const assetSimpleInfoHash = "info-hash-tas";
         const assetSimpleTotalSupply = 10000000;
         const assetSimpleTotalSupplyWei = await ethers.utils.parseEther(assetSimpleTotalSupply.toString());
         const assetSimple = await helpers.createAssetSimple(
@@ -141,7 +140,7 @@ describe("Query service tests", function () {
             testData.nameRegistry
         );
 
-        const assetStatesResponse = await testData.queryService.getAssetStatesForIssuer(
+        const assetStatesResponse = await testData.queryService.getERC20AssetsForIssuer(
             testData.issuer.address,
             [
                 testData.assetFactory.address,
