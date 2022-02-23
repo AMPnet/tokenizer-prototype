@@ -11,7 +11,6 @@ interface INameRegistry is IVersioned {
     function mapIssuer(string memory name, address instance) external;
     function mapAsset(string memory name, address instance) external;
     function mapCampaign(string memory name, address instance) external;
-    function mapSnapshotDistributor(string memory name, address instance) external;
 
     // READ
     function getIssuer(string memory name) external view returns (address);
@@ -20,7 +19,5 @@ interface INameRegistry is IVersioned {
     function getAssetName(address asset) external view returns (string memory);
     function getCampaign(string memory name) external view returns (address);
     function getCampaignName(address campaign) external view returns (string memory);
-    function getSnapshotDistributor(string memory name) external view returns (address);
-    function getSnapshotDistributorName(address distributor) external view returns (string memory);
 
 }

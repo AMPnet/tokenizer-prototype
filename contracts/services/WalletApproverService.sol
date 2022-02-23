@@ -4,24 +4,7 @@ pragma solidity ^0.8.0;
 import "../shared/IIssuerCommon.sol";
 import "../shared/IVersioned.sol";
 
-contract WalletApproverService is IVersioned {
-
-    string constant public FLAVOR = "WalletApproverServiceV1";
-    string constant public VERSION = "1.0.26";
-
-    function flavor() external pure override returns (string memory) { return FLAVOR; }
-    function version() external pure override returns (string memory) { return VERSION; } 
-
-    //------------------------
-    //  STATE
-    //------------------------
-    address public masterOwner;
-    mapping (address => bool) public allowedApprovers;
-    uint256 public rewardPerApprove;
-
-    //------------------------
-    //  EVENTS
-    //------------------------
+interface IWalletApproverService is IVersioned {
     event UpdateApproverStatus(address indexed caller, address indexed approver, bool approved);
     event TransferMasterOwnerRights(address indexed caller, address indexed newOwner);
     event ApproveWalletSuccess(address indexed caller, address indexed wallet);
@@ -32,6 +15,44 @@ contract WalletApproverService is IVersioned {
     event UpdateRewardAmount(address indexed caller, uint256 oldAmount, uint256 newAmount);
     event Received(address indexed sender, uint256 amount);
     event Released(address indexed receiver, uint256 amount);
+
+    function updateApproverStatus(address approver, bool approved) external;
+    function transferMasterOwnerRights(address newMasterOwner) external;
+    function updateRewardAmount(uint256 newRewardAmount) external;
+    function approveWallets(
+        IIssuerCommon issuer,
+        address payable [] memory wallets
+    ) external;
+    function approveWallet(
+        IIssuerCommon issuer,
+        address payable wallet
+    ) external;
+    function suspendWallets(
+        IIssuerCommon issuer,
+        address[] memory wallets
+    ) external;
+    function suspendWallet(
+        IIssuerCommon issuer,
+        address wallet
+    ) external;
+    function changeWalletApprover(IIssuerCommon issuer, address newWalletApprover) external;
+    function release() external;
+}
+
+contract WalletApproverService is IWalletApproverService {
+
+    string constant public FLAVOR = "WalletApproverServiceV1";
+    string constant public VERSION = "1.0.30";
+
+    function flavor() external pure override returns (string memory) { return FLAVOR; }
+    function version() external pure override returns (string memory) { return VERSION; } 
+
+    //------------------------
+    //  STATE
+    //------------------------
+    address public masterOwner;
+    mapping (address => bool) public allowedApprovers;
+    uint256 public rewardPerApprove;
 
     //------------------------
     //  CONSTRUCTOR
@@ -68,19 +89,19 @@ contract WalletApproverService is IVersioned {
     //------------------------
     //  STATE CHANGE FUNCTIONS
     //------------------------
-    function updateApproverStatus(address approver, bool approved) external isMasterOwner {
+    function updateApproverStatus(address approver, bool approved) external override isMasterOwner {
         allowedApprovers[approver] = approved;
         emit UpdateApproverStatus(msg.sender, approver, approved);
     }
     
-    function transferMasterOwnerRights(address newMasterOwner) external isMasterOwner {
+    function transferMasterOwnerRights(address newMasterOwner) external override isMasterOwner {
         allowedApprovers[msg.sender] = false;
         allowedApprovers[newMasterOwner] = true;
         masterOwner = newMasterOwner;
         emit TransferMasterOwnerRights(msg.sender, newMasterOwner);
     }
 
-    function updateRewardAmount(uint256 newRewardAmount) external isMasterOwner {
+    function updateRewardAmount(uint256 newRewardAmount) external override isMasterOwner {
         uint256 oldAmount = rewardPerApprove;
         rewardPerApprove = newRewardAmount;
         emit UpdateRewardAmount(msg.sender, oldAmount, newRewardAmount);
@@ -89,7 +110,7 @@ contract WalletApproverService is IVersioned {
     function approveWallets(
         IIssuerCommon issuer,
         address payable [] memory wallets
-    ) external isAllowedToApproveForIssuer(issuer) {
+    ) external override isAllowedToApproveForIssuer(issuer) {
         for (uint i=0; i<wallets.length; i++) {
             _approveWallet(issuer, wallets[i]);
         }
@@ -98,14 +119,14 @@ contract WalletApproverService is IVersioned {
     function approveWallet(
         IIssuerCommon issuer,
         address payable wallet
-    ) public isAllowedToApproveForIssuer(issuer) {
+    ) public override isAllowedToApproveForIssuer(issuer) {
         _approveWallet(issuer, wallet);
     }
 
     function suspendWallets(
         IIssuerCommon issuer,
         address[] memory wallets
-    ) external isAllowedToApproveForIssuer(issuer) {
+    ) external override isAllowedToApproveForIssuer(issuer) {
         for (uint i=0; i<wallets.length; i++) {
             _suspendWallet(issuer, wallets[i]);
         }
@@ -114,11 +135,11 @@ contract WalletApproverService is IVersioned {
     function suspendWallet(
         IIssuerCommon issuer,
         address wallet
-    ) public isAllowedToApproveForIssuer(issuer) {
+    ) public override isAllowedToApproveForIssuer(issuer) {
         _suspendWallet(issuer, wallet);
     }
 
-    function changeWalletApprover(IIssuerCommon issuer, address newWalletApprover) external isMasterOwner {
+    function changeWalletApprover(IIssuerCommon issuer, address newWalletApprover) external override isMasterOwner {
         issuer.changeWalletApprover(newWalletApprover);
     }
 
@@ -129,7 +150,7 @@ contract WalletApproverService is IVersioned {
         emit Received(msg.sender, msg.value);
     }
 
-    function release() external isMasterOwner {
+    function release() external override isMasterOwner {
         uint256 amount = address(this).balance;
         payable(msg.sender).transfer(amount);
         emit Released(msg.sender, amount);

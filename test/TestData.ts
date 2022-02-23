@@ -3,7 +3,16 @@ import { ethers } from "hardhat";
 import { Contract, Signer } from "ethers";
 import * as helpers from "../util/helpers";
 import * as deployerServiceUtil from "../util/deployer-service";
-import { CfManagerSoftcap, CfManagerSoftcapVesting, InvestService, Issuer, WalletApproverService } from "../typechain";
+import {
+    CfManagerSoftcap,
+    CfManagerSoftcapVesting,
+    InvestService,
+    Issuer,
+    PayoutService,
+    PayoutManager,
+    WalletApproverService,
+    FaucetService
+} from "../typechain";
 
 export class TestData {
 
@@ -14,18 +23,21 @@ export class TestData {
     assetSimpleFactory: Contract;
     cfManagerFactory: Contract;
     cfManagerVestingFactory: Contract;
-    snapshotDistributorFactory: Contract;
 
     //////// SERVICES ////////
     walletApproverService: WalletApproverService;
     deployerService: Contract;
     queryService: Contract;
     investService: InvestService;
+    faucetService: FaucetService;
+    payoutService: PayoutService;
 
     ////////// APX //////////
     apxRegistry: Contract;
     nameRegistry: Contract;
     feeManager: Contract;
+    merkleTreePathValidator: Contract;
+    payoutManager: PayoutManager;
 
     //////// SIGNERS ////////
     deployer: Signer;
@@ -62,6 +74,7 @@ export class TestData {
     campaignWhitelistRequired = true;       // only whitelisted wallets can invest
     campaignAnsName = "test-campaign";
     campaignInfoHash = "campaign-info-ipfs-hash";
+    faucetReward = "0.001"
 
     async deploy() {
         const accounts: Signer[] = await ethers.getSigners();
@@ -87,7 +100,6 @@ export class TestData {
         this.assetSimpleFactory = factories[3];
         this.cfManagerFactory = factories[4];
         this.cfManagerVestingFactory = factories[5];
-        this.snapshotDistributorFactory = factories[6];
 
         this.apxRegistry = await helpers.deployApxRegistry(
             this.deployer,
@@ -106,20 +118,27 @@ export class TestData {
             await this.treasury.getAddress()
         );
 
+        this.merkleTreePathValidator = await helpers.deployMerkleTreePathValidator(this.deployer);
+        this.payoutManager = (
+            await helpers.deployPayoutManager(this.deployer, this.merkleTreePathValidator.address)
+        ) as PayoutManager;
+
         const walletApproverAddress = await this.walletApprover.getAddress();
         const services = await helpers.deployServices(
             this.deployer,
             walletApproverAddress,
-            "0.001",
+            this.faucetReward,
             "0"
         );
         this.walletApproverService = services[0] as WalletApproverService;
         this.deployerService = services[1];
         this.queryService = services[2];
         this.investService = services[3] as InvestService;
+        this.faucetService = services[4] as FaucetService;
+        this.payoutService = services[5] as PayoutService;
     }
 
-    async deployIssuerAssetTransferableCampaign() {
+    async deployIssuerAssetTransferableCampaign(args: {campaignWhitelistRequired: boolean}) {
         //// Set the config for Issuer, Asset and Crowdfunding Campaign
         const issuerOwnerAddress = await this.issuerOwner.getAddress();
 
@@ -142,7 +161,7 @@ export class TestData {
             this.campaignMinInvestment,
             this.campaignMaxInvestment,
             this.maxTokensToBeSold,
-            this.campaignWhitelistRequired,
+            args.campaignWhitelistRequired,
             this.campaignInfoHash,
             this.apxRegistry.address,
             this.nameRegistry.address,

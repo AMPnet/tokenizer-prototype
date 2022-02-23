@@ -5,13 +5,12 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./IAssetTransferable.sol";
 import "../apx-protocol/IApxAssetsRegistry.sol";
 import "../tokens/erc20/ERC20.sol";
-import "../tokens/erc20/ERC20Snapshot.sol";
 import "../tokens/erc20/IToken.sol";
 import "../shared/IIssuerCommon.sol";
 import "../shared/ICampaignCommon.sol";
 import "../shared/Structs.sol";
 
-contract AssetTransferable is IAssetTransferable, ERC20Snapshot {
+contract AssetTransferable is IAssetTransferable, ERC20 {
     using SafeERC20 for IERC20;
 
     //------------------------
@@ -217,10 +216,6 @@ contract AssetTransferable is IAssetTransferable, ERC20Snapshot {
         _stablecoin().safeTransfer(investor, liquidationFundsShare);
         this.transferFrom(investor, address(this), approvedAmount);
         emit ClaimLiquidationShare(investor, liquidationFundsShare, block.timestamp);
-    }
-
-    function snapshot() external override notLiquidated returns (uint256) {
-        return _snapshot();
     }
 
     function migrateApxRegistry(address newRegistry) external override notLiquidated {
