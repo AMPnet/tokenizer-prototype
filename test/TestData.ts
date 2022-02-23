@@ -11,7 +11,8 @@ import {
     PayoutService,
     PayoutManager,
     WalletApproverService,
-    FaucetService
+    FaucetService,
+    QueryService
 } from "../typechain";
 
 export class TestData {
@@ -27,7 +28,7 @@ export class TestData {
     //////// SERVICES ////////
     walletApproverService: WalletApproverService;
     deployerService: Contract;
-    queryService: Contract;
+    queryService: QueryService;
     investService: InvestService;
     faucetService: FaucetService;
     payoutService: PayoutService;
@@ -132,7 +133,7 @@ export class TestData {
         );
         this.walletApproverService = services[0] as WalletApproverService;
         this.deployerService = services[1];
-        this.queryService = services[2];
+        this.queryService = services[2] as QueryService;
         this.investService = services[3] as InvestService;
         this.faucetService = services[4] as FaucetService;
         this.payoutService = services[5] as PayoutService;
