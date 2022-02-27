@@ -28,8 +28,16 @@ contract Structs {
         string name;
         string symbol;
         uint256 totalSupply;
-        uint256 decimals;
+        uint8 decimals;
         address issuer;
+    }
+
+    struct ERC20AssetCommonState {
+        address contractAddress;
+        uint8 decimals;
+        string name;
+        string symbol;
+        AssetCommonState commonState;
     }
 
     struct AssetCommonStateWithName {
@@ -216,7 +224,7 @@ contract Structs {
         string name;
         string symbol;
         uint256 totalSupply;
-        uint256 decimals;
+        uint8 decimals;
         address issuer;
         bool assetApprovedByIssuer;
         uint256 totalAmountRaised;
