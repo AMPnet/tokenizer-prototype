@@ -16,11 +16,14 @@ export async function createCampaign(
     nameRegistry: Contract,
     feeRegistry: Contract
   ): Promise<Contract> {
-    const cfManagerTx = await cfManagerFactory.create(
+    const cfManagerTx = await cfManagerFactory.create([
       owner,
       mappedName,
       asset.address,
+      ethers.constants.AddressZero,
+      ethers.constants.AddressZero,
       pricePerToken,
+      0,
       softCapWei,
       minInvestmentWei,
       maxInvestmentWei,
@@ -28,7 +31,7 @@ export async function createCampaign(
       info,
       nameRegistry.address,
       feeRegistry.address
-    );
+    ]);
     const receipt = await ethers.provider.waitForTransaction(cfManagerTx.hash);
     for (const log of receipt.logs) {
       try {

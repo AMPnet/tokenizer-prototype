@@ -67,7 +67,7 @@ contract CfManagerSoftcapVesting is ICfManagerSoftcapVesting, ACfManager {
 
         uint256 fetchedPricePrecision = _safe_price_precision_fetch(params.asset);
         uint256 pricePrecisionProcessed = fetchedPricePrecision > 0 ? fetchedPricePrecision : params.tokenPricePrecision;
-        require(params.tokenPricePrecision > 0, "CfManagerSoftcapVesting: Invalid price precision.");
+        require(pricePrecisionProcessed > 0, "CfManagerSoftcapVesting: Invalid price precision.");
 
         address paymentMethodProcessed = params.paymentMethod == address(0) ?
             IIssuerCommon(issuerProcessed).commonState().stablecoin :
@@ -100,8 +100,8 @@ contract CfManagerSoftcapVesting is ICfManagerSoftcapVesting, ACfManager {
             address(this),
             params.owner,
             params.asset,
-            address(params.issuer),
             issuerProcessed,
+            paymentMethodProcessed,
             params.tokenPrice,
             pricePrecisionProcessed,
             softCapNormalized,
