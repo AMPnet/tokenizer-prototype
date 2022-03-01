@@ -41,7 +41,7 @@ contract CfManagerSoftcapFactory is ICfManagerSoftcapFactory {
                     params.owner,
                     params.assetAddress,
                     params.issuerAddress,
-                    params.paymentMethod,
+                    params.paymentToken,
                     params.initialPricePerToken,
                     params.tokenPriceDecimals,
                     params.softCap,

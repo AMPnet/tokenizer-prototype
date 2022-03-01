@@ -50,7 +50,7 @@ contract Structs {
         string mappedName;
         address assetAddress;
         address issuerAddress;
-        address paymentMethod;
+        address paymentToken;
         uint256 initialPricePerToken;
         uint8 tokenPriceDecimals;
         uint256 softCap;
@@ -68,7 +68,7 @@ contract Structs {
         address owner;
         address asset;
         address issuer;
-        address paymentMethod;
+        address paymentToken;
         uint256 tokenPrice;
         uint8 tokenPriceDecimals;
         uint256 softCap;
