@@ -377,7 +377,7 @@ abstract contract ACfManager is IVersioned, IACfManager {
     function _token_amount_for_investment(
         uint256 investment,
         uint256 tokenPrice,
-        uint256 tokenPriceDecimals,
+        uint8 tokenPriceDecimals,
         address asset,
         address stable
     ) internal view returns (uint256) {

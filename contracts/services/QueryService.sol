@@ -518,7 +518,7 @@ contract QueryService is IQueryService {
         IAssetCommon token,
         IToken stablecoin,
         uint256 price,
-        uint256 priceDecimals
+        uint8 priceDecimals
     ) external view returns (uint256) {
         return tokenAmount
             * price
