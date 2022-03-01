@@ -65,10 +65,6 @@ contract CfManagerSoftcapVesting is ICfManagerSoftcapVesting, ACfManager {
         address issuerProcessed = fetchedIssuer != address(0) ? fetchedIssuer : params.issuer;
         require(issuerProcessed != address(0), "CfManagerSoftcapVesting: Invalid issuer.");
 
-        uint256 fetchedPricePrecision = _safe_price_precision_fetch(params.asset);
-        uint256 pricePrecisionProcessed = fetchedPricePrecision > 0 ? fetchedPricePrecision : params.tokenPricePrecision;
-        require(pricePrecisionProcessed > 0, "CfManagerSoftcapVesting: Invalid price precision.");
-
         address paymentMethodProcessed = params.paymentMethod == address(0) ?
             IIssuerCommon(issuerProcessed).commonState().stablecoin :
             params.paymentMethod;
@@ -76,10 +72,12 @@ contract CfManagerSoftcapVesting is ICfManagerSoftcapVesting, ACfManager {
             _token_amount_for_investment(
                 params.softCap,
                 params.tokenPrice,
+                params.tokenPriceDecimals,
                 params.asset,
                 paymentMethodProcessed
             ),
             params.tokenPrice,
+            params.tokenPriceDecimals,
             params.asset,
             paymentMethodProcessed
         );
@@ -87,10 +85,12 @@ contract CfManagerSoftcapVesting is ICfManagerSoftcapVesting, ACfManager {
             _token_amount_for_investment(
                 params.minInvestment,
                 params.tokenPrice,
+                params.tokenPriceDecimals,
                 params.asset,
                 paymentMethodProcessed
             ),
             params.tokenPrice,
+            params.tokenPriceDecimals,
             params.asset,
             paymentMethodProcessed
         );
@@ -103,7 +103,7 @@ contract CfManagerSoftcapVesting is ICfManagerSoftcapVesting, ACfManager {
             issuerProcessed,
             paymentMethodProcessed,
             params.tokenPrice,
-            pricePrecisionProcessed,
+            params.tokenPriceDecimals,
             softCapNormalized,
             minInvestmentNormalized,
             params.maxInvestment,
@@ -119,6 +119,7 @@ contract CfManagerSoftcapVesting is ICfManagerSoftcapVesting, ACfManager {
             _token_value(
                 IToken(params.asset).totalSupply(),
                 params.tokenPrice,
+                params.tokenPriceDecimals,
                 params.asset,
                 paymentMethodProcessed
             ) >= softCapNormalized,
@@ -142,7 +143,13 @@ contract CfManagerSoftcapVesting is ICfManagerSoftcapVesting, ACfManager {
     //------------------------
     function claim(address investor) external finalized vestingStarted {
         uint256 unreleased = _releasableAmount(investor);
-        uint256 unreleasedValue = _token_value(unreleased, state.tokenPrice, state.asset, state.stablecoin);
+        uint256 unreleasedValue = _token_value(
+            unreleased,
+            state.tokenPrice,
+            state.tokenPriceDecimals,
+            state.asset,
+            state.stablecoin
+        );
         require(unreleased > 0, "CfManagerSoftcapVesting: No tokens to be released.");
 
         state.totalClaimableTokens -= unreleased;

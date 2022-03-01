@@ -52,7 +52,7 @@ contract Structs {
         address issuerAddress;
         address paymentMethod;
         uint256 initialPricePerToken;
-        uint256 tokenPricePrecision;
+        uint8 tokenPriceDecimals;
         uint256 softCap;
         uint256 minInvestment;
         uint256 maxInvestment;
@@ -70,7 +70,7 @@ contract Structs {
         address issuer;
         address paymentMethod;
         uint256 tokenPrice;
-        uint256 tokenPricePrecision;
+        uint8 tokenPriceDecimals;
         uint256 softCap;
         uint256 minInvestment;
         uint256 maxInvestment;
@@ -91,6 +91,7 @@ contract Structs {
         bool finalized;
         bool canceled;
         uint256 pricePerToken;
+        uint8 tokenPriceDecimals;
         uint256 fundsRaised;
         uint256 tokensSold;
     }
@@ -121,6 +122,7 @@ contract Structs {
         bool state;
         uint256 stateUpdatedAt;
         uint256 price;
+        uint8 priceDecimals;
         uint256 priceUpdatedAt;
         uint256 priceValidUntil;
         uint256 capturedSupply;
@@ -249,6 +251,7 @@ contract Structs {
         uint256 totalAmountRaised;
         uint256 totalTokensSold;
         uint256 highestTokenSellPrice;
+        uint8 highestTokenSellPriceDecimals;
         uint256 totalTokensLocked;
         uint256 totalTokensLockedAndLiquidated;
         bool liquidated;
@@ -274,6 +277,7 @@ contract Structs {
         uint256 totalAmountRaised;
         uint256 totalTokensSold;
         uint256 highestTokenSellPrice;
+        uint8 highestTokenSellPriceDecimals;
         bool liquidated;
         uint256 liquidationFundsTotal;
         uint256 liquidationTimestamp;
@@ -308,7 +312,7 @@ contract Structs {
         address issuer;
         address stablecoin;
         uint256 tokenPrice;
-        uint256 tokenPricePrecision;
+        uint8 tokenPriceDecimals;
         uint256 softCap;
         uint256 minInvestment;
         uint256 maxInvestment;

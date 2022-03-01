@@ -140,16 +140,8 @@ abstract contract ACfManager is IVersioned, IACfManager {
         IERC20 assetERC20 = _assetERC20();
         uint256 tokensSold = state.totalTokensSold;
         uint256 tokensRefund = assetERC20.balanceOf(address(this)) - tokensSold;
-        IAssetCommon(state.asset).finalizeSale();
-        if (fundsRaised > 0) {
-            (address treasury, uint256 fee) = _calculateFee();
-            if (fee > 0 && treasury != address(0)) {
-                sc.safeTransfer(treasury, fee);
-                sc.safeTransfer(msg.sender, fundsRaised - fee);
-            } else {
-                sc.safeTransfer(msg.sender, fundsRaised);
-            }
-        }
+        _safeFinalizeSale();
+        _safeDistributeFunds(msg.sender, fundsRaised, sc);
         if (tokensRefund > 0) { assetERC20.safeTransfer(msg.sender, tokensRefund); }
         emit Finalize(msg.sender, state.asset, fundsRaised, tokensSold, tokensRefund, block.timestamp);
     }
@@ -178,6 +170,7 @@ abstract contract ACfManager is IVersioned, IACfManager {
             state.finalized,
             state.canceled,
             state.tokenPrice,
+            state.tokenPriceDecimals,
             state.totalFundsRaised,
             state.totalTokensSold
         );
@@ -221,18 +214,37 @@ abstract contract ACfManager is IVersioned, IACfManager {
         require(amount > 0, "ACfManager: Investment amount has to be greater than 0.");
         uint256 tokenBalance = _assetERC20().balanceOf(address(this));
         require(
-            _token_value(tokenBalance, state.tokenPrice, state.asset, state.stablecoin) >= state.softCap,
+            _token_value(
+                tokenBalance,
+                state.tokenPrice,
+                state.tokenPriceDecimals,
+                state.asset,
+                state.stablecoin
+            ) >= state.softCap,
             "ACfManager: not enough tokens for sale to reach the softcap."
         );
         uint256 floatingTokens = tokenBalance - state.totalClaimableTokens;
 
-        uint256 tokens = _token_amount_for_investment(amount, state.tokenPrice, state.asset, state.stablecoin);
-        uint256 tokenValue = _token_value(tokens, state.tokenPrice, state.asset, state.stablecoin);
+        uint256 tokens = _token_amount_for_investment(
+            amount,
+            state.tokenPrice,
+            state.tokenPriceDecimals,
+            state.asset,
+            state.stablecoin
+        );
+        uint256 tokenValue = _token_value(
+            tokens,
+            state.tokenPrice,
+            state.tokenPriceDecimals,
+            state.asset,
+            state.stablecoin
+        );
         require(tokens > 0 && tokenValue > 0, "ACfManager: Investment amount too low.");
         require(floatingTokens >= tokens, "ACfManager: Not enough tokens left for this investment amount.");
         uint256 totalInvestmentValue = _token_value(
             tokens + claims[investor],
             state.tokenPrice,
+            state.tokenPriceDecimals,
             state.asset,
             state.stablecoin
         );
@@ -277,6 +289,24 @@ abstract contract ACfManager is IVersioned, IACfManager {
         emit CancelInvestment(investor, state.asset, tokens, tokenValue, block.timestamp);
     }
 
+    function _safeFinalizeSale() internal {
+        state.asset.call(
+            abi.encodeWithSignature("finalizeSale()")
+        );
+    }
+
+    function _safeDistributeFunds(address fundsDestination, uint256 fundsRaised, IERC20 sc) internal {
+        if (fundsRaised > 0) {
+            (address treasury, uint256 fee) = _calculateFee();
+            if (fee > 0 && treasury != address(0)) {
+                sc.safeTransfer(treasury, fee);
+                sc.safeTransfer(fundsDestination, fundsRaised - fee);
+            } else {
+                sc.safeTransfer(fundsDestination, fundsRaised);
+            }
+        }
+    }
+
     function _calculateFee() internal returns (address, uint256) {
         (bool success, bytes memory result) = state.feeManager.call(
             abi.encodeWithSignature("calculateFee(address)", address(this))
@@ -294,10 +324,6 @@ abstract contract ACfManager is IVersioned, IACfManager {
         return 10 ** IToken(asset).decimals();
     }
 
-    function _asset_price_precision(address asset) internal view returns (uint256) {
-        return IAssetCommon(asset).priceDecimalsPrecision();
-    }
-
     function _stablecoin_decimals_precision(address stable) internal view returns (uint256) {
         return 10 ** IToken(stable).decimals();
     }
@@ -305,13 +331,14 @@ abstract contract ACfManager is IVersioned, IACfManager {
     function _token_value(
         uint256 tokens,
         uint256 tokenPrice,
+        uint8 tokenPriceDecimals,
         address asset,
         address stable
     ) internal view returns (uint256) {
         return tokens
         * tokenPrice
         * _stablecoin_decimals_precision(stable)
-        / _asset_price_precision(asset)
+        / (10 ** tokenPriceDecimals)
         / _asset_decimals_precision(asset);
     }
 
@@ -320,7 +347,13 @@ abstract contract ACfManager is IVersioned, IACfManager {
     }
 
     function _adjusted_min_investment(uint256 remainingTokens) internal view returns (uint256) {
-        uint256 remainingTokensValue = _token_value(remainingTokens, state.tokenPrice, state.asset, state.stablecoin);
+        uint256 remainingTokensValue = _token_value(
+            remainingTokens,
+            state.tokenPrice,
+            state.tokenPriceDecimals,
+            state.asset,
+            state.stablecoin
+        );
         return (remainingTokensValue < state.minInvestment) ? remainingTokensValue : state.minInvestment;
     }
 
@@ -328,20 +361,28 @@ abstract contract ACfManager is IVersioned, IACfManager {
         uint256 tokenAmountForInvestment = _token_amount_for_investment(
             state.softCap - state.totalFundsRaised,
             state.tokenPrice,
+            state.tokenPriceDecimals,
             state.asset,
             state.stablecoin
         );
-        return _token_value(tokenAmountForInvestment, state.tokenPrice, state.asset, state.stablecoin);
+        return _token_value(
+            tokenAmountForInvestment,
+            state.tokenPrice,
+            state.tokenPriceDecimals,
+            state.asset,
+            state.stablecoin
+        );
     }
 
     function _token_amount_for_investment(
         uint256 investment,
         uint256 tokenPrice,
+        uint256 tokenPriceDecimals,
         address asset,
         address stable
     ) internal view returns (uint256) {
         return investment
-        * _asset_price_precision(asset)
+        * (10 ** tokenPriceDecimals)
         * _asset_decimals_precision(asset)
         / tokenPrice
         / _stablecoin_decimals_precision(stable);
@@ -355,12 +396,5 @@ abstract contract ACfManager is IVersioned, IACfManager {
             Structs.AssetCommonState memory assetCommonState = abi.decode(result, (Structs.AssetCommonState));
             return assetCommonState.issuer;
         } else { return address(0); }
-    }
-
-    function _safe_price_precision_fetch(address asset) internal view returns (uint256) {
-        (bool success, bytes memory result) = asset.staticcall(abi.encodeWithSignature("priceDecimalsPrecision()"));
-        if (success) {
-            return abi.decode(result, (uint256));
-        } else { return 0; }
     }
 }

@@ -45,7 +45,7 @@ contract CfManagerSoftcapVestingFactory is ICfManagerSoftcapVestingFactory {
                     params.issuerAddress,
                     params.paymentMethod,
                     params.initialPricePerToken,
-                    params.tokenPricePrecision,
+                    params.tokenPriceDecimals,
                     params.softCap,
                     params.minInvestment,
                     params.maxInvestment,

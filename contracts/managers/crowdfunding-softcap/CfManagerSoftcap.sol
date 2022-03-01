@@ -35,10 +35,6 @@ contract CfManagerSoftcap is ICfManagerSoftcap, ACfManager {
         address issuerProcessed = fetchedIssuer != address(0) ? fetchedIssuer : params.issuer;
         require(issuerProcessed != address(0), "CfManagerSoftcap: Invalid issuer.");
 
-        uint256 fetchedPricePrecision = _safe_price_precision_fetch(params.asset);
-        uint256 pricePrecisionProcessed = fetchedPricePrecision > 0 ? fetchedPricePrecision : params.tokenPricePrecision;
-        require(pricePrecisionProcessed   > 0, "CfManagerSoftcap: Invalid price precision.");
-        
         address paymentMethodProcessed = params.paymentMethod == address(0) ?
             IIssuerCommon(issuerProcessed).commonState().stablecoin :
             params.paymentMethod;
@@ -46,10 +42,12 @@ contract CfManagerSoftcap is ICfManagerSoftcap, ACfManager {
             _token_amount_for_investment(
                 params.softCap,
                 params.tokenPrice,
+                params.tokenPriceDecimals,
                 params.asset,
                 paymentMethodProcessed
             ),
             params.tokenPrice,
+            params.tokenPriceDecimals,
             params.asset,
             paymentMethodProcessed
         );
@@ -57,10 +55,12 @@ contract CfManagerSoftcap is ICfManagerSoftcap, ACfManager {
             _token_amount_for_investment(
                 params.minInvestment,
                 params.tokenPrice,
+                params.tokenPriceDecimals,
                 params.asset,
                 paymentMethodProcessed
             ),
             params.tokenPrice,
+            params.tokenPriceDecimals,
             params.asset,
             paymentMethodProcessed
         );
@@ -74,7 +74,7 @@ contract CfManagerSoftcap is ICfManagerSoftcap, ACfManager {
             issuerProcessed,
             paymentMethodProcessed,
             params.tokenPrice,
-            pricePrecisionProcessed,
+            params.tokenPriceDecimals,
             softCapNormalized,
             minInvestmentNormalized,
             params.maxInvestment,
@@ -89,6 +89,7 @@ contract CfManagerSoftcap is ICfManagerSoftcap, ACfManager {
             _token_value(
                 IToken(params.asset).totalSupply(),
                 params.tokenPrice,
+                params.tokenPriceDecimals,
                 params.asset,
                 paymentMethodProcessed
             ) >= softCapNormalized,
