@@ -511,7 +511,10 @@ describe("Payout Manager test", function () {
         // verify cancel payout event
         await expect(cencelPayout).to.emit(payoutManager, "PayoutCanceled").withArgs(
             payout.id,
-            payout.asset
+            payout.owner,
+            payout.asset,
+            payoutInfo.rewardAsset,
+            payout.remainingReward
         );
 
         // verify funds are returned to owner
@@ -584,7 +587,10 @@ describe("Payout Manager test", function () {
         // verify cancel payout event
         await expect(cencelPayout).to.emit(payoutManager, "PayoutCanceled").withArgs(
             payout.id,
-            payout.asset
+            payout.owner,
+            payout.asset,
+            payoutInfo.rewardAsset,
+            payout.remainingReward - balances[0] // minus claimed reward
         );
 
         // verify funds are returned to owner
@@ -660,7 +666,10 @@ describe("Payout Manager test", function () {
         // verify cancel payout event
         await expect(cencelPayout).to.emit(payoutManager, "PayoutCanceled").withArgs(
             payout.id,
-            payout.asset
+            payout.owner,
+            payout.asset,
+            rewardAsset.address,
+            payout.remainingReward
         );
 
         // verify funds are returned to owner
@@ -731,7 +740,10 @@ describe("Payout Manager test", function () {
         // verify cancel payout event
         await expect(cencelPayout).to.emit(payoutManager, "PayoutCanceled").withArgs(
             payout.id,
-            payout.asset
+            payout.owner,
+            payout.asset,
+            rewardAsset.address,
+            payout.remainingReward
         );
 
         // verify funds are returned to owner

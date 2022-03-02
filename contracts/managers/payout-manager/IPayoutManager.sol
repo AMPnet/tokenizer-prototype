@@ -30,8 +30,8 @@ interface IPayoutManager is IVersioned {
     //  EVENTS
     //------------------------
     event PayoutCreated(uint256 payoutId, address indexed payoutOwner, IERC20 asset, IERC20 rewardAsset, uint256 totalRewardAmount);
-    event PayoutCanceled(uint256 payoutId, IERC20 asset);
-    event PayoutClaimed(uint256 payoutId, address indexed wallet, uint256 balance, uint256 payoutAmount);
+    event PayoutCanceled(uint256 payoutId, address indexed payoutOwner, IERC20 asset, IERC20 rewardAsset, uint256 remainingRewardAmount);
+    event PayoutClaimed(uint256 payoutId, address indexed wallet, IERC20 asset, uint256 balance, IERC20 rewardAsset, uint256 payoutAmount);
 
     //------------------------
     //  READ-ONLY FUNCTIONS
