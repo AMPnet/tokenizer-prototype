@@ -612,9 +612,16 @@ export async function registerAsset(assetManager: Signer, apxRegistry: Contract,
 export async function updateState(assetManager: Signer, apxRegistry: Contract, asset: String, state: boolean) {
   await apxRegistry.connect(assetManager).updateState(asset, state);
 }
-export async function updatePrice(priceManager: Signer, apxRegistry: Contract, asset: Contract, price: Number, expiry: Number) {
+export async function updatePrice(
+  priceManager: Signer,
+  apxRegistry: Contract,
+  asset: Contract,
+  price: Number,
+  priceDecimals: Number,
+  expiry: Number
+) {
   const capturedSupply = await asset.totalSupply();
-  await apxRegistry.connect(priceManager).updatePrice(asset.address, price, expiry, capturedSupply);
+  await apxRegistry.connect(priceManager).updatePrice(asset.address, price, priceDecimals, expiry, capturedSupply);
 }
 
 /**

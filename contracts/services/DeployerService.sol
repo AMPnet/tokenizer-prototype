@@ -66,6 +66,7 @@ interface IDeployerService is IVersioned {
         address cfManagerOwner;
         string cfManagerMappedName;
         uint256 cfManagerPricePerToken;
+        uint8 cfManagerTokenPriceDecimals;
         uint256 cfManagerSoftcap;
         uint256 cfManagerSoftcapMinInvestment;
         uint256 cfManagerSoftcapMaxInvestment;
@@ -92,6 +93,7 @@ interface IDeployerService is IVersioned {
         address cfManagerOwner;
         string cfManagerMappedName;
         uint256 cfManagerPricePerToken;
+        uint8 cfManagerTokenPriceDecimals;
         uint256 cfManagerSoftcap;
         uint256 cfManagerSoftcapMinInvestment;
         uint256 cfManagerSoftcapMaxInvestment;
@@ -123,6 +125,7 @@ interface IDeployerService is IVersioned {
         address cfManagerOwner;
         string cfManagerMappedName;
         uint256 cfManagerPricePerToken;
+        uint8 cfManagerTokenPriceDecimals;
         uint256 cfManagerSoftcap;
         uint256 cfManagerSoftcapMinInvestment;
         uint256 cfManagerSoftcapMaxInvestment;
@@ -149,6 +152,7 @@ interface IDeployerService is IVersioned {
         address cfManagerOwner;
         string cfManagerMappedName;
         uint256 cfManagerPricePerToken;
+        uint8 cfManagerTokenPriceDecimals;
         uint256 cfManagerSoftcap;
         uint256 cfManagerSoftcapMinInvestment;
         uint256 cfManagerSoftcapMaxInvestment;
@@ -173,6 +177,7 @@ interface IDeployerService is IVersioned {
         address cfManagerOwner;
         string cfManagerMappedName;
         uint256 cfManagerPricePerToken;
+        uint8 cfManagerTokenPriceDecimals;
         uint256 cfManagerSoftcap;
         uint256 cfManagerSoftcapMinInvestment;
         uint256 cfManagerSoftcapMaxInvestment;
@@ -235,7 +240,7 @@ contract DeployerService is IDeployerService {
                     address(0), // used only when creating campaign for preixisting assets
                     address(0), // used only when creating campaignn for preixisting assets
                     request.cfManagerPricePerToken,
-                    0, // used only when creating campaignn for preixisting assets
+                    request.cfManagerTokenPriceDecimals,
                     request.cfManagerSoftcap,
                     request.cfManagerSoftcapMinInvestment,
                     request.cfManagerSoftcapMaxInvestment,
@@ -294,7 +299,7 @@ contract DeployerService is IDeployerService {
                     address(0), // used only when creating campaign for preixisting assets
                     address(0), // used only when creating campaign for preixisting assets
                     request.cfManagerPricePerToken,
-                    0, // used only when creating campaign for preixisting assets
+                    request.cfManagerTokenPriceDecimals,
                     request.cfManagerSoftcap,
                     request.cfManagerSoftcapMinInvestment,
                     request.cfManagerSoftcapMaxInvestment,
@@ -359,7 +364,7 @@ contract DeployerService is IDeployerService {
                     address(0), // used only when creating campaign for preixisting assets
                     address(0), // used only when creating campaign for preixisting assets
                     request.cfManagerPricePerToken,
-                    0, // used only when creating campaign for preixisting assets
+                    request.cfManagerTokenPriceDecimals,
                     request.cfManagerSoftcap,
                     request.cfManagerSoftcapMinInvestment,
                     request.cfManagerSoftcapMaxInvestment,
@@ -423,7 +428,7 @@ contract DeployerService is IDeployerService {
                     address(0), // used only when creating campaign for preixisting assets
                     address(0), // used only when creating campaign for preixisting assets
                     request.cfManagerPricePerToken,
-                    0, // used only when creating campaign for preixisting assets
+                    request.cfManagerTokenPriceDecimals,
                     request.cfManagerSoftcap,
                     request.cfManagerSoftcapMinInvestment,
                     request.cfManagerSoftcapMaxInvestment,
@@ -473,7 +478,7 @@ contract DeployerService is IDeployerService {
                     address(0), // used only when creating campaign for preixisting assets
                     address(0), // used only when creating campaign for preixisting assets
                     request.cfManagerPricePerToken,
-                    0, // used only when creating campaign for preixisting assets
+                    request.cfManagerTokenPriceDecimals,
                     request.cfManagerSoftcap,
                     request.cfManagerSoftcapMinInvestment,
                     request.cfManagerSoftcapMaxInvestment,
