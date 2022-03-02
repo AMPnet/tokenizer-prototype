@@ -130,7 +130,8 @@ describe("Payout Manager test", function () {
             expected.owner,
             expected.asset,
             rewardAsset.address,
-            expected.totalReward
+            expected.totalReward,
+            async () => (await createPayout).timestamp
         );
     }
 
@@ -506,15 +507,16 @@ describe("Payout Manager test", function () {
         verifyPayoutInfo(ownerPayouts[0], payout);
 
         // cancel payout
-        const cencelPayout = payoutManager.connect(payoutOwner1).cancelPayout(payout.id);
+        const cancelPayout = payoutManager.connect(payoutOwner1).cancelPayout(payout.id);
 
         // verify cancel payout event
-        await expect(cencelPayout).to.emit(payoutManager, "PayoutCanceled").withArgs(
+        await expect(cancelPayout).to.emit(payoutManager, "PayoutCanceled").withArgs(
             payout.id,
             payout.owner,
             payout.asset,
             payoutInfo.rewardAsset,
-            payout.remainingReward
+            payout.remainingReward,
+            async () => (await cancelPayout).timestamp
         );
 
         // verify funds are returned to owner
@@ -582,15 +584,16 @@ describe("Payout Manager test", function () {
         expect(balance).to.be.equal(balances[0]);
 
         // cancel payout
-        const cencelPayout = payoutManager.connect(payoutOwner1).cancelPayout(payout.id);
+        const cancelPayout = payoutManager.connect(payoutOwner1).cancelPayout(payout.id);
 
         // verify cancel payout event
-        await expect(cencelPayout).to.emit(payoutManager, "PayoutCanceled").withArgs(
+        await expect(cancelPayout).to.emit(payoutManager, "PayoutCanceled").withArgs(
             payout.id,
             payout.owner,
             payout.asset,
             payoutInfo.rewardAsset,
-            payout.remainingReward - balances[0] // minus claimed reward
+            payout.remainingReward - balances[0], // minus claimed reward
+            async () => (await cancelPayout).timestamp
         );
 
         // verify funds are returned to owner
@@ -661,15 +664,16 @@ describe("Payout Manager test", function () {
         await verifyCreatePayoutEvent(createPayout, payout);
 
         // cancel payout
-        const cencelPayout = payoutManager.connect(payoutOwner1).cancelPayout(payout.id);
+        const cancelPayout = payoutManager.connect(payoutOwner1).cancelPayout(payout.id);
 
         // verify cancel payout event
-        await expect(cencelPayout).to.emit(payoutManager, "PayoutCanceled").withArgs(
+        await expect(cancelPayout).to.emit(payoutManager, "PayoutCanceled").withArgs(
             payout.id,
             payout.owner,
             payout.asset,
             rewardAsset.address,
-            payout.remainingReward
+            payout.remainingReward,
+            async () => (await cancelPayout).timestamp
         );
 
         // verify funds are returned to owner
@@ -735,15 +739,16 @@ describe("Payout Manager test", function () {
         verifyPayoutInfo(ownerPayouts[0], payout);
 
         // cancel payout
-        const cencelPayout = payoutManager.connect(payoutOwner1).cancelPayout(payout.id);
+        const cancelPayout = payoutManager.connect(payoutOwner1).cancelPayout(payout.id);
 
         // verify cancel payout event
-        await expect(cencelPayout).to.emit(payoutManager, "PayoutCanceled").withArgs(
+        await expect(cancelPayout).to.emit(payoutManager, "PayoutCanceled").withArgs(
             payout.id,
             payout.owner,
             payout.asset,
             rewardAsset.address,
-            payout.remainingReward
+            payout.remainingReward,
+            async () => (await cancelPayout).timestamp
         );
 
         // verify funds are returned to owner

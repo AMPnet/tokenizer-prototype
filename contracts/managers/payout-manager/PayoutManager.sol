@@ -143,7 +143,7 @@ contract PayoutManager is IPayoutManager {
         // transfer reward asset
         _createPayout.rewardAsset.transferFrom(payoutOwner, address(this), _createPayout.totalRewardAmount);
 
-        emit PayoutCreated(payout.payoutId, payoutOwner, _createPayout.asset, _createPayout.rewardAsset, _createPayout.totalRewardAmount);
+        emit PayoutCreated(payout.payoutId, payoutOwner, _createPayout.asset, _createPayout.rewardAsset, _createPayout.totalRewardAmount, block.timestamp);
 
         return payout.payoutId;
     }
@@ -161,7 +161,7 @@ contract PayoutManager is IPayoutManager {
         // transfer all remaining reward funds to the payout owner
         payout.rewardAsset.transfer(payout.payoutOwner, remainingRewardAmount);
 
-        emit PayoutCanceled(_payoutId, payout.payoutOwner, payout.asset, payout.rewardAsset, remainingRewardAmount);
+        emit PayoutCanceled(_payoutId, payout.payoutOwner, payout.asset, payout.rewardAsset, remainingRewardAmount, block.timestamp);
     }
 
     function claim(
@@ -207,6 +207,6 @@ contract PayoutManager is IPayoutManager {
         // send reward funds
         payout.rewardAsset.transfer(_wallet, payoutAmount);
 
-        emit PayoutClaimed(_payoutId, _wallet, payout.asset, _balance, payout.rewardAsset, payoutAmount);
+        emit PayoutClaimed(_payoutId, _wallet, payout.asset, _balance, payout.rewardAsset, payoutAmount, block.timestamp);
     }
 }
