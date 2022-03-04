@@ -12,7 +12,8 @@ import {
     PayoutManager,
     WalletApproverService,
     FaucetService,
-    QueryService
+    QueryService,
+    CampaignFeeManager
 } from "../typechain";
 
 export class TestData {
@@ -36,7 +37,7 @@ export class TestData {
     ////////// APX //////////
     apxRegistry: Contract;
     nameRegistry: Contract;
-    feeManager: Contract;
+    campaignFeeManager: CampaignFeeManager;
     merkleTreePathValidator: Contract;
     payoutManager: PayoutManager;
 
@@ -113,11 +114,11 @@ export class TestData {
             await this.deployer.getAddress(),
             factories.map(factory => factory.address)
         );
-        this.feeManager = await helpers.deployFeeManager(
+        this.campaignFeeManager = await helpers.deployCampaignFeeManager(
             this.deployer,
             await this.deployer.getAddress(),
             await this.treasury.getAddress()
-        );
+        ) as CampaignFeeManager;
 
         this.merkleTreePathValidator = await helpers.deployMerkleTreePathValidator(this.deployer);
         this.payoutManager = (
@@ -166,7 +167,7 @@ export class TestData {
             this.campaignInfoHash,
             this.apxRegistry.address,
             this.nameRegistry.address,
-            this.feeManager.address,
+            this.campaignFeeManager.address,
             this.assetTransferableFactory,
             this.cfManagerFactory,
             this.deployerService
@@ -201,7 +202,7 @@ export class TestData {
             this.campaignInfoHash,
             this.apxRegistry.address,
             this.nameRegistry.address,
-            this.feeManager.address,
+            this.campaignFeeManager.address,
             this.assetFactory,
             this.cfManagerFactory,
             this.deployerService
@@ -234,7 +235,7 @@ export class TestData {
             this.campaignWhitelistRequired,
             this.campaignInfoHash,
             this.nameRegistry.address,
-            this.feeManager.address,
+            this.campaignFeeManager.address,
             this.assetSimpleFactory,
             this.cfManagerVestingFactory,
             this.deployerService

@@ -29,12 +29,12 @@ export async function deployApxRegistry(deployer: Signer, masterOwner: string, a
   return apxRegistry;
 }
 
-export async function deployFeeManager(deployer: Signer, owner: string, treasury: string, confirmations: number = config.confirmationsForDeploy): Promise<Contract> {
-  const FeeManager = await ethers.getContractFactory("FeeManager", deployer);
-  const feeManager = await FeeManager.deploy(owner, treasury);
-  await ethers.provider.waitForTransaction(feeManager.deployTransaction.hash, confirmations)
-  console.log(`\nFeeManager deployed\n\tAt address: ${feeManager.address}`);
-  return feeManager;
+export async function deployCampaignFeeManager(deployer: Signer, owner: string, treasury: string, confirmations: number = config.confirmationsForDeploy): Promise<Contract> {
+  const CampaignFeeManager = await ethers.getContractFactory("CampaignFeeManager", deployer);
+  const campaignFeeManager = await CampaignFeeManager.deploy(owner, treasury);
+  await ethers.provider.waitForTransaction(campaignFeeManager.deployTransaction.hash, confirmations)
+  console.log(`\nCampaignFeeManager deployed\n\tAt address: ${campaignFeeManager.address}`);
+  return campaignFeeManager;
 }
 
 export async function deployRevenueFeeManager(deployer: Signer, owner: string, treasury: string, confirmations: number = config.confirmationsForDeploy): Promise<Contract> {
@@ -626,7 +626,7 @@ export async function updatePrice(priceManager: Signer, apxRegistry: Contract, a
 }
 
 /**
- * FeeManager related functions.
+ * CampaignFeeManager related functions.
  */
 export async function setDefaultFee(feeManager: Contract, numerator: Number, denominator: Number) {
   await feeManager.setDefaultFee(true, numerator, denominator);

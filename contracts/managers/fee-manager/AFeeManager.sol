@@ -44,9 +44,9 @@ abstract contract AFeeManager {
         emit SetDefaultFee(initialized, numerator, denominator, block.timestamp);
     }
 
-    function calculateFeeForAmount(address campaign, uint256 amount) public view returns (address, uint256) {
-        if (fees[campaign].initialized) {
-            FixedFee memory fee = fees[campaign];
+    function calculateFeeForAmount(address account, uint256 amount) public view returns (address, uint256) {
+        if (fees[account].initialized) {
+            FixedFee memory fee = fees[account];
             return (treasury, amount * fee.numerator / fee.denominator);
         } else if (defaultFee.initialized) {
             return (treasury, amount * defaultFee.numerator / defaultFee.denominator);

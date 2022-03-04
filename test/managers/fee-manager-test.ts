@@ -4,14 +4,14 @@ import {Contract, Signer} from "ethers";
 import * as helpers from "../../util/helpers";
 import {expect} from "chai";
 import {describe, it} from "mocha";
-import { FeeManager, RevenueFeeManager } from "../../typechain";
+import { CampaignFeeManager, RevenueFeeManager } from "../../typechain";
 
 describe("Fee Managers test", function () {
 
     let manager: Signer
     let treasury: Signer
     let jane: Signer
-    let feeManagerContract: FeeManager
+    let feeManagerContract: CampaignFeeManager
     let revenueFeeManagerContract: RevenueFeeManager
 
     beforeEach(async function () {
@@ -20,11 +20,11 @@ describe("Fee Managers test", function () {
         treasury    = accounts[1];
         jane        = accounts[2];
 
-        feeManagerContract = await helpers.deployFeeManager(
+        feeManagerContract = await helpers.deployCampaignFeeManager(
             manager,
             await manager.getAddress(),
             await treasury.getAddress()
-        ) as FeeManager;
+        ) as CampaignFeeManager;
         revenueFeeManagerContract = await helpers.deployRevenueFeeManager(
             manager,
             await manager.getAddress(),
@@ -36,7 +36,7 @@ describe("Fee Managers test", function () {
         const modifierMessage = "!manager";
         const address = await jane.getAddress();
 
-        // FeeManager
+        // CampaignFeeManager
         await expect(
             feeManagerContract.connect(jane).updateTreasury(address)
         ).to.be.revertedWith(modifierMessage);
@@ -72,7 +72,7 @@ describe("Fee Managers test", function () {
         const errorMessage = "AFeeManager: fee > 1.0";
         const address = await jane.getAddress();
 
-        // FeeManager
+        // CampaignFeeManager
         await expect(
             feeManagerContract.connect(manager).setDefaultFee(true, 11, 10)
         ).to.be.revertedWith(errorMessage);
@@ -96,7 +96,7 @@ describe("Fee Managers test", function () {
         const errorMessage = "AFeeManager: division by zero";
         const address = await jane.getAddress();
 
-        // FeeManager
+        // CampaignFeeManager
         await expect(
             feeManagerContract.connect(manager).setDefaultFee(true, 0, 0)
         ).to.be.revertedWith(errorMessage);

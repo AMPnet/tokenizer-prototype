@@ -83,7 +83,7 @@ describe("Asset transferable - full test", function () {
       const fundsRaisedWei = totalInvestment.sub(totalFee);
       const stablecoinPrecision = await testData.stablecoin.decimals();
       const fundsRaised = await ethers.utils.formatUnits(fundsRaisedWei, stablecoinPrecision);
-      await helpers.setDefaultFee(testData.feeManager, feeNumerator, feeDenominator);
+      await helpers.setDefaultFee(testData.campaignFeeManager, feeNumerator, feeDenominator);
       await testData.cfManager.connect(testData.issuerOwner).finalize();
       expect(
         await testData.stablecoin.balanceOf(issuerOwnerAddress)
