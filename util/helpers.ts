@@ -37,6 +37,14 @@ export async function deployFeeManager(deployer: Signer, owner: string, treasury
   return feeManager;
 }
 
+export async function deployRevenueFeeManager(deployer: Signer, owner: string, treasury: string, confirmations: number = config.confirmationsForDeploy): Promise<Contract> {
+  const RevenueFeeManager = await ethers.getContractFactory("RevenueFeeManager", deployer);
+  const revenueFeeManager = await RevenueFeeManager.deploy(owner, treasury);
+  await ethers.provider.waitForTransaction(revenueFeeManager.deployTransaction.hash, confirmations);
+  console.log(`\RevenueFeeManager deployed\n\tAt address: ${revenueFeeManager.address}`);
+  return revenueFeeManager;
+}
+
 export async function deployMerkleTreePathValidator(deployer: Signer, confirmations: number = config.confirmationsForDeploy): Promise<Contract> {
   const MerkleTreePathValidator = await ethers.getContractFactory("MerkleTreePathValidator", deployer);
   const merkleTreePathValidator = await MerkleTreePathValidator.deploy();
