@@ -63,7 +63,7 @@ contract CfManagerSoftcapVesting is ICfManagerSoftcapVesting, ACfManager {
 
         address fetchedIssuer = _safe_issuer_fetch(params.asset);
         address issuerProcessed = fetchedIssuer != address(0) ? fetchedIssuer : params.issuer;
-        require(issuerProcessed != address(0), "CfManagerSoftcapVesting: Invalid issuer.");
+        require(issuerProcessed == params.issuer, "CfManagerSoftcapVesting: Invalid issuer provided.");
 
         address paymentTokenProcessed = params.paymentToken == address(0) ?
             IIssuerCommon(issuerProcessed).commonState().stablecoin :
