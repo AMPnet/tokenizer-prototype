@@ -21,6 +21,7 @@ export async function createIssuerAssetCampaign(
     cfManagerMappedName: String,
     cfManagerPaymentToken: String,
     cfManagerPricePerToken: Number,
+    cfManagerTokenPriceDecimals: Number,
     cfManagerSoftcap: Number,
     cfManagerMinInvestment: Number,
     cfManagerMaxInvestment: Number,
@@ -32,7 +33,8 @@ export async function createIssuerAssetCampaign(
     cfManagerFactory: Contract,
     deployerService: Contract,
     apxRegistry: Contract,
-    nameRegistry: Contract
+    nameRegistry: Contract,
+    campaignFeeManager: Contract
   ): Promise<Array<Contract>> {
     const stablecoin = await ethers.getContractAt("USDC", issuerStablecoin);
     const assetInitialTokenSupplyWei = ethers.utils.parseEther(assetInitialTokenSupply.toString());
@@ -62,6 +64,7 @@ export async function createIssuerAssetCampaign(
         cfManagerMappedName,
         cfManagerPaymentToken,
         cfManagerPricePerToken,
+        cfManagerTokenPriceDecimals,
         cfManagerSoftcapWei,
         cfManagerMinInvestmentWei,
         cfManagerMaxInvestmentWei,
@@ -69,7 +72,8 @@ export async function createIssuerAssetCampaign(
         cfManagerWhitelistRequired,
         cfManagerInfo,
         apxRegistry.address,
-        nameRegistry.address
+        nameRegistry.address,
+        campaignFeeManager.address
       ]
     );
     const receipt = await ethers.provider.waitForTransaction(deployTx.hash);
@@ -234,6 +238,7 @@ export async function createIssuerAssetTransferableCampaign(
     cfManagerInfo: String,
     apxRegistry: String,
     nameRegistry: String,
+    campaignFeeManager: String,
     issuerFactory: Contract,
     assetTransferableFactory: Contract,
     cfManagerFactory: Contract,
@@ -275,7 +280,8 @@ export async function createIssuerAssetTransferableCampaign(
         cfManagerWhitelistRequired,
         cfManagerInfo,
         apxRegistry,
-        nameRegistry
+        nameRegistry,
+        campaignFeeManager
       ]
     );
     const receipt = await ethers.provider.waitForTransaction(deployTx.hash);
