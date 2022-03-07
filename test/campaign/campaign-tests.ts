@@ -43,6 +43,7 @@ describe("Covers important tests for all campaign flavors", function () {
       issuerOwnerAddress,
       "regular-campaign-successful-1",
       asset,
+      testData.issuer,
       10000,             // $1 price per token
       10000000,         // $10 softCap (taken from real example)
       10000000,         // $10 min per user investment
@@ -178,6 +179,7 @@ describe("Covers important tests for all campaign flavors", function () {
       issuerOwnerAddress,
       "regular-campaign-successful-2",
       asset,
+      testData.issuer,
       111,             // $0.111 price per token
       2111999997,      // ~$2112 softCap (taken from real example)
       550000000,       // $550 min per user investment
@@ -271,6 +273,7 @@ describe("Covers important tests for all campaign flavors", function () {
       issuerOwnerAddress,
       "failed-campaign",
       asset,
+      testData.issuer,
       10000,            // $1 price per token
       10000000,         // $10 softCap (taken from real example)
       10000000,         // $10 min per user investment
@@ -353,6 +356,7 @@ describe("Covers important tests for all campaign flavors", function () {
       issuerOwnerAddress,
       "min-per-user-test",
       asset,
+      testData.issuer,
       30000,            // $3 price per token
       10000000,         // $10 softCap
       2000000,          // $2 min per user investment
@@ -406,6 +410,7 @@ describe("Covers important tests for all campaign flavors", function () {
       issuerOwnerAddress,
       "min-per-user-test",
       asset,
+      testData.issuer,
       30000,            // $3 price per token
       10000000,         // $10 softCap
       2000000,          // $2 min per user investment
