@@ -24,9 +24,9 @@ contract TimeLockManager {
 
     function lock(uint256 amount) public {
         require(amount > 0, "TimeLockManager: amount is  0");
+        require(block.timestamp < deadline, "TimeLockManager:: manager expired");
         uint256 approvedAmount = token.allowance(msg.sender, address(this));
         require(approvedAmount > 0, "TimeLockManager:: allowance is 0");
-        require(block.timestamp < deadline, "TimeLockManager:: manager expired");
         locks[msg.sender] += approvedAmount;
         token.safeTransferFrom(msg.sender, address(this), approvedAmount);
         emit Lock(msg.sender, amount);
