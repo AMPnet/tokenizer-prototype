@@ -13,7 +13,8 @@ import {
     WalletApproverService,
     FaucetService,
     QueryService,
-    CampaignFeeManager
+    CampaignFeeManager,
+    RevenueFeeManager
 } from "../typechain";
 
 export class TestData {
@@ -40,6 +41,7 @@ export class TestData {
     campaignFeeManager: CampaignFeeManager;
     merkleTreePathValidator: Contract;
     payoutManager: PayoutManager;
+    revenueFeeManager: RevenueFeeManager;
 
     //////// SIGNERS ////////
     deployer: Signer;
@@ -121,8 +123,17 @@ export class TestData {
         ) as CampaignFeeManager;
 
         this.merkleTreePathValidator = await helpers.deployMerkleTreePathValidator(this.deployer);
+        this.revenueFeeManager = await helpers.deployRevenueFeeManager(
+            this.deployer,
+            await this.deployer.getAddress(),
+            await this.treasury.getAddress()
+        ) as RevenueFeeManager;
         this.payoutManager = (
-            await helpers.deployPayoutManager(this.deployer, this.merkleTreePathValidator.address)
+            await helpers.deployPayoutManager(
+                this.deployer,
+                this.merkleTreePathValidator.address,
+                this.revenueFeeManager.address
+            )
         ) as PayoutManager;
 
         const walletApproverAddress = await this.walletApprover.getAddress();

@@ -53,9 +53,9 @@ export async function deployMerkleTreePathValidator(deployer: Signer, confirmati
   return merkleTreePathValidator;
 }
 
-export async function deployPayoutManager(deployer: Signer, merkleTreePathValidatorAddress, confirmations: number = config.confirmationsForDeploy): Promise<Contract> {
+export async function deployPayoutManager(deployer: Signer, merkleTreePathValidatorAddress: string, revenueFeeManagerAddress: string, confirmations: number = config.confirmationsForDeploy): Promise<Contract> {
   const PayoutManager = await ethers.getContractFactory("PayoutManager", deployer);
-  const payoutManager = await PayoutManager.deploy(merkleTreePathValidatorAddress);
+  const payoutManager = await PayoutManager.deploy(merkleTreePathValidatorAddress, revenueFeeManagerAddress);
   await ethers.provider.waitForTransaction(payoutManager.deployTransaction.hash, confirmations)
   console.log(`\nPayoutManager deployed\n\tAt address: ${payoutManager.address}`);
   return payoutManager;
