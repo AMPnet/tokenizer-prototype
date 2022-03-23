@@ -17,13 +17,11 @@ contract CampaignFeeManager is AFeeManager, ICampaignFeeManager {
     string constant public FLAVOR = "FeeManagerV1";
     string constant public VERSION = "1.0.32";
 
-    // Constructor
     constructor(address _manager, address _treasury) {
         manager = _manager;
         treasury = _treasury;
     }
 
-    // ICampaignFeeManager IMPL
     function flavor() external pure override returns (string memory) { return FLAVOR; }
     
     function version() external pure override returns (string memory) { return VERSION; }

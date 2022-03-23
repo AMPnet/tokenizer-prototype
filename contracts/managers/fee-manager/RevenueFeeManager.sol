@@ -27,13 +27,11 @@ contract RevenueFeeManager is AFeeManager, IRevenueFeeManager {
     string constant public FLAVOR = "RevenueFeeManagerV1";
     string constant public VERSION = "1.0.32";
 
-    // Constructor
     constructor(address _manager, address _treasury) {
         manager = _manager;
         treasury = _treasury;
     }
 
-    // IRevenueFeeManager IMPL
     function flavor() external pure override returns (string memory) { return FLAVOR; }
     
     function version() external pure override returns (string memory) { return VERSION; }
