@@ -40,7 +40,7 @@ contract RevenueFeeManager is AFeeManager, IRevenueFeeManager {
         external
         override
         isManager 
-        isPositiveFee(numerator, denominator) 
+        isValidFee(numerator, denominator)
     {
         fees[asset] = FixedFee(initialized, numerator, denominator);
         emit SetAssetFee(asset, initialized, numerator, denominator, block.timestamp);
@@ -58,12 +58,13 @@ contract RevenueFeeManager is AFeeManager, IRevenueFeeManager {
         external
         override
         isManager
-        isPositiveFee(numerator, denominator) 
+        isValidFee(numerator, denominator)
     {
         Structs.AssetCommonStateWithName[] memory assets = queryService.getAssetsForIssuer(issuer, factories, nameRegistry);
+        FixedFee memory fee = FixedFee(initialized, numerator, denominator);
         for (uint256 i = 0; i < assets.length; i++) {
             address asset = assets[i].asset.contractAddress;
-            fees[asset] = FixedFee(initialized, numerator, denominator);
+            fees[asset] = fee;
             emit SetAssetFee(asset, initialized, numerator, denominator, block.timestamp);
         }
     }

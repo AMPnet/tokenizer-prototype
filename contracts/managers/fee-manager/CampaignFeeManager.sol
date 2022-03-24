@@ -14,7 +14,7 @@ interface ICampaignFeeManager is IVersioned  {
 
 contract CampaignFeeManager is AFeeManager, ICampaignFeeManager {
 
-    string constant public FLAVOR = "FeeManagerV1";
+    string constant public FLAVOR = "CampaignFeeManagerV1";
     string constant public VERSION = "1.0.32";
 
     constructor(address _manager, address _treasury) {
@@ -30,7 +30,7 @@ contract CampaignFeeManager is AFeeManager, ICampaignFeeManager {
         external
         override
         isManager
-        isPositiveFee(numerator, denominator) 
+        isValidFee(numerator, denominator)
     {
         fees[campaign] = FixedFee(initialized, numerator, denominator);
         emit SetCampaignFee(campaign, initialized, numerator, denominator, block.timestamp);

@@ -24,7 +24,7 @@ abstract contract AFeeManager {
         _;
     }
 
-    modifier isPositiveFee(uint256 numerator, uint256 denominator) {
+    modifier isValidFee(uint256 numerator, uint256 denominator) {
         require(numerator <= denominator, "AFeeManager: fee > 1.0");
         require(denominator > 0, "AFeeManager: division by zero");
         _;
@@ -38,7 +38,7 @@ abstract contract AFeeManager {
     function setDefaultFee(bool initialized, uint256 numerator, uint256 denominator) 
         external 
         isManager 
-        isPositiveFee(numerator, denominator) 
+        isValidFee(numerator, denominator)
     {
         defaultFee = FixedFee(initialized, numerator, denominator);
         emit SetDefaultFee(initialized, numerator, denominator, block.timestamp);
