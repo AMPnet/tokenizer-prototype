@@ -3,13 +3,14 @@ import { ethers } from "hardhat";
 import { BigNumber, ContractTransaction, Signer } from "ethers";
 import { expect } from "chai";
 import { describe, it } from "mocha";
-import { IERC20, MerkleTreePathValidator, PayoutManager } from "../../typechain";
+import { IERC20, MerkleTreePathValidator, PayoutManager, RevenueFeeManager } from "../../typechain";
 import * as helpers from "../../util/helpers";
 
 describe("Payout Manager test", function () {
 
     //////// CONTRACTS ////////
     let merkleTreePathValidatorService: MerkleTreePathValidator;
+    let revenueFeeManager: RevenueFeeManager;
     let payoutManager: PayoutManager;
     let asset1: IERC20;
     let asset2: IERC20;
@@ -21,6 +22,7 @@ describe("Payout Manager test", function () {
     let payoutOwner2: Signer;
     let payoutOwner3: Signer;
     let alice: Signer;
+    let revenueOwner: Signer;
 
     //////// CONST ////////
 
@@ -161,14 +163,18 @@ describe("Payout Manager test", function () {
         payoutOwner2     = accounts[9];
         payoutOwner3     = accounts[10];
         alice            = accounts[11];
+        revenueOwner     = accounts[12];
 
         const merkleTreeValidatorFactory = await ethers.getContractFactory("MerkleTreePathValidator", assetDistributor);
         const merkleTreeValidatorContract = await merkleTreeValidatorFactory.deploy();
-
         merkleTreePathValidatorService = merkleTreeValidatorContract as MerkleTreePathValidator;
 
+        const revenueFeeManagerFactory = await ethers.getContractFactory("RevenueFeeManager", assetDistributor);
+        const revenueFeeManagerContract = await revenueFeeManagerFactory.deploy(await revenueOwner.getAddress(), await revenueOwner.getAddress());
+        revenueFeeManager = revenueFeeManagerContract as RevenueFeeManager;
+
         const payoutManagerFactory = await ethers.getContractFactory("PayoutManager", assetDistributor);
-        const payoutManagerContract = await payoutManagerFactory.deploy(merkleTreePathValidatorService.address);
+        const payoutManagerContract = await payoutManagerFactory.deploy(merkleTreePathValidatorService.address, revenueFeeManager.address);
 
         payoutManager = payoutManagerContract as PayoutManager;
 
@@ -979,4 +985,60 @@ describe("Payout Manager test", function () {
         const claim = payoutManager.connect(alice).claim(payout.id, nonIncludedAddress, 2500, proofs[0]);
         await expect(claim).to.be.revertedWith("PayoutManager: requested (address, balance) pair is not contained in specified payout");
     });
-})
+
+    it('should not allow to create payout without fee allowance', async function() {
+        // set revenue fee
+        await revenueFeeManager.connect(revenueOwner).setDefaultFee(true, 1, 10);
+
+        const ownerAddress = await payoutOwner1.getAddress();
+
+        // transfer reward token to payoutOwner1
+        await rewardAsset.connect(assetDistributor).transfer(ownerAddress, oneToOneReward);
+
+        // payoutOwner1 approves reward for payout
+        await rewardAsset.connect(payoutOwner1).approve(payoutManager.address, oneToOneReward);
+
+        const payout: Payout = {
+            id: 0,
+            owner: ownerAddress,
+            canceled: false,
+            asset: asset1.address,
+            totalReward: oneToOneReward,
+            remainingReward: oneToOneReward
+        }
+        const createPayout = preparePayout(payoutOwner1, payout);
+        await expect(createPayout).to.be.revertedWith("PayoutManager: insufficient reward asset allowance");
+    });
+
+    it('should distribute revenue share fee', async function() {
+        // set revenue fee
+        await revenueFeeManager.connect(revenueOwner).setDefaultFee(true, 1, 10);
+        const fee = oneToOneReward * 0.1;
+        const rewardWithFee = oneToOneReward + fee;
+
+        const ownerAddress = await payoutOwner1.getAddress();
+        // transfer reward token to payoutOwner1
+        await rewardAsset.connect(assetDistributor).transfer(ownerAddress, rewardWithFee);
+        // payoutOwner1 approves reward for payout
+        await rewardAsset.connect(payoutOwner1).approve(payoutManager.address, rewardWithFee);
+
+        const payout: Payout = {
+            id: 0,
+            owner: ownerAddress,
+            canceled: false,
+            asset: asset1.address,
+            totalReward: oneToOneReward,
+            remainingReward: oneToOneReward
+        }
+
+        // payoutOwner1 creates payout for asset1
+        const createPayout = preparePayout(payoutOwner1, payout);
+
+        // verify PayoutCreated event data
+        await verifyCreatePayoutEvent(createPayout, payout);
+
+        // verify revenue fee is distributed
+        const balance = await rewardAsset.balanceOf(await revenueOwner.getAddress());
+        expect(balance).to.be.equal(fee);
+    });
+});

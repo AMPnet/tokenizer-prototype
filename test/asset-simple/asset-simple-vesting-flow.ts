@@ -78,7 +78,7 @@ describe("Asset simple - full test with vesting schedule", function () {
       const feeDenominator = 10;
       const totalInvestment = janeInvestmentWei.add(aliceInvestmentWei);
       const totalFee = totalInvestment.mul(feeNumerator).div(feeDenominator);
-      await helpers.setDefaultFee(testData.feeManager, feeNumerator, feeDenominator);
+      await helpers.setDefaultFee(testData.campaignFeeManager, feeNumerator, feeDenominator);
       await testData.cfManagerVesting.connect(testData.issuerOwner).finalize();
       expect(
         await testData.stablecoin.balanceOf(issuerOwnerAddress)

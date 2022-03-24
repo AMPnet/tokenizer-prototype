@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import "./IPayoutManager.sol";
 import "./IMerkleTreePathValidator.sol";
+import "../fee-manager/RevenueFeeManager.sol";
 import "../../shared/IVersioned.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -15,6 +16,7 @@ contract PayoutManager is IPayoutManager {
     //  STATE
     //------------------------
     IMerkleTreePathValidator private merkleTreePathValidator;
+    IRevenueFeeManager private revenueFeeManager;
 
     uint256 private currentPayoutId = 0; // current payout ID, incremental - if some payout exists, it will always be smaller than this value
     mapping(uint256 => Structs.Payout) private payoutsById;
@@ -25,8 +27,9 @@ contract PayoutManager is IPayoutManager {
     //------------------------
     //  CONSTRUCTOR
     //------------------------
-    constructor(IMerkleTreePathValidator _merkleTreePathValidator) {
+    constructor(IMerkleTreePathValidator _merkleTreePathValidator, IRevenueFeeManager _revenueFeeManager) {
         merkleTreePathValidator = _merkleTreePathValidator;
+        revenueFeeManager = _revenueFeeManager;
     }
 
     //------------------------
@@ -110,10 +113,12 @@ contract PayoutManager is IPayoutManager {
         require(_createPayout.totalRewardAmount > 0, "PayoutManager: cannot create payout without reward");
         require(_createPayout.assetSnapshotMerkleDepth > 0, "PayoutManager: Merkle tree depth cannot be zero");
 
+        (address feeAddress, uint256 feeAmount) = revenueFeeManager.calculateFee(address(_createPayout.asset), _createPayout.totalRewardAmount);
         address payoutOwner = msg.sender;
-
-        // verify that payout owner approved enough reward asset
-        require(_createPayout.totalRewardAmount <= _createPayout.rewardAsset.allowance(payoutOwner, address(this)), "PayoutManager: insufficient reward asset allowance");
+        require(
+            (_createPayout.totalRewardAmount + feeAmount) <= _createPayout.rewardAsset.allowance(payoutOwner, address(this)),
+            "PayoutManager: insufficient reward asset allowance(reward+fee)"
+        );
 
         // create payout
         Structs.Payout memory payout = Structs.Payout(
@@ -140,6 +145,10 @@ contract PayoutManager is IPayoutManager {
 
         currentPayoutId += 1;
 
+        // transfer revenue share fee
+        if (feeAmount > 0) {
+            _createPayout.rewardAsset.transferFrom(payoutOwner, feeAddress, feeAmount);
+        }
         // transfer reward asset
         _createPayout.rewardAsset.transferFrom(payoutOwner, address(this), _createPayout.totalRewardAmount);
 
