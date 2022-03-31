@@ -27,7 +27,7 @@ describe("Payout service tests", function () {
         expect(payouts.length).to.be.equal(0);
     });
 
-    it(`must check for: 
+    it.only(`must check for: 
             - payouts for all three asset types returned by the payout service for issuer
             - payout states for given payoutIds and investor for all three asset types`, async function () {
         const issuerOwnerAddress = await testData.issuerOwner.getAddress();
@@ -198,6 +198,27 @@ describe("Payout service tests", function () {
         expect(payoutStatesForInvestor[2].payoutId).to.be.equal(2);
         expect(payoutStatesForInvestor[2].investor).to.be.equal(aliceAddress);
         expect(payoutStatesForInvestor[2].amountClaimed).to.be.equal(0);
+
+        // Test fetching of the fee for the payout for asset
+        const revenueFeeNumerator = 1;
+        const revenueFeeDenominator = 10;
+        const revenueAmount = 100;
+        const revenueFee = revenueAmount * revenueFeeNumerator / revenueFeeDenominator;
+        await testData.revenueFeeManager.setAssetFee(
+            assetBasic.address,
+            true,
+            revenueFeeNumerator,
+            revenueFeeDenominator
+        );
+        const fetchedRevenueFeeRecord = (await testData.payoutService.getPayoutFeeForAssetAndAmount(
+            assetBasic.address,
+            revenueAmount,
+            testData.payoutManager.address
+        ));
+        const fetchedTreasuryAddress = fetchedRevenueFeeRecord[0];
+        const fetchedRevenueFee = fetchedRevenueFeeRecord[1].toNumber();
+        expect(fetchedTreasuryAddress).to.be.equal(await testData.treasury.getAddress());
+        expect(fetchedRevenueFee).to.be.equal(revenueFee); 
     });
 
     /* HELPERS */

@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "../managers/payout-manager/IPayoutManager.sol";
+import "../managers/fee-manager/IRevenueFeeManager.sol";
 import "../shared/Structs.sol";
 import "../shared/IAssetFactoryCommon.sol";
 import "../shared/IVersioned.sol";
@@ -26,12 +27,17 @@ interface IPayoutService is IVersioned {
         uint256[] memory payoutId
     ) external view returns(PayoutStateForInvestor[] memory);
 
+    function getPayoutFeeForAssetAndAmount(
+        address asset,
+        uint256 amount,
+        address payoutManager
+    ) external view returns (address, uint256);
 }
 
 contract PayoutService is IPayoutService {
     
     string constant public FLAVOR = "PayoutServiceV1";
-    string constant public VERSION = "1.0.30";
+    string constant public VERSION = "1.0.32";
 
     function flavor() external pure override returns (string memory) { return FLAVOR; }
     function version() external pure override returns (string memory) { return VERSION; }
@@ -88,4 +94,13 @@ contract PayoutService is IPayoutService {
         return response;
     }
 
+    function getPayoutFeeForAssetAndAmount(
+        address asset,
+        uint256 amount,
+        address payoutManager
+    ) external view override returns (address, uint256) {
+        return IRevenueFeeManager(
+            IPayoutManager(payoutManager).getFeeManager()
+        ).calculateFee(asset, amount);
+    }
 }

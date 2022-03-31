@@ -10,7 +10,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 contract PayoutManager is IPayoutManager {
 
     string constant public FLAVOR = "PayoutManagerV1";
-    string constant public VERSION = "1.0.30";
+    string constant public VERSION = "1.0.32";
 
     //------------------------
     //  STATE
@@ -61,6 +61,8 @@ contract PayoutManager is IPayoutManager {
     function flavor() external pure override returns (string memory) { return FLAVOR; }
     
     function version() external pure override returns (string memory) { return VERSION; }
+
+    function getFeeManager() external view override returns (address) { return address(revenueFeeManager); }
 
     function getCurrentPayoutId() public view override returns (uint256) {
         return currentPayoutId;
