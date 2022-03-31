@@ -101,7 +101,7 @@ describe("Payout Manager test", function () {
         isCanceled: boolean;
         asset: string;
         totalAssetAmount: BigNumber;
-        ignoredAssetAddresses: string[];
+        ignoredHolderAddresses: string[];
         assetSnapshotMerkleRoot: string;
         assetSnapshotMerkleDepth: BigNumber;
         assetSnapshotBlockNumber: BigNumber;
@@ -115,7 +115,7 @@ describe("Payout Manager test", function () {
         return payoutManager.connect(owner).createPayout({
             asset: payout.asset,
             totalAssetAmount: totalAssetAmount,
-            ignoredAssetAddresses: ignoredAddresses,
+            ignoredHolderAddresses: ignoredAddresses,
             payoutInfo: payoutInfoIpfsHash,
             assetSnapshotMerkleRoot: merkleRoot,
             assetSnapshotMerkleDepth: merkleDepth,
@@ -144,7 +144,7 @@ describe("Payout Manager test", function () {
         expect(payoutInfo.isCanceled).to.be.equal(expected.canceled);
         expect(payoutInfo.asset).to.be.equal(expected.asset);
         expect(payoutInfo.totalAssetAmount).to.be.equal(totalAssetAmount);
-        expect(payoutInfo.ignoredAssetAddresses).to.have.members(ignoredAddresses);
+        expect(payoutInfo.ignoredHolderAddresses).to.have.members(ignoredAddresses);
         expect(payoutInfo.assetSnapshotMerkleRoot).to.be.equal(merkleRoot);
         expect(payoutInfo.assetSnapshotMerkleDepth).to.be.equal(merkleDepth);
         expect(payoutInfo.assetSnapshotBlockNumber).to.be.equal(blockNumber);
@@ -187,7 +187,7 @@ describe("Payout Manager test", function () {
         const createPayout = payoutManager.connect(payoutOwner1).createPayout({
             asset: asset1.address,
             totalAssetAmount: 0,
-            ignoredAssetAddresses: ignoredAddresses,
+            ignoredHolderAddresses: ignoredAddresses,
             payoutInfo: payoutInfoIpfsHash,
             assetSnapshotMerkleRoot: merkleRoot,
             assetSnapshotMerkleDepth: merkleDepth,
@@ -204,7 +204,7 @@ describe("Payout Manager test", function () {
         const createPayout = payoutManager.connect(payoutOwner1).createPayout({
             asset: asset1.address,
             totalAssetAmount: totalAssetAmount,
-            ignoredAssetAddresses: ignoredAddresses,
+            ignoredHolderAddresses: ignoredAddresses,
             payoutInfo: payoutInfoIpfsHash,
             assetSnapshotMerkleRoot: merkleRoot,
             assetSnapshotMerkleDepth: merkleDepth,
@@ -221,7 +221,7 @@ describe("Payout Manager test", function () {
         const createPayout = payoutManager.connect(payoutOwner1).createPayout({
             asset: asset1.address,
             totalAssetAmount: totalAssetAmount,
-            ignoredAssetAddresses: ignoredAddresses,
+            ignoredHolderAddresses: ignoredAddresses,
             payoutInfo: payoutInfoIpfsHash,
             assetSnapshotMerkleRoot: merkleRoot,
             assetSnapshotMerkleDepth: 0,
@@ -238,7 +238,7 @@ describe("Payout Manager test", function () {
         const createPayout = payoutManager.connect(payoutOwner1).createPayout({
             asset: asset1.address,
             totalAssetAmount: totalAssetAmount,
-            ignoredAssetAddresses: ignoredAddresses,
+            ignoredHolderAddresses: ignoredAddresses,
             payoutInfo: payoutInfoIpfsHash,
             assetSnapshotMerkleRoot: merkleRoot,
             assetSnapshotMerkleDepth: merkleDepth,

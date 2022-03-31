@@ -130,7 +130,7 @@ contract PayoutManager is IPayoutManager {
             false, // payout is not canceled
             _createPayout.asset,
             _createPayout.totalAssetAmount,
-            _createPayout.ignoredAssetAddresses,
+            _createPayout.ignoredHolderAddresses,
             _createPayout.assetSnapshotMerkleRoot,
             _createPayout.assetSnapshotMerkleDepth,
             _createPayout.assetSnapshotBlockNumber,

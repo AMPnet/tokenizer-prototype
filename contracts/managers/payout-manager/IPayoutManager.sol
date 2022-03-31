@@ -13,7 +13,7 @@ interface IPayoutManager is IVersioned {
     struct CreatePayout {
         IERC20 asset;
         uint256 totalAssetAmount;
-        address[] ignoredAssetAddresses;
+        address[] ignoredHolderAddresses;
 
         string payoutInfo;
 

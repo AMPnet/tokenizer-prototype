@@ -16,5 +16,5 @@ interface IRevenueFeeManager is IVersioned  {
         uint256 numerator,
         uint256 denominator
     ) external;
-    function calculateFee(address asset, uint256 amount) external view returns (address, uint256);
+    function calculateFee(address asset, uint256 amount) external view returns (address treasury, uint256 fee);
 }

@@ -7,5 +7,5 @@ interface ICampaignFeeManager is IVersioned  {
     event SetCampaignFee(address campaign, bool initialized, uint256 nominator, uint256 denominator, uint256 timestamp);
 
     function setCampaignFee(address campaign, bool initialized, uint256 numerator, uint256 denominator) external;
-    function calculateFee(address campaign) external view returns (address, uint256);
+    function calculateFee(address campaign) external view returns (address treasury, uint256 fee);
 }

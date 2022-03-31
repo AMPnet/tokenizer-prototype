@@ -27,7 +27,7 @@ describe("Payout service tests", function () {
         expect(payouts.length).to.be.equal(0);
     });
 
-    it.only(`must check for: 
+    it(`must check for: 
             - payouts for all three asset types returned by the payout service for issuer
             - payout states for given payoutIds and investor for all three asset types`, async function () {
         const issuerOwnerAddress = await testData.issuerOwner.getAddress();
@@ -103,7 +103,7 @@ describe("Payout service tests", function () {
         await testData.payoutManager.connect(testData.issuerOwner).createPayout({
             asset: assetSimple.address,
             totalAssetAmount: payoutInfo.totalAssetAmount,
-            ignoredAssetAddresses: payoutInfo.ignoredAssetAddresses,
+            ignoredHolderAddresses: payoutInfo.ignoredAssetAddresses,
             payoutInfo: payoutInfo.payoutInfo,
             assetSnapshotMerkleRoot: payoutInfo.assetSnapshotMerkleRoot,
             assetSnapshotMerkleDepth: payoutInfo.assetSnapshotMerkleDepth,
@@ -117,7 +117,7 @@ describe("Payout service tests", function () {
         await testData.payoutManager.connect(testData.issuerOwner).createPayout({
             asset: assetTransferable.address,
             totalAssetAmount: payoutInfo.totalAssetAmount,
-            ignoredAssetAddresses: payoutInfo.ignoredAssetAddresses,
+            ignoredHolderAddresses: payoutInfo.ignoredAssetAddresses,
             payoutInfo: payoutInfo.payoutInfo,
             assetSnapshotMerkleRoot: payoutInfo.assetSnapshotMerkleRoot,
             assetSnapshotMerkleDepth: payoutInfo.assetSnapshotMerkleDepth,
@@ -131,7 +131,7 @@ describe("Payout service tests", function () {
         await testData.payoutManager.connect(testData.issuerOwner).createPayout({
             asset: assetBasic.address,
             totalAssetAmount: payoutInfo.totalAssetAmount,
-            ignoredAssetAddresses: payoutInfo.ignoredAssetAddresses,
+            ignoredHolderAddresses: payoutInfo.ignoredAssetAddresses,
             payoutInfo: payoutInfo.payoutInfo,
             assetSnapshotMerkleRoot: payoutInfo.assetSnapshotMerkleRoot,
             assetSnapshotMerkleDepth: payoutInfo.assetSnapshotMerkleDepth,
@@ -242,7 +242,7 @@ describe("Payout service tests", function () {
         isCanceled: boolean;
         asset: string;
         totalAssetAmount: BigNumber;
-        ignoredAssetAddresses: string[];
+        ignoredHolderAddresses: string[];
         assetSnapshotMerkleRoot: string;
         assetSnapshotMerkleDepth: BigNumber;
         assetSnapshotBlockNumber: BigNumber;
@@ -265,7 +265,7 @@ describe("Payout service tests", function () {
         expect(fetchedPayoutForIssuerItem.payoutInfo).to.be.equal(expectedPayoutInfo.payoutInfo);
         expect(fetchedPayoutForIssuerItem.isCanceled).to.be.false;
         expect(fetchedPayoutForIssuerItem.totalAssetAmount).to.be.equal(expectedPayoutInfo.totalAssetAmount);
-        expect(fetchedPayoutForIssuerItem.ignoredAssetAddresses.length).to.be.equal(0);
+        expect(fetchedPayoutForIssuerItem.ignoredHolderAddresses.length).to.be.equal(0);
         expect(fetchedPayoutForIssuerItem.assetSnapshotMerkleRoot).to.be.equal(expectedPayoutInfo.assetSnapshotMerkleRoot);
         expect(fetchedPayoutForIssuerItem.assetSnapshotMerkleDepth).to.be.equal(expectedPayoutInfo.assetSnapshotMerkleDepth);
         expect(fetchedPayoutForIssuerItem.assetSnapshotBlockNumber).to.be.equal(expectedPayoutInfo.assetSnapshotBlockNumber);

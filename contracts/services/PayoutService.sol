@@ -31,7 +31,7 @@ interface IPayoutService is IVersioned {
         address asset,
         uint256 amount,
         address payoutManager
-    ) external view returns (address, uint256);
+    ) external view returns (address treasury, uint256 fee);
 }
 
 contract PayoutService is IPayoutService {
@@ -98,7 +98,7 @@ contract PayoutService is IPayoutService {
         address asset,
         uint256 amount,
         address payoutManager
-    ) external view override returns (address, uint256) {
+    ) external view override returns (address treasury, uint256 fee) {
         return IRevenueFeeManager(
             IPayoutManager(payoutManager).getFeeManager()
         ).calculateFee(asset, amount);
