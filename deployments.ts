@@ -98,6 +98,56 @@ export const Matic: TokenizerConfig = {
     emptyFactory: '0xca07985612E7BD509C4a2BDc04e27D851cf50a92'
 }
 
+export const Private: TokenizerConfig = {
+    issuerFactory: {
+        basic: '0x158c48742c323c9fDac56d7a8d1AcC6F8854358A',
+    },
+    assetFactory: {
+        basic: '0xfbeEff11748D483E6E52bfC969e1f241C9C7209A',
+        transferable: '0xF630062FCb3dF6Dd22741161aD4fa2d67A70fB9F',
+        simple: '0x71A8b7c566Db21FD00E54D5Db677B44F83DC2ef8',
+    },
+    cfManagerFactory: {
+        basic: '0x7BE561e9eDAE9747bf221FA9B9Af07e1A9B23d12',
+        vesting: '0x9061C5b645A7Ef20e8fFC132291AB54CbDEac9B9',
+    },
+    apxRegistry: {
+        address: '0xf5B8fE53BC7d6EFdC229b17FbcCac9f8B0286eeD',
+        owner: '0x5013F6ce0f9Beb07Be528E408352D03f3FCa1857',
+        assetManager: '0x5013F6ce0f9Beb07Be528E408352D03f3FCa1857',
+        priceManager: '0x5013F6ce0f9Beb07Be528E408352D03f3FCa1857'
+    },
+    faucetService: {
+        address: '0x0000000000000000000000000000000000000000',
+        owner: '0x0000000000000000000000000000000000000000',
+        callers: [],
+        reward: '0',
+        threshold: '0'
+    },
+    nameRegistry: {
+        address: '0xE556caF2D184362A565ff1EA368288e8Cc45ef69',
+        owner: '0x5013F6ce0f9Beb07Be528E408352D03f3FCa1857'
+    },
+    feeManager: {
+        address: '0xA0b9F8b74594861107De092B1F29d3d8C5A3A42b',
+        owner: '0x5013F6ce0f9Beb07Be528E408352D03f3FCa1857',
+        treasury: '0x5013F6ce0f9Beb07Be528E408352D03f3FCa1857'
+    },
+    walletApproverService: {
+        address: '0x1867fbc164fDC1229a49280d266c869d67074258',
+        owner: '0x5013F6ce0f9Beb07Be528E408352D03f3FCa1857',
+        callers: ['0x0382Fe477878c8C3807aB427D0DB282EFfa01CD6'],
+        reward: '0'
+    },
+    investService: '0x7F069323f85dF642Ef2FE5691C1909220036e911',
+    payoutManager: '0x47FFfb93FE4875B6FBf1C82F0e068bB4E5917b31',
+    merkleTreePathValidator: '0xc50Bf7054dfDB26fA0310C0F5e50DC26C08bEab1',
+    payoutService: '0xa5674f141c7D43a2657a42dc70FCaB618cB931D8',
+    queryService: '0x95f2AD099BCb457757ae29c134A30934821b0D9D',
+    deployerService: '0x6a1aE7eD67113ecae332E06474C96e4e6BB894Fc',
+    emptyFactory: '0x42699A7612A82f1d9C36148af9C77354759b210b'
+}
+
 interface TokenizerConfig {
     issuerFactory: {
         basic: string,
