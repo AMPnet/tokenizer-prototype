@@ -2,25 +2,9 @@
 pragma solidity ^0.8.0;
 
 import "./AFeeManager.sol";
+import "./IRevenueFeeManager.sol";
 import "../../services/QueryService.sol";
-import "../../shared/IVersioned.sol";
 import "../../shared/Structs.sol";
-
-interface IRevenueFeeManager is IVersioned  {
-    event SetAssetFee(address asset, bool initialized, uint256 nominator, uint256 denominator, uint256 timestamp);
-
-    function setAssetFee(address asset, bool initialized, uint256 numerator, uint256 denominator) external;
-    function setIssuerFee(
-        address issuer,
-        QueryService queryService,
-        address[] calldata factories,
-        INameRegistry nameRegistry,
-        bool initialized,
-        uint256 numerator,
-        uint256 denominator
-    ) external;
-    function calculateFee(address asset, uint256 amount) external view returns (address, uint256);
-} 
 
 contract RevenueFeeManager is AFeeManager, IRevenueFeeManager {
 
@@ -48,9 +32,9 @@ contract RevenueFeeManager is AFeeManager, IRevenueFeeManager {
 
     function setIssuerFee(
         address issuer,
-        QueryService queryService,
+        address queryService,
         address[] calldata factories,
-        INameRegistry nameRegistry,
+        address nameRegistry,
         bool initialized, 
         uint256 numerator, 
         uint256 denominator
@@ -60,7 +44,12 @@ contract RevenueFeeManager is AFeeManager, IRevenueFeeManager {
         isManager
         isValidFee(numerator, denominator)
     {
-        Structs.AssetCommonStateWithName[] memory assets = queryService.getAssetsForIssuer(issuer, factories, nameRegistry);
+        Structs.AssetCommonStateWithName[] memory assets = 
+            IQueryService(queryService).getAssetsForIssuer(
+                issuer,
+                factories,
+                INameRegistry(nameRegistry)
+            );
         FixedFee memory fee = FixedFee(initialized, numerator, denominator);
         for (uint256 i = 0; i < assets.length; i++) {
             address asset = assets[i].asset.contractAddress;

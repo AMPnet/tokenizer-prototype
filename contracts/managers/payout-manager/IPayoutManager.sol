@@ -13,7 +13,7 @@ interface IPayoutManager is IVersioned {
     struct CreatePayout {
         IERC20 asset;
         uint256 totalAssetAmount;
-        address[] ignoredAssetAddresses;
+        address[] ignoredHolderAddresses;
 
         string payoutInfo;
 
@@ -36,6 +36,7 @@ interface IPayoutManager is IVersioned {
     //------------------------
     //  READ-ONLY FUNCTIONS
     //------------------------
+    function getFeeManager() external view returns (address);
     function getCurrentPayoutId() external view returns (uint256);
     function getPayoutInfo(uint256 _payoutId) external view returns (Structs.Payout memory);
     function getPayoutIdsForAsset(address _assetAddress) external view returns (uint256[] memory);
