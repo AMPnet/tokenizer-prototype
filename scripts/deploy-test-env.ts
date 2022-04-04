@@ -50,7 +50,7 @@ async function main() {
 
     const payoutManager: Contract = (process.env.PAYOUT_MANAGER) ?
         await ethers.getContractAt("PayoutManager", process.env.PAYOUT_MANAGER) :
-        await helpers.deployPayoutManager(deployer, merkleTreePathValidator.address);
+        await helpers.deployPayoutManager(deployer, merkleTreePathValidator.address, revenueFeeManager.address);
 
     const mirroredToken: Contract = (process.env.MIRRORED_TOKEN) ?
         await ethers.getContractAt("MirroredToken", process.env.MIRRORED_TOKEN) :
