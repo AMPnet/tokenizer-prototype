@@ -27,9 +27,11 @@ contract PayoutManager is IPayoutManager {
     //------------------------
     //  CONSTRUCTOR
     //------------------------
-    constructor(IMerkleTreePathValidator _merkleTreePathValidator, IRevenueFeeManager _revenueFeeManager) {
-        merkleTreePathValidator = _merkleTreePathValidator;
-        revenueFeeManager = _revenueFeeManager;
+    constructor(address _merkleTreePathValidator, address _revenueFeeManager) {
+        require(_merkleTreePathValidator != address(0), "PayoutManager: invalid merkle tree validator provided");
+        require(_revenueFeeManager != address(0), "PayoutManager: invalid fee manager provided");
+        merkleTreePathValidator = IMerkleTreePathValidator(_merkleTreePathValidator);
+        revenueFeeManager = IRevenueFeeManager(_revenueFeeManager);
     }
 
     //------------------------

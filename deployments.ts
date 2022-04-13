@@ -45,7 +45,7 @@ export const Mumbai: TokenizerConfig = {
         reward: '10000000000000000'
     },
     investService: '0x97B37a1F46b39cDD4F65aB54720e8eC8207be8E7',
-    payoutManager: '0x785e44E6bE12068216f513a460c490DAc9631aC5',
+    payoutManager: '0xd129c487ea7A5B8583f742a6c3dD99617Bb23Bf6',
     merkleTreePathValidator: '0x9982bb7bD0160B869D8E6Ca7559e53B01D2165eb',
     payoutService: '0xdf7361E2A8F9d9b3258960A19535cf42f211D946',
     queryService: '0x743BFd8395b13157A3cE6b1D8c1aC172a20B4d4d',
