@@ -2,6 +2,12 @@
 import { ethers } from "hardhat";
 import { Contract } from "ethers";
 
+function log(message: string, opts?: { logOutput: boolean }) {
+  if (!opts || opts?.logOutput === true) {
+    console.log(message);
+  }
+}
+
 export async function createCampaign(
     owner: String,
     mappedName: String,
@@ -14,7 +20,8 @@ export async function createCampaign(
     info: String,
     cfManagerFactory: Contract,
     nameRegistry: Contract,
-    feeRegistry: Contract
+    feeRegistry: Contract,
+    opts?: { logOutput: boolean }
   ): Promise<Contract> {
     const cfManagerTx = await cfManagerFactory.create(
       owner,
@@ -30,21 +37,21 @@ export async function createCampaign(
       feeRegistry.address
     );
     const receipt = await ethers.provider.waitForTransaction(cfManagerTx.hash);
-    for (const log of receipt.logs) {
+    for (const recLog of receipt.logs) {
       try {
-        const parsedLog = cfManagerFactory.interface.parseLog(log);
+        const parsedLog = cfManagerFactory.interface.parseLog(recLog);
         if (parsedLog.name == "CfManagerSoftcapCreated") {
           const ownerAddress = parsedLog.args.creator;
           const cfManagerAddress = parsedLog.args.cfManager;
           const assetAddress = parsedLog.args.asset;
-          console.log(`\nCrowdfunding Campaign deployed\n\tAt address: ${cfManagerAddress}\n\tOwner: ${ownerAddress}\n\tAsset: ${assetAddress}`);
+          log(`\nCrowdfunding Campaign deployed\n\tAt address: ${cfManagerAddress}\n\tOwner: ${ownerAddress}\n\tAsset: ${assetAddress}`);
           return (await ethers.getContractAt("CfManagerSoftcap", cfManagerAddress));
         }
         if (parsedLog.name == "CfManagerSoftcapVestingCreated") {
             const ownerAddress = parsedLog.args.creator;
             const cfManagerAddress = parsedLog.args.cfManager;
             const assetAddress = parsedLog.args.asset;
-            console.log(`\nCrowdfunding Campaign [Vesting] deployed\n\tAt address: ${cfManagerAddress}\n\tOwner: ${ownerAddress}\n\tAsset: ${assetAddress}`);
+            log(`\nCrowdfunding Campaign [Vesting] deployed\n\tAt address: ${cfManagerAddress}\n\tOwner: ${ownerAddress}\n\tAsset: ${assetAddress}`);
             return (await ethers.getContractAt("CfManagerSoftcapVesting", cfManagerAddress));
         }
       } catch (_) {}
