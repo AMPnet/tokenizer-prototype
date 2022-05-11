@@ -80,7 +80,7 @@ export class TestData {
     campaignInfoHash = "campaign-info-ipfs-hash";
     faucetReward = "0.001"
 
-    async deploy() {
+    async deploy(opts?: { logOutput: boolean }) {
         const accounts: Signer[] = await ethers.getSigners();
 
         this.deployer        = accounts[0];
@@ -95,9 +95,9 @@ export class TestData {
         this.mark            = accounts[8];
         this.treasury        = accounts[9];
 
-        this.stablecoin = await helpers.deployStablecoin(this.deployer, "1000000000000", 6);
+        this.stablecoin = await helpers.deployStablecoin(this.deployer, "1000000000000", 6, opts);
 
-        const factories = await helpers.deployFactories(this.deployer);
+        const factories = await helpers.deployFactories(this.deployer, opts);
         this.issuerFactory = factories[0];
         this.assetFactory = factories[1];
         this.assetTransferableFactory = factories[2];
@@ -109,30 +109,35 @@ export class TestData {
             this.deployer,
             await this.deployer.getAddress(),
             await this.assetManager.getAddress(),
-            await this.priceManager.getAddress()
+            await this.priceManager.getAddress(),
+            opts
         );
         this.nameRegistry = await helpers.deployNameRegistry(
             this.deployer,
             await this.deployer.getAddress(),
-            factories.map(factory => factory.address)
+            factories.map(factory => factory.address),
+            opts
         );
         this.campaignFeeManager = await helpers.deployCampaignFeeManager(
             this.deployer,
             await this.deployer.getAddress(),
-            await this.treasury.getAddress()
+            await this.treasury.getAddress(),
+            opts
         ) as CampaignFeeManager;
 
-        this.merkleTreePathValidator = await helpers.deployMerkleTreePathValidator(this.deployer);
+        this.merkleTreePathValidator = await helpers.deployMerkleTreePathValidator(this.deployer, opts);
         this.revenueFeeManager = await helpers.deployRevenueFeeManager(
             this.deployer,
             await this.deployer.getAddress(),
-            await this.treasury.getAddress()
+            await this.treasury.getAddress(),
+            opts
         ) as RevenueFeeManager;
         this.payoutManager = (
             await helpers.deployPayoutManager(
                 this.deployer,
                 this.merkleTreePathValidator.address,
-                this.revenueFeeManager.address
+                this.revenueFeeManager.address,
+                opts
             )
         ) as PayoutManager;
 
@@ -141,7 +146,8 @@ export class TestData {
             this.deployer,
             walletApproverAddress,
             this.faucetReward,
-            "0"
+            "0",
+            opts
         );
         this.walletApproverService = services[0] as WalletApproverService;
         this.deployerService = services[1];
@@ -151,12 +157,12 @@ export class TestData {
         this.payoutService = services[5] as PayoutService;
     }
 
-    async deployIssuerAssetTransferableCampaign(args: {campaignWhitelistRequired: boolean}) {
+    async deployIssuerAssetTransferableCampaign(args: {campaignWhitelistRequired: boolean}, opts?: { logOutput: boolean }) {
         //// Set the config for Issuer, Asset and Crowdfunding Campaign
         const issuerOwnerAddress = await this.issuerOwner.getAddress();
 
         //// Deploy the contracts with the provided config
-        await this.deployIssuer()
+        await this.deployIssuer(opts)
         const contracts = await deployerServiceUtil.createAssetTransferableCampaign(
             this.issuer,
             issuerOwnerAddress,
@@ -181,17 +187,18 @@ export class TestData {
             this.campaignFeeManager.address,
             this.assetTransferableFactory,
             this.cfManagerFactory,
-            this.deployerService
+            this.deployerService,
+            opts
         );
         this.asset = contracts[0];
         this.cfManager = contracts[1] as CfManagerSoftcap;
     }
 
-    async deployIssuerAssetClassicCampaign() {
+    async deployIssuerAssetClassicCampaign(opts?: { logOutput: boolean }) {
         const issuerOwnerAddress = await this.issuerOwner.getAddress();
 
         //// Deploy the contracts with the provided config
-        await this.deployIssuer()
+        await this.deployIssuer(opts)
         const contracts = await deployerServiceUtil.createAssetCampaign(
             this.issuer,
             issuerOwnerAddress,
@@ -216,18 +223,19 @@ export class TestData {
             this.campaignFeeManager.address,
             this.assetFactory,
             this.cfManagerFactory,
-            this.deployerService
+            this.deployerService,
+            opts
         );
         this.asset = contracts[0];
         this.cfManager = contracts[1] as CfManagerSoftcap;
     }
 
-    async deployIssuerAssetSimpleCampaignVesting() {
+    async deployIssuerAssetSimpleCampaignVesting(opts?: { logOutput: boolean }) {
         //// Set the config for Issuer, Asset and Crowdfunding Campaign
         const issuerOwnerAddress = await this.issuerOwner.getAddress();
 
         //// Deploy the contracts with the provided config
-        await this.deployIssuer()
+        await this.deployIssuer(opts)
         const contracts = await deployerServiceUtil.createAssetSimpleCampaignVesting(
             this.issuer,
             issuerOwnerAddress,
@@ -249,13 +257,14 @@ export class TestData {
             this.campaignFeeManager.address,
             this.assetSimpleFactory,
             this.cfManagerVestingFactory,
-            this.deployerService
+            this.deployerService,
+            opts
         );
         this.asset = contracts[0];
         this.cfManagerVesting = contracts[1] as CfManagerSoftcapVesting;
     }
 
-    async deployIssuer() {
+    async deployIssuer(opts?: { logOutput: boolean }) {
         const issuerAnsName = "test-issuer";
         const issuerInfoHash = "issuer-info-ipfs-hash";
         const issuerOwnerAddress = await this.issuerOwner.getAddress();
@@ -266,7 +275,8 @@ export class TestData {
             this.walletApproverService.address,
             issuerInfoHash,
             this.issuerFactory,
-            this.nameRegistry
+            this.nameRegistry,
+            opts
         ) as Issuer;
     }
 

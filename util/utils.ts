@@ -7,3 +7,9 @@ export async function advanceBlockTime(time: Number): Promise<String> {
     const latest = await ethers.provider.getBlock("latest");
     return latest.hash;
 }
+
+export function log(message: string, opts?: { logOutput: boolean }) {
+    if (!opts || opts?.logOutput === true) {
+        console.log(message);
+    }
+}
