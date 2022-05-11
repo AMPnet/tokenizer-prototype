@@ -1,12 +1,7 @@
 // @ts-ignore
 import { ethers } from "hardhat";
 import { Contract } from "ethers";
-
-function log(message: string, opts?: { logOutput: boolean }) {
-  if (!opts || opts?.logOutput === true) {
-    console.log(message);
-  }
-}
+import { log } from "../../util/utils";
 
 export async function createCampaign(
     owner: String,

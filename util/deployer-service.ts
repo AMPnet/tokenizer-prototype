@@ -2,12 +2,7 @@
 import { ethers } from "hardhat";
 import { Contract } from "ethers";
 import { parseStablecoin } from "./helpers";
-
-function log(message: string, opts?: { logOutput: boolean }) {
-  if (!opts || opts?.logOutput === true) {
-    console.log(message);
-  }
-}
+import { log } from "./utils";
 
 export async function createIssuerAssetCampaign(
     issuerOwner: String,

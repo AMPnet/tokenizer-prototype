@@ -2,15 +2,10 @@
 import { ethers } from "hardhat";
 import { Contract, Signer, BigNumber } from "ethers";
 import * as filters from "./filters";
+import { log } from "./utils";
 
 const config = {
   confirmationsForDeploy: 1
-}
-
-function log(message: string, opts?: { logOutput: boolean }) {
-  if (!opts || opts?.logOutput === true) {
-    console.log(message);
-  }
 }
 
 export async function deployStablecoin(deployer: Signer, supply: number | string, precision: number | string, opts?: { logOutput: boolean }, confirmations: number = config.confirmationsForDeploy): Promise<Contract> {
