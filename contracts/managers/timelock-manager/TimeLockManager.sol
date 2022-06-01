@@ -31,7 +31,7 @@ contract TimeLockManager {
             "TimeLockManager:: missing allowance"
         );
         require(
-            token.balanceOf(msg.sender, address(this)) >= amount,
+            token.balanceOf(msg.sender) >= amount,
             "TimeLockManager:: balance not enough"
         );
 
@@ -68,6 +68,10 @@ contract TimeLockManager {
         tokenLock.released = true;
         IERC20(tokenLock.token).safeTransfer(spender, tokenLock.amount);
         emit Unlock(spender, tokenLock.token, index, tokenLock.amount);
+    }
+
+    function tokenLocksList(address wallet) external view returns (TokenLock[] memory) {
+        return locks[wallet];
     }
 
 }
