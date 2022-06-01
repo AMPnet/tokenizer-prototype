@@ -28,13 +28,21 @@ async function main() {
             process.env.APX_REGISTRY_PRICE_MANAGER
         );
 
-    const feeManager: Contract = (process.env.FEE_MANAGER) ?
-        await ethers.getContractAt("FeeManager", process.env.FEE_MANAGER) :
-        await helpers.deployFeeManager(
+    const campaignFeeManager: Contract = (process.env.CAMPAIGN_FEE_MANAGER) ?
+        await ethers.getContractAt("CampaignFeeManager", process.env.CAMPAIGN_FEE_MANAGER) :
+        await helpers.deployCampaignFeeManager(
             deployer,
-            process.env.FEE_MANAGER_OWNER,
-            process.env.FEE_MANAGER_TREASURY
+            process.env.CAMPAIGN_FEE_MANAGER_OWNER,
+            process.env.CAMPAIGN_FEE_MANAGER_TREASURY
         );
+
+    const revenueFeeManager: Contract = (process.env.REVENUE_FEE_MANAGER) ?
+    await ethers.getContractAt("RevenueFeeManager", process.env.REVENUE_FEE_MANAGER) :
+    await helpers.deployRevenueFeeManager(
+        deployer,
+        process.env.REVENUE_FEE_MANAGER_OWNER,
+        process.env.REVENUE_FEE_MANAGER_TREASURY
+    );
     
     const merkleTreePathValidator: Contract = (process.env.MERKLE_TREE_PATH_VALIDATOR) ?
         await ethers.getContractAt("MerkleTreePathValidator", process.env.MERKLE_TREE_PATH_VALIDATOR) :
@@ -42,7 +50,7 @@ async function main() {
 
     const payoutManager: Contract = (process.env.PAYOUT_MANAGER) ?
         await ethers.getContractAt("PayoutManager", process.env.PAYOUT_MANAGER) :
-        await helpers.deployPayoutManager(deployer, merkleTreePathValidator.address);
+        await helpers.deployPayoutManager(deployer, merkleTreePathValidator.address, revenueFeeManager.address);
 
     const mirroredToken: Contract = (process.env.MIRRORED_TOKEN) ?
         await ethers.getContractAt("MirroredToken", process.env.MIRRORED_TOKEN) :

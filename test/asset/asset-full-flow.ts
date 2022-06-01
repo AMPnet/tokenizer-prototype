@@ -91,8 +91,8 @@ describe("Asset - full test", function () {
       const fundsRaisedWei = totalInvestment.sub(totalFee);
       const stablecoinPrecision = await testData.stablecoin.decimals();
       const fundsRaised = await ethers.utils.formatUnits(fundsRaisedWei, stablecoinPrecision);
-      await helpers.setDefaultFee(testData.feeManager, 1, 5);
-      await helpers.setFeeForCampaign(testData.feeManager, testData.cfManager.address, feeNumerator, feeDenominator);
+      await helpers.setDefaultFee(testData.campaignFeeManager, 1, 5);
+      await helpers.setFeeForCampaign(testData.campaignFeeManager, testData.cfManager.address, feeNumerator, feeDenominator);
       await testData.cfManager.connect(testData.issuerOwner).finalize();
       expect(
           await testData.stablecoin.balanceOf(issuerOwnerAddress)

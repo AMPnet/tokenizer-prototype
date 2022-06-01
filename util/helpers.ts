@@ -29,12 +29,20 @@ export async function deployApxRegistry(deployer: Signer, masterOwner: string, a
   return apxRegistry;
 }
 
-export async function deployFeeManager(deployer: Signer, owner: string, treasury: string, confirmations: number = config.confirmationsForDeploy): Promise<Contract> {
-  const FeeManager = await ethers.getContractFactory("FeeManager", deployer);
-  const feeManager = await FeeManager.deploy(owner, treasury);
-  await ethers.provider.waitForTransaction(feeManager.deployTransaction.hash, confirmations)
-  console.log(`\nFeeManager deployed\n\tAt address: ${feeManager.address}`);
-  return feeManager;
+export async function deployCampaignFeeManager(deployer: Signer, owner: string, treasury: string, confirmations: number = config.confirmationsForDeploy): Promise<Contract> {
+  const CampaignFeeManager = await ethers.getContractFactory("CampaignFeeManager", deployer);
+  const campaignFeeManager = await CampaignFeeManager.deploy(owner, treasury);
+  await ethers.provider.waitForTransaction(campaignFeeManager.deployTransaction.hash, confirmations)
+  console.log(`\nCampaignFeeManager deployed\n\tAt address: ${campaignFeeManager.address}`);
+  return campaignFeeManager;
+}
+
+export async function deployRevenueFeeManager(deployer: Signer, owner: string, treasury: string, confirmations: number = config.confirmationsForDeploy): Promise<Contract> {
+  const RevenueFeeManager = await ethers.getContractFactory("RevenueFeeManager", deployer);
+  const revenueFeeManager = await RevenueFeeManager.deploy(owner, treasury);
+  await ethers.provider.waitForTransaction(revenueFeeManager.deployTransaction.hash, confirmations);
+  console.log(`\RevenueFeeManager deployed\n\tAt address: ${revenueFeeManager.address}`);
+  return revenueFeeManager;
 }
 
 export async function deployMerkleTreePathValidator(deployer: Signer, confirmations: number = config.confirmationsForDeploy): Promise<Contract> {
@@ -45,9 +53,9 @@ export async function deployMerkleTreePathValidator(deployer: Signer, confirmati
   return merkleTreePathValidator;
 }
 
-export async function deployPayoutManager(deployer: Signer, merkleTreePathValidatorAddress, confirmations: number = config.confirmationsForDeploy): Promise<Contract> {
+export async function deployPayoutManager(deployer: Signer, merkleTreePathValidatorAddress: string, revenueFeeManagerAddress: string, confirmations: number = config.confirmationsForDeploy): Promise<Contract> {
   const PayoutManager = await ethers.getContractFactory("PayoutManager", deployer);
-  const payoutManager = await PayoutManager.deploy(merkleTreePathValidatorAddress);
+  const payoutManager = await PayoutManager.deploy(merkleTreePathValidatorAddress, revenueFeeManagerAddress);
   await ethers.provider.waitForTransaction(payoutManager.deployTransaction.hash, confirmations)
   console.log(`\nPayoutManager deployed\n\tAt address: ${payoutManager.address}`);
   return payoutManager;
@@ -618,7 +626,7 @@ export async function updatePrice(priceManager: Signer, apxRegistry: Contract, a
 }
 
 /**
- * FeeManager related functions.
+ * CampaignFeeManager related functions.
  */
 export async function setDefaultFee(feeManager: Contract, numerator: Number, denominator: Number) {
   await feeManager.setDefaultFee(true, numerator, denominator);

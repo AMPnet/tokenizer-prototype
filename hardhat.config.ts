@@ -80,6 +80,15 @@ function networks() {
        gasPrice: 10000000000
     }
   }
+  if (process.env.PRIVATE_RPC) {
+    networks["private"] = {
+       url: process.env.PRIVATE_RPC,
+       accounts: {
+         mnemonic: process.env.SEED_PHRASE
+       },
+       gasPrice: 0
+    }
+  }
  }
  return networks;
 }

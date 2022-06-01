@@ -28,8 +28,13 @@ export const Mumbai: TokenizerConfig = {
         address: '0x254a38c1edF0448ecD9973B724FAABee2ad3Ffc0',
         owner: '0x5013F6ce0f9Beb07Be528E408352D03f3FCa1857'
     },
-    feeManager: {
+    campaignFeeManager: {
         address: '0xC74f47030aedEBa155a65921E62e8B3C0Bf77140',
+        owner: '0x5013F6ce0f9Beb07Be528E408352D03f3FCa1857',
+        treasury: '0x5013F6ce0f9Beb07Be528E408352D03f3FCa1857'
+    },
+    revenueFeeManager: {
+        address: '0x374468082351a2b6014ACC961101bCad622A85DF',
         owner: '0x5013F6ce0f9Beb07Be528E408352D03f3FCa1857',
         treasury: '0x5013F6ce0f9Beb07Be528E408352D03f3FCa1857'
     },
@@ -40,9 +45,9 @@ export const Mumbai: TokenizerConfig = {
         reward: '10000000000000000'
     },
     investService: '0x97B37a1F46b39cDD4F65aB54720e8eC8207be8E7',
-    payoutManager: '0x06608Ae976424dbF97E5130E26637AFE96fD8C07',
+    payoutManager: '0xd129c487ea7A5B8583f742a6c3dD99617Bb23Bf6',
     merkleTreePathValidator: '0x9982bb7bD0160B869D8E6Ca7559e53B01D2165eb',
-    payoutService: '0x1b2F2e06feB844693cF27d181690f3212AE6c8d6',
+    payoutService: '0xdf7361E2A8F9d9b3258960A19535cf42f211D946',
     queryService: '0x743BFd8395b13157A3cE6b1D8c1aC172a20B4d4d',
     deployerService: '0x7EBb7d279Ff45Ba30698CC090a53c0EC05F89f81',
     emptyFactory: '0x3BE13506aF685EB2d2F6321700053f6395146522'
@@ -78,7 +83,12 @@ export const Matic: TokenizerConfig = {
         address: '0xdFB1F288b9845d4afE879aF554d4D2f1fb8A531d',
         owner: '0x083D85EA574E276E86841202B159D60f3473E671'
     },
-    feeManager: {
+    campaignFeeManager: {
+        address: '0x7c6912280D9c28e42c208bE79ccb2c8fC71Bd7EA',
+        owner: '0x083D85EA574E276E86841202B159D60f3473E671',
+        treasury: '0xC42676564481FB66E10b93545a9f41C81cc7813D'
+    },
+    revenueFeeManager: {
         address: '0x7c6912280D9c28e42c208bE79ccb2c8fC71Bd7EA',
         owner: '0x083D85EA574E276E86841202B159D60f3473E671',
         treasury: '0xC42676564481FB66E10b93545a9f41C81cc7813D'
@@ -96,6 +106,61 @@ export const Matic: TokenizerConfig = {
     queryService: '0x05633b916e9ca43366f51fe7506126ceae0dc5d9',
     deployerService: '0xf47CF4f0E0cb0097d7C0955068bF98733586A87e',
     emptyFactory: '0xca07985612E7BD509C4a2BDc04e27D851cf50a92'
+}
+
+export const Private: TokenizerConfig = {
+    issuerFactory: {
+        basic: '0x0d2739312BD308C5F1A51Db8Ad859Cd5978f3570',
+    },
+    assetFactory: {
+        basic: '0x6d7aCe816b7ff80005ae7950d9fC508A7adC8DDC',
+        transferable: '0x71A8b7c566Db21FD00E54D5Db677B44F83DC2ef8',
+        simple: '0x7BE561e9eDAE9747bf221FA9B9Af07e1A9B23d12',
+    },
+    cfManagerFactory: {
+        basic: '0x9061C5b645A7Ef20e8fFC132291AB54CbDEac9B9',
+        vesting: '0xE556caF2D184362A565ff1EA368288e8Cc45ef69',
+    },
+    apxRegistry: {
+        address: '0xf5B8fE53BC7d6EFdC229b17FbcCac9f8B0286eeD',
+        owner: '0x5013F6ce0f9Beb07Be528E408352D03f3FCa1857',
+        assetManager: '0x5013F6ce0f9Beb07Be528E408352D03f3FCa1857',
+        priceManager: '0x5013F6ce0f9Beb07Be528E408352D03f3FCa1857'
+    },
+    faucetService: {
+        address: '0x0000000000000000000000000000000000000000',
+        owner: '0x0000000000000000000000000000000000000000',
+        callers: [],
+        reward: '0',
+        threshold: '0'
+    },
+    nameRegistry: {
+        address: '0x1867fbc164fDC1229a49280d266c869d67074258',
+        owner: '0x5013F6ce0f9Beb07Be528E408352D03f3FCa1857'
+    },
+    campaignFeeManager: {
+        address: '0xA0b9F8b74594861107De092B1F29d3d8C5A3A42b',
+        owner: '0x5013F6ce0f9Beb07Be528E408352D03f3FCa1857',
+        treasury: '0x5013F6ce0f9Beb07Be528E408352D03f3FCa1857'
+    },
+    revenueFeeManager: {
+        address: '0xc50Bf7054dfDB26fA0310C0F5e50DC26C08bEab1',
+        owner: '0x5013F6ce0f9Beb07Be528E408352D03f3FCa1857',
+        treasury: '0x5013F6ce0f9Beb07Be528E408352D03f3FCa1857'
+    },
+    walletApproverService: {
+        address: '0x6a1aE7eD67113ecae332E06474C96e4e6BB894Fc',
+        owner: '0x5013F6ce0f9Beb07Be528E408352D03f3FCa1857',
+        callers: ['0x0382Fe477878c8C3807aB427D0DB282EFfa01CD6'],
+        reward: '0'
+    },
+    investService: '0xa5674f141c7D43a2657a42dc70FCaB618cB931D8',
+    payoutManager: '0x158c48742c323c9fDac56d7a8d1AcC6F8854358A',
+    merkleTreePathValidator: '0x47FFfb93FE4875B6FBf1C82F0e068bB4E5917b31',
+    payoutService: '0xD4eb15e97FeEd5530c99062eA1953Db5b3634A97',
+    queryService: '0x7F069323f85dF642Ef2FE5691C1909220036e911',
+    deployerService: '0x95f2AD099BCb457757ae29c134A30934821b0D9D',
+    emptyFactory: '0xd48Fcfe879649A83e1AD333b2AB2Bd480754F972'
 }
 
 interface TokenizerConfig {
@@ -128,7 +193,12 @@ interface TokenizerConfig {
         address: string,
         owner: string
     },
-    feeManager: {
+    campaignFeeManager: {
+        address: string,
+        owner: string,
+        treasury: string
+    },
+    revenueFeeManager: {
         address: string,
         owner: string,
         treasury: string
