@@ -1,8 +1,8 @@
 // @ts-ignore
 import {ethers} from "hardhat";
-import {BigNumber, Contract, Signer, utils} from "ethers";
+import {BigNumber, Signer} from "ethers";
 import * as helpers from "../../util/helpers";
-import {expect, util} from "chai";
+import {expect} from "chai";
 import {TimeLockManager, IERC20} from "../../typechain";
 import {describe, it} from "mocha";
 import {advanceBlockTime} from "../../util/utils";
@@ -12,12 +12,9 @@ describe("TimeLock Manager tests", function () {
     var accounts: Signer[];
     var token: IERC20;
 
-    async function createTimeLockManager(
-        token: string,
-        deadline: number
-    ): Promise<TimeLockManager> {
+    async function createTimeLockManager(): Promise<TimeLockManager> {
         const TimeLockManagerContract = await ethers.getContractFactory("TimeLockManager", accounts[0]);
-        const deployed = await TimeLockManagerContract.deploy(token, deadline);
+        const deployed = await TimeLockManagerContract.deploy();
         return deployed as TimeLockManager;
     }
     
@@ -34,60 +31,18 @@ describe("TimeLock Manager tests", function () {
         token = await helpers.deployStablecoin(accounts[0], "1000000", 18) as IERC20;
     });
 
-    it(`is forbidden to create a TimeLock manager with the unlock deadline in the past`, async () => {
-        const forbiddenCreateTx = createTimeLockManager(
-            token.address,
-            (await now()) - 1
-        );
-        await expect(forbiddenCreateTx).to.be.revertedWith("TimeLockManager:: deadline must be in the future");
-    });
-
-    it(`is forbidden to create a TimeLock manager with the zero address token`, async () => {
-        const forbiddenCreateTx = createTimeLockManager(
-            ethers.constants.AddressZero,
-            (await now()) + 1
-        );
-        await expect(forbiddenCreateTx).to.be.revertedWith("TimeLockManager:: token is 0x0");
-    });
-
-    it(`will fail to lock tokens if amount is 0`, async () => {
-        const timeLockManager = await createTimeLockManager(
-            token.address,
-            (await now()) + 100
-        );
-        const forbiddenLockTx = timeLockManager.lock(0);
-        await expect(forbiddenLockTx).to.be.revertedWith("TimeLockManager: amount is  0");
-    });
-
     it(`will fail to lock tokens if missing approval`, async () => {
-        const timeLockManager = await createTimeLockManager(
-            token.address,
-            (await now()) + 100
-        );
-        const forbiddenLockTx = timeLockManager.lock(10);
-        await expect(forbiddenLockTx).to.be.revertedWith("TimeLockManager:: allowance is 0");
+        const timeLockManager = await createTimeLockManager();
+        const forbiddenLockTx = timeLockManager.lock(token.address, 10, 10, "info");
+        await expect(forbiddenLockTx).to.be.revertedWith("TimeLockManager:: missing allowance");
     });
 
-    it(`will fail to lock tokens if unlock deadline has been reached`, async () => {
-        const deadline = (await now()) + 10;
-        const amountToLock = 1;
-        const timeLockManager = await createTimeLockManager(
-            token.address,
-            deadline
-        );
-        await advanceBlockTime(deadline + 1); // go into the future to reach the unlock deadline
-        await token.connect(accounts[0]).approve(timeLockManager.address, amountToLock);
-        const forbiddenLockTx = timeLockManager.lock(amountToLock);
-        await expect(forbiddenLockTx).to.be.revertedWith("TimeLockManager:: manager expired");
-    });
-
-    it(`will successfully lock tokens if the unlock deadline has not been reached`, async () => {
-        const deadline = (await now()) + 10;
+    it(`will successfully lock tokens if the lockup period is > 0 & token amount is > 0`, async () => {
+        const duration = 10;
+        const deadline = (await now()) + duration;
         const amountToLock = BigNumber.from(1);
-        const timeLockManager = await createTimeLockManager(
-            token.address,
-            deadline
-        );
+        const lockDescription = "info";
+        const timeLockManager = await createTimeLockManager();
         
         // make sure spender has 0 tokens in the beginning
         const spender = accounts[1];
@@ -100,34 +55,67 @@ describe("TimeLock Manager tests", function () {
 
         // spender locks 1 token
         await token.connect(spender).approve(timeLockManager.address, amountToLock);
-        const lockTx = await timeLockManager.connect(spender).lock(amountToLock);
-        await expect(lockTx).to.emit(timeLockManager, "Lock").withArgs(spenderAddress, amountToLock);
+        const lockTx = await timeLockManager.connect(spender).lock(
+            token.address,
+            amountToLock,
+            duration,
+            lockDescription
+        );
+        await expect(lockTx).to.emit(timeLockManager, "Lock").withArgs(
+            spenderAddress,
+            token.address,
+            amountToLock,
+            duration
+        );
         expect(await token.balanceOf(spenderAddress)).to.be.equal(0);
-        expect(await timeLockManager.locks(spenderAddress)).to.be.equal(amountToLock);
         expect(await token.balanceOf(timeLockManager.address)).to.be.equal(amountToLock);
 
+        const tokenLockEntry = await timeLockManager.locks(spenderAddress, 0);
+        expect(tokenLockEntry.token).to.be.equal(token.address);
+        expect(tokenLockEntry.amount).to.be.equal(amountToLock);
+        expect(tokenLockEntry.createdAt).to.exist;
+        expect(tokenLockEntry.duration).to.be.equal(duration);
+        expect(tokenLockEntry.info).to.be.equal(lockDescription);
+        expect(tokenLockEntry.released).to.be.false;
+
         // spender tries to unlock before deadline has been reached (must fail)
-        const forbiddenUnlockTx = timeLockManager.connect(spender).unlock(spenderAddress);
+        const forbiddenUnlockTx = timeLockManager.connect(spender).unlock(spenderAddress, 0);
         await expect(forbiddenUnlockTx).to.be.revertedWith("TimeLockManager:: deadline not reached");
 
         // fast forward to future when deadline is reached and the spender can unlock his tokens
-        await advanceBlockTime(deadline + 1);
-        const unlockTx = await timeLockManager.unlock(spenderAddress);
-        await expect(unlockTx).to.emit(timeLockManager, "Unlock").withArgs(spenderAddress, amountToLock);
-        expect(await token.balanceOf(spenderAddress)).to.be.equal(amountToLock);
-        expect(await timeLockManager.locks(spenderAddress)).to.be.equal(0);
-        expect(await token.balanceOf(timeLockManager.address)).to.be.equal(0);
-    });
-
-    it(`will fail to unlock tokens if 0 tokens are locked`, async () => {
-        const deadline = (await now()) + 10;
-        const timeLockManager = await createTimeLockManager(
+        await advanceBlockTime(deadline + 10);
+        const unlockTx = await timeLockManager.unlock(spenderAddress, 0);
+        await expect(unlockTx).to.emit(timeLockManager, "Unlock").withArgs(
+            spenderAddress,
             token.address,
-            deadline
+            0,
+            amountToLock
         );
-        await advanceBlockTime(deadline + 1);
-        const forbiddenUnlockTx = timeLockManager.unlock(await accounts[0].getAddress());
-        await expect(forbiddenUnlockTx).to.be.revertedWith("TimeLockManager:: locked amount is 0");
+        expect(await token.balanceOf(spenderAddress)).to.be.equal(amountToLock);
+        expect(await token.balanceOf(timeLockManager.address)).to.be.equal(0);
+
+        const tokenLockEntryAfterRelease = await timeLockManager.locks(spenderAddress, 0);
+        expect(tokenLockEntryAfterRelease.token).to.be.equal(token.address);
+        expect(tokenLockEntryAfterRelease.amount).to.be.equal(amountToLock);
+        expect(tokenLockEntryAfterRelease.createdAt).to.exist;
+        expect(tokenLockEntryAfterRelease.duration).to.be.equal(duration);
+        expect(tokenLockEntryAfterRelease.info).to.be.equal(lockDescription);
+        expect(tokenLockEntryAfterRelease.released).to.be.true;
+
+        // it will fail if user tries to release tokens again
+        const failedUnlockTx = timeLockManager.unlock(spenderAddress, 0);
+        await expect(failedUnlockTx).to.be.revertedWith("TimeLockManager:: tokens already released");
+
+        // can fetch the list of the token locks for the user 
+        const lockHistory = await timeLockManager.tokenLocksList(spenderAddress);
+        expect(lockHistory.length).to.be.equal(1);
+        const tokenLockEntryFromHistory = lockHistory[0];
+        expect(tokenLockEntryFromHistory.token).to.be.equal(token.address);
+        expect(tokenLockEntryFromHistory.amount).to.be.equal(amountToLock);
+        expect(tokenLockEntryFromHistory.createdAt).to.exist;
+        expect(tokenLockEntryFromHistory.duration).to.be.equal(duration);
+        expect(tokenLockEntryFromHistory.info).to.be.equal(lockDescription);
+        expect(tokenLockEntryFromHistory.released).to.be.true;
     });
 
 });

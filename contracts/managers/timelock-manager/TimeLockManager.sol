@@ -7,38 +7,71 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 contract TimeLockManager {
     using SafeERC20 for IERC20;
 
-    event Lock(address indexed sender, uint256 amount);
-    event Unlock(address indexed receiver, uint256 amount);
-
-    IERC20 public token;
-    uint256 public deadline;
-
-    mapping (address => uint256) public locks;
-
-    constructor(address _token, uint256 _deadline) {
-        require(_token != address(0), "TimeLockManager:: token is 0x0");
-        require(_deadline > block.timestamp, "TimeLockManager:: deadline must be in the future");
-        token = IERC20(_token);
-        deadline = _deadline;
+    struct TokenLock {
+        address token;
+        uint256 amount;
+        uint256 createdAt;
+        uint256 duration;
+        string info;
+        bool released;
     }
 
-    function lock(uint256 amount) public {
-        require(amount > 0, "TimeLockManager: amount is  0");
-        require(block.timestamp < deadline, "TimeLockManager:: manager expired");
-        uint256 approvedAmount = token.allowance(msg.sender, address(this));
-        require(approvedAmount > 0, "TimeLockManager:: allowance is 0");
-        locks[msg.sender] += approvedAmount;
-        token.safeTransferFrom(msg.sender, address(this), approvedAmount);
-        emit Lock(msg.sender, amount);
+    event Lock(address indexed sender, address indexed token, uint256 amount, uint256 duration);
+    event Unlock(address indexed receiver, address indexed token, uint256 id, uint256 amount);
+
+    mapping (address => TokenLock[]) public locks;
+
+    function lock(address tokenAddress, uint256 amount, uint256 duration, string memory info) public {
+        require(amount > 0, "TimeLockManager: amount is 0");
+        require(duration > 0, "TimeLockManager: duration is 0");
+
+        IERC20 token = IERC20(tokenAddress);
+        require(
+            token.allowance(msg.sender, address(this)) >= amount,
+            "TimeLockManager:: missing allowance"
+        );
+        require(
+            token.balanceOf(msg.sender) >= amount,
+            "TimeLockManager:: balance not enough"
+        );
+
+        locks[msg.sender].push(
+            TokenLock(
+                tokenAddress,
+                amount,
+                block.timestamp,
+                duration,
+                info,
+                false
+            )
+        );
+        token.safeTransferFrom(msg.sender, address(this), amount);
+
+        emit Lock(msg.sender, tokenAddress, amount, duration);
     }
 
-    function unlock(address spender) public {
-        uint256 lockedAmount = locks[spender];
-        require(lockedAmount > 0, "TimeLockManager:: locked amount is 0");
-        require(block.timestamp >= deadline, "TimeLockManager:: deadline not reached");
-        locks[spender] = 0;
-        token.safeTransfer(spender, lockedAmount);
-        emit Unlock(spender, lockedAmount);
+    function unlock(address spender, uint256 index) public {
+        require(
+            index < locks[spender].length,
+            "TimeLockManager:: index out of bounds"
+        );
+        TokenLock storage tokenLock = locks[spender][index];
+        require(
+            !tokenLock.released,
+            "TimeLockManager:: tokens already released"
+        );
+        require(
+            block.timestamp > (tokenLock.createdAt + tokenLock.duration),
+            "TimeLockManager:: deadline not reached"
+        );
+
+        tokenLock.released = true;
+        IERC20(tokenLock.token).safeTransfer(spender, tokenLock.amount);
+        emit Unlock(spender, tokenLock.token, index, tokenLock.amount);
+    }
+
+    function tokenLocksList(address wallet) external view returns (TokenLock[] memory) {
+        return locks[wallet];
     }
 
 }
