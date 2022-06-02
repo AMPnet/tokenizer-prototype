@@ -2,6 +2,7 @@
 import { ethers } from "hardhat";
 import { Contract } from "ethers";
 import { parseStablecoin } from "./helpers";
+import { log } from "./utils";
 
 export async function createIssuerAssetCampaign(
     issuerOwner: String,
@@ -30,7 +31,8 @@ export async function createIssuerAssetCampaign(
     cfManagerFactory: Contract,
     deployerService: Contract,
     apxRegistry: Contract,
-    nameRegistry: Contract
+    nameRegistry: Contract,
+    opts?: { logOutput: boolean }
   ): Promise<Array<Contract>> {
     const stablecoin = await ethers.getContractAt("USDC", issuerStablecoin);
     const assetInitialTokenSupplyWei = ethers.utils.parseEther(assetInitialTokenSupply.toString());
@@ -73,32 +75,32 @@ export async function createIssuerAssetCampaign(
     let issuerAddress: string;
     let assetAddress: string;
     let cfManagerAddress: string;
-    for (const log of receipt.logs) {
+    for (const recLog of receipt.logs) {
       try {
-        const parsedLog = issuerFactory.interface.parseLog(log);
+        const parsedLog = issuerFactory.interface.parseLog(recLog);
         if (parsedLog.name == "IssuerCreated") {
           const ownerAddress = parsedLog.args.creator;
           issuerAddress = parsedLog.args.issuer;
-          console.log(`\nIssuer deployed\n\tAt address: ${issuerAddress}\n\tOwner: ${ownerAddress}`);
+          log(`\nIssuer deployed\n\tAt address: ${issuerAddress}\n\tOwner: ${ownerAddress}`, opts);
         }
       } catch (_) {}
   
       try {
-        const parsedLog = assetFactory.interface.parseLog(log);
+        const parsedLog = assetFactory.interface.parseLog(recLog);
         if (parsedLog.name == "AssetCreated") {
           const ownerAddress = parsedLog.args.creator;
           assetAddress = parsedLog.args.asset;
-          console.log(`\nAsset deployed\n\tAt address: ${assetAddress}\n\tOwner: ${ownerAddress}`);
+          log(`\nAsset deployed\n\tAt address: ${assetAddress}\n\tOwner: ${ownerAddress}`, opts);
         }
       } catch (_) {}
   
       try {
-        const parsedLog = cfManagerFactory.interface.parseLog(log);
+        const parsedLog = cfManagerFactory.interface.parseLog(recLog);
         if (parsedLog.name == "CfManagerSoftcapCreated") {
           const ownerAddress = parsedLog.args.creator;
           const assetAddress = parsedLog.args.asset;
           cfManagerAddress = parsedLog.args.cfManager;
-          console.log(`\nCrowdfunding Campaign deployed\n\tAt address: ${cfManagerAddress}\n\tOwner: ${ownerAddress}\n\tAsset: ${assetAddress}`);
+          log(`\nCrowdfunding Campaign deployed\n\tAt address: ${cfManagerAddress}\n\tOwner: ${ownerAddress}\n\tAsset: ${assetAddress}`, opts);
         }
       } catch (_) {}
     }
@@ -133,7 +135,8 @@ export async function createIssuerAssetCampaign(
     feeManager: String,
     assetFactory: Contract,
     cfManagerFactory: Contract,
-    deployerService: Contract
+    deployerService: Contract,
+    opts?: { logOutput: boolean }
   ): Promise<Array<Contract>> {
     const stablecoinAddress = (await issuer.commonState()).stablecoin;
     const stablecoin = await ethers.getContractAt("USDC", stablecoinAddress);
@@ -173,23 +176,23 @@ export async function createIssuerAssetCampaign(
   
     let assetAddress: string;
     let cfManagerAddress: string;
-    for (const log of receipt.logs) {
+    for (const recLog of receipt.logs) {
       try {
-        const parsedLog = assetFactory.interface.parseLog(log);
+        const parsedLog = assetFactory.interface.parseLog(recLog);
         if (parsedLog.name == "AssetCreated") {
           const ownerAddress = parsedLog.args.creator;
           assetAddress = parsedLog.args.asset;
-          console.log(`\nAsset deployed\n\tAt address: ${assetAddress}\n\tOwner: ${ownerAddress}`);
+          log(`\nAsset deployed\n\tAt address: ${assetAddress}\n\tOwner: ${ownerAddress}`, opts);
         }
       } catch (_) {}
   
       try {
-        const parsedLog = cfManagerFactory.interface.parseLog(log);
+        const parsedLog = cfManagerFactory.interface.parseLog(recLog);
         if (parsedLog.name == "CfManagerSoftcapCreated") {
           const ownerAddress = parsedLog.args.creator;
           const assetAddress = parsedLog.args.asset;
           cfManagerAddress = parsedLog.args.cfManager;
-          console.log(`\nCrowdfunding Campaign deployed\n\tAt address: ${cfManagerAddress}\n\tOwner: ${ownerAddress}\n\tAsset: ${assetAddress}`);
+          log(`\nCrowdfunding Campaign deployed\n\tAt address: ${cfManagerAddress}\n\tOwner: ${ownerAddress}\n\tAsset: ${assetAddress}`, opts);
         }
       } catch (_) {}
     }
@@ -227,7 +230,8 @@ export async function createIssuerAssetTransferableCampaign(
     issuerFactory: Contract,
     assetTransferableFactory: Contract,
     cfManagerFactory: Contract,
-    deployerService: Contract
+    deployerService: Contract,
+    opts?: { logOutput: boolean }
   ): Promise<Array<Contract>> {
     const stablecoin = await ethers.getContractAt("USDC", issuerStablecoin);
     const assetInitialTokenSupplyWei = ethers.utils.parseEther(assetInitialTokenSupply.toString());
@@ -271,32 +275,32 @@ export async function createIssuerAssetTransferableCampaign(
     let issuerAddress: string;
     let assetTransferableAddress: string;
     let cfManagerAddress: string;
-    for (const log of receipt.logs) {
+    for (const recLog of receipt.logs) {
       try {
-        const parsedLog = issuerFactory.interface.parseLog(log);
+        const parsedLog = issuerFactory.interface.parseLog(recLog);
         if (parsedLog.name == "IssuerCreated") {
           const ownerAddress = parsedLog.args.creator;
           issuerAddress = parsedLog.args.issuer;
-          console.log(`\nIssuer deployed\n\tAt address: ${issuerAddress}\n\tOwner: ${ownerAddress}`);
+          log(`\nIssuer deployed\n\tAt address: ${issuerAddress}\n\tOwner: ${ownerAddress}`, opts);
         }
       } catch (_) {}
   
       try {
-        const parsedLog = assetTransferableFactory.interface.parseLog(log);
+        const parsedLog = assetTransferableFactory.interface.parseLog(recLog);
         if (parsedLog.name == "AssetTransferableCreated") {
           const ownerAddress = parsedLog.args.creator;
           assetTransferableAddress = parsedLog.args.asset;
-          console.log(`\nAsset deployed\n\tAt address: ${assetTransferableAddress}\n\tOwner: ${ownerAddress}`);
+          log(`\nAsset deployed\n\tAt address: ${assetTransferableAddress}\n\tOwner: ${ownerAddress}`, opts);
         }
       } catch (_) {}
   
       try {
-        const parsedLog = cfManagerFactory.interface.parseLog(log);
+        const parsedLog = cfManagerFactory.interface.parseLog(recLog);
         if (parsedLog.name == "CfManagerSoftcapCreated") {
           const ownerAddress = parsedLog.args.creator;
           const assetAddress = parsedLog.args.asset;
           cfManagerAddress = parsedLog.args.cfManager;
-          console.log(`\nCrowdfunding Campaign deployed\n\tAt address: ${cfManagerAddress}\n\tOwner: ${ownerAddress}\n\tAsset: ${assetAddress}`);
+          log(`\nCrowdfunding Campaign deployed\n\tAt address: ${cfManagerAddress}\n\tOwner: ${ownerAddress}\n\tAsset: ${assetAddress}`, opts);
         }
       } catch (_) {}
     }
@@ -331,7 +335,8 @@ export async function createAssetTransferableCampaign(
     feeManager: String,
     assetTransferableFactory: Contract,
     cfManagerFactory: Contract,
-    deployerService: Contract
+    deployerService: Contract,
+    opts?: { logOutput: boolean }
   ): Promise<Array<Contract>> {
     const stablecoinAddress = (await issuer.commonState()).stablecoin;
     const stablecoin = await ethers.getContractAt("USDC", stablecoinAddress);
@@ -371,23 +376,23 @@ export async function createAssetTransferableCampaign(
   
     let assetTransferableAddress: string;
     let cfManagerAddress: string;
-    for (const log of receipt.logs) {
+    for (const recLog of receipt.logs) {
       try {
-        const parsedLog = assetTransferableFactory.interface.parseLog(log);
+        const parsedLog = assetTransferableFactory.interface.parseLog(recLog);
         if (parsedLog.name == "AssetTransferableCreated") {
           const ownerAddress = parsedLog.args.creator;
           assetTransferableAddress = parsedLog.args.asset;
-          console.log(`\nAssetTransferable deployed\n\tAt address: ${assetTransferableAddress}\n\tOwner: ${ownerAddress}`);
+          log(`\nAssetTransferable deployed\n\tAt address: ${assetTransferableAddress}\n\tOwner: ${ownerAddress}`, opts);
         }
       } catch (_) {}
   
       try {
-        const parsedLog = cfManagerFactory.interface.parseLog(log);
+        const parsedLog = cfManagerFactory.interface.parseLog(recLog);
         if (parsedLog.name == "CfManagerSoftcapCreated") {
           const ownerAddress = parsedLog.args.creator;
           const assetAddress = parsedLog.args.asset;
           cfManagerAddress = parsedLog.args.cfManager;
-          console.log(`\nCrowdfunding Campaign deployed\n\tAt address: ${cfManagerAddress}\n\tOwner: ${ownerAddress}\n\tAsset: ${assetAddress}`);
+          log(`\nCrowdfunding Campaign deployed\n\tAt address: ${cfManagerAddress}\n\tOwner: ${ownerAddress}\n\tAsset: ${assetAddress}`, opts);
         }
       } catch (_) {}
     }
@@ -418,7 +423,8 @@ export async function createAssetSimpleCampaignVesting(
   feeManager: String,
   assetSimpleFactory: Contract,
   cfManagerVestingFactory: Contract,
-  deployerService: Contract
+  deployerService: Contract,
+  opts?: { logOutput: boolean }
 ): Promise<Array<Contract>> {
   const stablecoinAddress = (await issuer.commonState()).stablecoin;
   const stablecoin = await ethers.getContractAt("USDC", stablecoinAddress);
@@ -455,23 +461,23 @@ export async function createAssetSimpleCampaignVesting(
 
   let assetSimpleAddress: string;
   let cfManagerVestingAddress: string;
-  for (const log of receipt.logs) {
+  for (const recLog of receipt.logs) {
     try {
-      const parsedLog = assetSimpleFactory.interface.parseLog(log);
+      const parsedLog = assetSimpleFactory.interface.parseLog(recLog);
       if (parsedLog.name == "AssetSimpleCreated") {
         const ownerAddress = parsedLog.args.creator;
         assetSimpleAddress = parsedLog.args.asset;
-        console.log(`\nAssetSimple deployed\n\tAt address: ${assetSimpleAddress}\n\tOwner: ${ownerAddress}`);
+        log(`\nAssetSimple deployed\n\tAt address: ${assetSimpleAddress}\n\tOwner: ${ownerAddress}`, opts);
       }
     } catch (_) {}
 
     try {
-      const parsedLog = cfManagerVestingFactory.interface.parseLog(log);
+      const parsedLog = cfManagerVestingFactory.interface.parseLog(recLog);
       if (parsedLog.name == "CfManagerSoftcapVestingCreated") {
         const ownerAddress = parsedLog.args.creator;
         const assetAddress = parsedLog.args.asset;
         cfManagerVestingAddress = parsedLog.args.cfManager;
-        console.log(`\nCrowdfunding Campaign Vesting deployed\n\tAt address: ${cfManagerVestingAddress}\n\tOwner: ${ownerAddress}\n\tAsset: ${assetAddress}`);
+        log(`\nCrowdfunding Campaign Vesting deployed\n\tAt address: ${cfManagerVestingAddress}\n\tOwner: ${ownerAddress}\n\tAsset: ${assetAddress}`, opts);
       }
     } catch (_) {}
   }
