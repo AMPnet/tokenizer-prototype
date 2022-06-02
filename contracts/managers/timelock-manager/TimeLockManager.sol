@@ -3,25 +3,20 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "./ITimeLockManager.sol";
 
-contract TimeLockManager {
+contract TimeLockManager is ITimeLockManager {
     using SafeERC20 for IERC20;
-
-    struct TokenLock {
-        address token;
-        uint256 amount;
-        uint256 createdAt;
-        uint256 duration;
-        string info;
-        bool released;
-    }
-
-    event Lock(address indexed sender, address indexed token, uint256 amount, uint256 duration);
-    event Unlock(address indexed receiver, address indexed token, uint256 id, uint256 amount);
 
     mapping (address => TokenLock[]) public locks;
 
-    function lock(address tokenAddress, uint256 amount, uint256 duration, string memory info) public {
+    function lock(
+        address tokenAddress,
+        uint256 amount,
+        uint256 duration,
+        string memory info,
+        address unlockPrivilegeWallet
+    ) public override {
         require(amount > 0, "TimeLockManager: amount is 0");
         require(duration > 0, "TimeLockManager: duration is 0");
 
@@ -42,15 +37,15 @@ contract TimeLockManager {
                 block.timestamp,
                 duration,
                 info,
-                false
+                false,
+                unlockPrivilegeWallet
             )
         );
         token.safeTransferFrom(msg.sender, address(this), amount);
-
         emit Lock(msg.sender, tokenAddress, amount, duration);
     }
 
-    function unlock(address spender, uint256 index) public {
+    function unlock(address spender, uint256 index) public override {
         require(
             index < locks[spender].length,
             "TimeLockManager:: index out of bounds"
@@ -60,17 +55,18 @@ contract TimeLockManager {
             !tokenLock.released,
             "TimeLockManager:: tokens already released"
         );
-        require(
-            block.timestamp > (tokenLock.createdAt + tokenLock.duration),
-            "TimeLockManager:: deadline not reached"
-        );
-
+        if(msg.sender != tokenLock.unlockPrivilegeWallet) {
+            require(
+                block.timestamp > (tokenLock.createdAt + tokenLock.duration),
+                "TimeLockManager:: deadline not reached"
+            );
+        }
         tokenLock.released = true;
         IERC20(tokenLock.token).safeTransfer(spender, tokenLock.amount);
         emit Unlock(spender, tokenLock.token, index, tokenLock.amount);
     }
 
-    function tokenLocksList(address wallet) external view returns (TokenLock[] memory) {
+    function tokenLocksList(address wallet) external view override returns (TokenLock[] memory) {
         return locks[wallet];
     }
 
