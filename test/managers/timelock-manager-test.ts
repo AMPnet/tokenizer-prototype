@@ -33,8 +33,43 @@ describe("TimeLock Manager tests", function () {
 
     it(`will fail to lock tokens if missing approval`, async () => {
         const timeLockManager = await createTimeLockManager();
-        const forbiddenLockTx = timeLockManager.lock(token.address, 10, 10, "info");
+        const forbiddenLockTx = timeLockManager.lock(token.address, 10, 10, "info", ethers.constants.AddressZero);
         await expect(forbiddenLockTx).to.be.revertedWith("TimeLockManager:: missing allowance");
+    });
+
+    it(`allows wallet with privilege to do an early token unlock`, async () => {
+        const duration = 100;
+        const deadline = (await now()) + duration;
+        const amountToLock = BigNumber.from(1);
+        const lockDescription = "info";
+        const timeLockManager = await createTimeLockManager();
+        const spenderWallet = accounts[2];
+        const spenderWalletAddress = await spenderWallet.getAddress();
+        const unlockerWallet = accounts[3];
+        const unlockerWalletAddress = await unlockerWallet.getAddress();
+
+        await token.transfer(spenderWalletAddress, amountToLock);
+        await token.connect(spenderWallet).approve(timeLockManager.address, amountToLock);
+        await timeLockManager.connect(spenderWallet).lock(
+            token.address,
+            amountToLock,
+            duration,
+            lockDescription,
+            unlockerWalletAddress
+        );
+
+        expect(await token.balanceOf(spenderWalletAddress)).to.be.equal(0);
+        expect(await token.balanceOf(timeLockManager.address)).to.be.equal(amountToLock);
+
+        // early unlock fails if called from the spender wallet
+        const failedUnlockTx = timeLockManager.connect(spenderWallet).unlock(spenderWalletAddress, 0);
+        await expect(failedUnlockTx).to.be.revertedWith("TimeLockManager:: deadline not reached");
+
+        // early unlock is possible if called from the privileged wallet
+        await timeLockManager.connect(unlockerWallet).unlock(spenderWalletAddress, 0);
+
+        expect(await token.balanceOf(spenderWalletAddress)).to.be.equal(amountToLock);
+        expect(await token.balanceOf(timeLockManager.address)).to.be.equal(0);
     });
 
     it(`will successfully lock tokens if the lockup period is > 0 & token amount is > 0`, async () => {
@@ -59,7 +94,8 @@ describe("TimeLock Manager tests", function () {
             token.address,
             amountToLock,
             duration,
-            lockDescription
+            lockDescription,
+            ethers.constants.AddressZero
         );
         await expect(lockTx).to.emit(timeLockManager, "Lock").withArgs(
             spenderAddress,
