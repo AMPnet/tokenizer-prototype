@@ -39,6 +39,7 @@ export REVENUE_FEE_MANAGER=
 export REVENUE_FEE_MANAGER_OWNER=                   # provide this param if REVENUE_FEE_MANAGER field empty
 export REVENUE_FEE_MANAGER_TREASURY=                # provide this param if REVENUE_FEE_MANAGER field empty
 export PAYOUT_MANAGER=
+export TIMELOCK_MANAGER=
 export NAME_REGISTRY=
 export NAME_REGISTRY_OWNER=                         # provide this param if NAME_REGISTRY field empty
 export NAME_REGISTRY_OLD=                           # provide this param if NAME_REGISTRY field empty and old exists

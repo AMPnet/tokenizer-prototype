@@ -62,6 +62,14 @@ export async function deployPayoutManager(deployer: Signer, merkleTreePathValida
   return payoutManager;
 }
 
+export async function deployTimeLockManager(deployer: Signer, opts?: { logOutput: boolean }, confirmations: number = config.confirmationsForDeploy): Promise<Contract> {
+  const TimeLockManager = await ethers.getContractFactory("TimeLockManager", deployer);
+  const timeLockManager = await TimeLockManager.deploy();
+  await ethers.provider.waitForTransaction(timeLockManager.deployTransaction.hash, confirmations)
+  log(`\nTimeLockManager deployed\n\tAt address: ${timeLockManager.address}`, opts);
+  return timeLockManager;
+}
+
 export async function deployMirroredToken(deployer: Signer, name: string, symbol: string, originalToken: string, opts?: { logOutput: boolean }, confirmations: number = config.confirmationsForDeploy): Promise<Contract> {
   const MirroredToken = await ethers.getContractFactory("MirroredToken", deployer);
   const mirroredToken = await MirroredToken.deploy(name, symbol, originalToken);

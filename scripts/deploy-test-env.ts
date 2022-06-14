@@ -52,6 +52,10 @@ async function main() {
         await ethers.getContractAt("PayoutManager", process.env.PAYOUT_MANAGER) :
         await helpers.deployPayoutManager(deployer, merkleTreePathValidator.address, revenueFeeManager.address);
 
+    const timeLockManager: Contract = (process.env.TIMELOCK_MANAGER) ?
+    await ethers.getContractAt("TimeLockManager", process.env.TIMELOCK_MANAGER) :
+    await helpers.deployTimeLockManager(deployer);
+
     const mirroredToken: Contract = (process.env.MIRRORED_TOKEN) ?
         await ethers.getContractAt("MirroredToken", process.env.MIRRORED_TOKEN) :
         await helpers.deployMirroredToken(
@@ -65,6 +69,7 @@ async function main() {
         await ethers.getContractAt("IssuerFactory", process.env.ISSUER_FACTORY) :
         await helpers.deployIssuerFactory(
             deployer,
+            { logOutput: true },
             process.env.NAME_REGISTRY ? process.env.ISSUER_FACTORY_OLD : addressZero
         );
 
@@ -72,6 +77,7 @@ async function main() {
         await ethers.getContractAt("AssetFactory", process.env.ASSET_FACTORY) :
         await helpers.deployAssetFactory(
             deployer,
+            { logOutput: true },
             process.env.NAME_REGISTRY ? process.env.ASSET_FACTORY_OLD : addressZero
         );
 
@@ -79,6 +85,7 @@ async function main() {
         await ethers.getContractAt("AssetTransferableFactory", process.env.ASSET_TRANSFERABLE_FACTORY) :
         await helpers.deployAssetTransferableFactory(
             deployer,
+            { logOutput: true },
             process.env.NAME_REGISTRY ? process.env.ASSET_TRANSFERABLE_FACTORY_OLD : addressZero
         );
 
@@ -86,6 +93,7 @@ async function main() {
         await ethers.getContractAt("AssetSimpleFactory", process.env.ASSET_SIMPLE_FACTORY) :
         await helpers.deployAssetSimpleFactory(
             deployer,
+            { logOutput: true },
             process.env.NAME_REGISTRY ? process.env.ASSET_SIMPLE_FACTORY_OLD : addressZero
         );
 
@@ -93,6 +101,7 @@ async function main() {
         await ethers.getContractAt("CfManagerSoftcapFactory", process.env.CF_MANAGER_FACTORY) :
         await helpers.deployCfManagerFactory(
             deployer,
+            { logOutput: true },
             process.env.NAME_REGISTRY ? process.env.CF_MANAGER_FACTORY_OLD : addressZero
         );
 
@@ -100,6 +109,7 @@ async function main() {
         await ethers.getContractAt("CfManagerSoftcapVestingFactory", process.env.CF_MANAGER_VESTING_FACTORY) :
         await helpers.deployCfManagerVestingFactory(
             deployer,
+            { logOutput: true },
             process.env.NAME_REGISTRY ? process.env.CF_MANAGER_VESTING_FACTORY_OLD : addressZero
         );
 
