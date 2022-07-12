@@ -3,18 +3,20 @@ pragma solidity ^0.8.0;
 
 import "./IPayoutManager.sol";
 import "./IMerkleTreePathValidator.sol";
+import "../fee-manager/RevenueFeeManager.sol";
 import "../../shared/IVersioned.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract PayoutManager is IPayoutManager {
 
     string constant public FLAVOR = "PayoutManagerV1";
-    string constant public VERSION = "1.0.30";
+    string constant public VERSION = "1.0.32";
 
     //------------------------
     //  STATE
     //------------------------
     IMerkleTreePathValidator private merkleTreePathValidator;
+    IRevenueFeeManager private revenueFeeManager;
 
     uint256 private currentPayoutId = 0; // current payout ID, incremental - if some payout exists, it will always be smaller than this value
     mapping(uint256 => Structs.Payout) private payoutsById;
@@ -25,8 +27,11 @@ contract PayoutManager is IPayoutManager {
     //------------------------
     //  CONSTRUCTOR
     //------------------------
-    constructor(IMerkleTreePathValidator _merkleTreePathValidator) {
-        merkleTreePathValidator = _merkleTreePathValidator;
+    constructor(address _merkleTreePathValidator, address _revenueFeeManager) {
+        require(_merkleTreePathValidator != address(0), "PayoutManager: invalid merkle tree validator provided");
+        require(_revenueFeeManager != address(0), "PayoutManager: invalid fee manager provided");
+        merkleTreePathValidator = IMerkleTreePathValidator(_merkleTreePathValidator);
+        revenueFeeManager = IRevenueFeeManager(_revenueFeeManager);
     }
 
     //------------------------
@@ -58,6 +63,8 @@ contract PayoutManager is IPayoutManager {
     function flavor() external pure override returns (string memory) { return FLAVOR; }
     
     function version() external pure override returns (string memory) { return VERSION; }
+
+    function getFeeManager() external view override returns (address) { return address(revenueFeeManager); }
 
     function getCurrentPayoutId() public view override returns (uint256) {
         return currentPayoutId;
@@ -110,10 +117,12 @@ contract PayoutManager is IPayoutManager {
         require(_createPayout.totalRewardAmount > 0, "PayoutManager: cannot create payout without reward");
         require(_createPayout.assetSnapshotMerkleDepth > 0, "PayoutManager: Merkle tree depth cannot be zero");
 
+        (address feeAddress, uint256 feeAmount) = revenueFeeManager.calculateFee(address(_createPayout.asset), _createPayout.totalRewardAmount);
         address payoutOwner = msg.sender;
-
-        // verify that payout owner approved enough reward asset
-        require(_createPayout.totalRewardAmount <= _createPayout.rewardAsset.allowance(payoutOwner, address(this)), "PayoutManager: insufficient reward asset allowance");
+        require(
+            (_createPayout.totalRewardAmount + feeAmount) <= _createPayout.rewardAsset.allowance(payoutOwner, address(this)),
+            "PayoutManager: insufficient reward asset allowance(reward+fee)"
+        );
 
         // create payout
         Structs.Payout memory payout = Structs.Payout(
@@ -123,7 +132,7 @@ contract PayoutManager is IPayoutManager {
             false, // payout is not canceled
             _createPayout.asset,
             _createPayout.totalAssetAmount,
-            _createPayout.ignoredAssetAddresses,
+            _createPayout.ignoredHolderAddresses,
             _createPayout.assetSnapshotMerkleRoot,
             _createPayout.assetSnapshotMerkleDepth,
             _createPayout.assetSnapshotBlockNumber,
@@ -140,10 +149,14 @@ contract PayoutManager is IPayoutManager {
 
         currentPayoutId += 1;
 
+        // transfer revenue share fee
+        if (feeAmount > 0) {
+            _createPayout.rewardAsset.transferFrom(payoutOwner, feeAddress, feeAmount);
+        }
         // transfer reward asset
         _createPayout.rewardAsset.transferFrom(payoutOwner, address(this), _createPayout.totalRewardAmount);
 
-        emit PayoutCreated(payout.payoutId, payoutOwner, _createPayout.asset, _createPayout.rewardAsset, _createPayout.totalRewardAmount);
+        emit PayoutCreated(payout.payoutId, payoutOwner, _createPayout.asset, _createPayout.rewardAsset, _createPayout.totalRewardAmount, block.timestamp);
 
         return payout.payoutId;
     }
@@ -161,7 +174,7 @@ contract PayoutManager is IPayoutManager {
         // transfer all remaining reward funds to the payout owner
         payout.rewardAsset.transfer(payout.payoutOwner, remainingRewardAmount);
 
-        emit PayoutCanceled(_payoutId, payout.asset);
+        emit PayoutCanceled(_payoutId, payout.payoutOwner, payout.asset, payout.rewardAsset, remainingRewardAmount, block.timestamp);
     }
 
     function claim(
@@ -207,6 +220,6 @@ contract PayoutManager is IPayoutManager {
         // send reward funds
         payout.rewardAsset.transfer(_wallet, payoutAmount);
 
-        emit PayoutClaimed(_payoutId, _wallet, _balance, payoutAmount);
+        emit PayoutClaimed(_payoutId, _wallet, payout.asset, _balance, payout.rewardAsset, payoutAmount, block.timestamp);
     }
 }

@@ -28,13 +28,21 @@ async function main() {
             process.env.APX_REGISTRY_PRICE_MANAGER
         );
 
-    const feeManager: Contract = (process.env.FEE_MANAGER) ?
-        await ethers.getContractAt("FeeManager", process.env.FEE_MANAGER) :
-        await helpers.deployFeeManager(
+    const campaignFeeManager: Contract = (process.env.CAMPAIGN_FEE_MANAGER) ?
+        await ethers.getContractAt("CampaignFeeManager", process.env.CAMPAIGN_FEE_MANAGER) :
+        await helpers.deployCampaignFeeManager(
             deployer,
-            process.env.FEE_MANAGER_OWNER,
-            process.env.FEE_MANAGER_TREASURY
+            process.env.CAMPAIGN_FEE_MANAGER_OWNER,
+            process.env.CAMPAIGN_FEE_MANAGER_TREASURY
         );
+
+    const revenueFeeManager: Contract = (process.env.REVENUE_FEE_MANAGER) ?
+    await ethers.getContractAt("RevenueFeeManager", process.env.REVENUE_FEE_MANAGER) :
+    await helpers.deployRevenueFeeManager(
+        deployer,
+        process.env.REVENUE_FEE_MANAGER_OWNER,
+        process.env.REVENUE_FEE_MANAGER_TREASURY
+    );
     
     const merkleTreePathValidator: Contract = (process.env.MERKLE_TREE_PATH_VALIDATOR) ?
         await ethers.getContractAt("MerkleTreePathValidator", process.env.MERKLE_TREE_PATH_VALIDATOR) :
@@ -42,7 +50,11 @@ async function main() {
 
     const payoutManager: Contract = (process.env.PAYOUT_MANAGER) ?
         await ethers.getContractAt("PayoutManager", process.env.PAYOUT_MANAGER) :
-        await helpers.deployPayoutManager(deployer, merkleTreePathValidator.address);
+        await helpers.deployPayoutManager(deployer, merkleTreePathValidator.address, revenueFeeManager.address);
+
+    const timeLockManager: Contract = (process.env.TIMELOCK_MANAGER) ?
+    await ethers.getContractAt("TimeLockManager", process.env.TIMELOCK_MANAGER) :
+    await helpers.deployTimeLockManager(deployer);
 
     const mirroredToken: Contract = (process.env.MIRRORED_TOKEN) ?
         await ethers.getContractAt("MirroredToken", process.env.MIRRORED_TOKEN) :
@@ -57,6 +69,7 @@ async function main() {
         await ethers.getContractAt("IssuerFactory", process.env.ISSUER_FACTORY) :
         await helpers.deployIssuerFactory(
             deployer,
+            { logOutput: true },
             process.env.NAME_REGISTRY ? process.env.ISSUER_FACTORY_OLD : addressZero
         );
 
@@ -64,6 +77,7 @@ async function main() {
         await ethers.getContractAt("AssetFactory", process.env.ASSET_FACTORY) :
         await helpers.deployAssetFactory(
             deployer,
+            { logOutput: true },
             process.env.NAME_REGISTRY ? process.env.ASSET_FACTORY_OLD : addressZero
         );
 
@@ -71,6 +85,7 @@ async function main() {
         await ethers.getContractAt("AssetTransferableFactory", process.env.ASSET_TRANSFERABLE_FACTORY) :
         await helpers.deployAssetTransferableFactory(
             deployer,
+            { logOutput: true },
             process.env.NAME_REGISTRY ? process.env.ASSET_TRANSFERABLE_FACTORY_OLD : addressZero
         );
 
@@ -78,6 +93,7 @@ async function main() {
         await ethers.getContractAt("AssetSimpleFactory", process.env.ASSET_SIMPLE_FACTORY) :
         await helpers.deployAssetSimpleFactory(
             deployer,
+            { logOutput: true },
             process.env.NAME_REGISTRY ? process.env.ASSET_SIMPLE_FACTORY_OLD : addressZero
         );
 
@@ -85,6 +101,7 @@ async function main() {
         await ethers.getContractAt("CfManagerSoftcapFactory", process.env.CF_MANAGER_FACTORY) :
         await helpers.deployCfManagerFactory(
             deployer,
+            { logOutput: true },
             process.env.NAME_REGISTRY ? process.env.CF_MANAGER_FACTORY_OLD : addressZero
         );
 
@@ -92,6 +109,7 @@ async function main() {
         await ethers.getContractAt("CfManagerSoftcapVestingFactory", process.env.CF_MANAGER_VESTING_FACTORY) :
         await helpers.deployCfManagerVestingFactory(
             deployer,
+            { logOutput: true },
             process.env.NAME_REGISTRY ? process.env.CF_MANAGER_VESTING_FACTORY_OLD : addressZero
         );
 

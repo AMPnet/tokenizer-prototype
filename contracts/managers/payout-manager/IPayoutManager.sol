@@ -13,7 +13,7 @@ interface IPayoutManager is IVersioned {
     struct CreatePayout {
         IERC20 asset;
         uint256 totalAssetAmount;
-        address[] ignoredAssetAddresses;
+        address[] ignoredHolderAddresses;
 
         string payoutInfo;
 
@@ -29,13 +29,14 @@ interface IPayoutManager is IVersioned {
     //------------------------
     //  EVENTS
     //------------------------
-    event PayoutCreated(uint256 payoutId, address indexed payoutOwner, IERC20 asset, IERC20 rewardAsset, uint256 totalRewardAmount);
-    event PayoutCanceled(uint256 payoutId, IERC20 asset);
-    event PayoutClaimed(uint256 payoutId, address indexed wallet, uint256 balance, uint256 payoutAmount);
+    event PayoutCreated(uint256 payoutId, address indexed payoutOwner, IERC20 asset, IERC20 rewardAsset, uint256 totalRewardAmount, uint256 timestamp);
+    event PayoutCanceled(uint256 payoutId, address indexed payoutOwner, IERC20 asset, IERC20 rewardAsset, uint256 remainingRewardAmount, uint256 timestamp);
+    event PayoutClaimed(uint256 payoutId, address indexed wallet, IERC20 asset, uint256 balance, IERC20 rewardAsset, uint256 payoutAmount, uint256 timestamp);
 
     //------------------------
     //  READ-ONLY FUNCTIONS
     //------------------------
+    function getFeeManager() external view returns (address);
     function getCurrentPayoutId() external view returns (uint256);
     function getPayoutInfo(uint256 _payoutId) external view returns (Structs.Payout memory);
     function getPayoutIdsForAsset(address _assetAddress) external view returns (uint256[] memory);

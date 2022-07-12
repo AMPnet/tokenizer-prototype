@@ -51,7 +51,7 @@ describe("Covers important tests for all campaign flavors", function () {
       true, "",
       testData.cfManagerFactory,
       testData.nameRegistry,
-      testData.feeManager
+      testData.campaignFeeManager
     );
     await asset.connect(issuerOwner).transfer(
       campaign.address,
@@ -187,7 +187,7 @@ describe("Covers important tests for all campaign flavors", function () {
       true, "",
       testData.cfManagerFactory,
       testData.nameRegistry,
-      testData.feeManager
+      testData.campaignFeeManager
     );
     await asset.connect(issuerOwner).transfer(campaign.address, BigNumber.from("190270270270270270270270"));
 
@@ -281,7 +281,7 @@ describe("Covers important tests for all campaign flavors", function () {
       true, "",
       testData.cfManagerFactory,
       testData.nameRegistry,
-      testData.feeManager
+      testData.campaignFeeManager
     );
     await asset.connect(issuerOwner).transfer(
       campaign.address,
@@ -364,7 +364,7 @@ describe("Covers important tests for all campaign flavors", function () {
       true, "",
       testData.cfManagerFactory,
       testData.nameRegistry,
-      testData.feeManager
+      testData.campaignFeeManager
     );
 
     await asset.connect(issuerOwner).transfer(
@@ -418,7 +418,7 @@ describe("Covers important tests for all campaign flavors", function () {
       true, "",
       testData.cfManagerVestingFactory,
       testData.nameRegistry,
-      testData.feeManager
+      testData.campaignFeeManager
     );
 
     await asset.connect(issuerOwner).transfer(

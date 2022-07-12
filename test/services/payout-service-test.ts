@@ -103,7 +103,7 @@ describe("Payout service tests", function () {
         await testData.payoutManager.connect(testData.issuerOwner).createPayout({
             asset: assetSimple.address,
             totalAssetAmount: payoutInfo.totalAssetAmount,
-            ignoredAssetAddresses: payoutInfo.ignoredAssetAddresses,
+            ignoredHolderAddresses: payoutInfo.ignoredAssetAddresses,
             payoutInfo: payoutInfo.payoutInfo,
             assetSnapshotMerkleRoot: payoutInfo.assetSnapshotMerkleRoot,
             assetSnapshotMerkleDepth: payoutInfo.assetSnapshotMerkleDepth,
@@ -117,7 +117,7 @@ describe("Payout service tests", function () {
         await testData.payoutManager.connect(testData.issuerOwner).createPayout({
             asset: assetTransferable.address,
             totalAssetAmount: payoutInfo.totalAssetAmount,
-            ignoredAssetAddresses: payoutInfo.ignoredAssetAddresses,
+            ignoredHolderAddresses: payoutInfo.ignoredAssetAddresses,
             payoutInfo: payoutInfo.payoutInfo,
             assetSnapshotMerkleRoot: payoutInfo.assetSnapshotMerkleRoot,
             assetSnapshotMerkleDepth: payoutInfo.assetSnapshotMerkleDepth,
@@ -131,7 +131,7 @@ describe("Payout service tests", function () {
         await testData.payoutManager.connect(testData.issuerOwner).createPayout({
             asset: assetBasic.address,
             totalAssetAmount: payoutInfo.totalAssetAmount,
-            ignoredAssetAddresses: payoutInfo.ignoredAssetAddresses,
+            ignoredHolderAddresses: payoutInfo.ignoredAssetAddresses,
             payoutInfo: payoutInfo.payoutInfo,
             assetSnapshotMerkleRoot: payoutInfo.assetSnapshotMerkleRoot,
             assetSnapshotMerkleDepth: payoutInfo.assetSnapshotMerkleDepth,
@@ -198,6 +198,27 @@ describe("Payout service tests", function () {
         expect(payoutStatesForInvestor[2].payoutId).to.be.equal(2);
         expect(payoutStatesForInvestor[2].investor).to.be.equal(aliceAddress);
         expect(payoutStatesForInvestor[2].amountClaimed).to.be.equal(0);
+
+        // Test fetching of the fee for the payout for asset
+        const revenueFeeNumerator = 1;
+        const revenueFeeDenominator = 10;
+        const revenueAmount = 100;
+        const revenueFee = revenueAmount * revenueFeeNumerator / revenueFeeDenominator;
+        await testData.revenueFeeManager.setAssetFee(
+            assetBasic.address,
+            true,
+            revenueFeeNumerator,
+            revenueFeeDenominator
+        );
+        const fetchedRevenueFeeRecord = (await testData.payoutService.getPayoutFeeForAssetAndAmount(
+            assetBasic.address,
+            revenueAmount,
+            testData.payoutManager.address
+        ));
+        const fetchedTreasuryAddress = fetchedRevenueFeeRecord[0];
+        const fetchedRevenueFee = fetchedRevenueFeeRecord[1].toNumber();
+        expect(fetchedTreasuryAddress).to.be.equal(await testData.treasury.getAddress());
+        expect(fetchedRevenueFee).to.be.equal(revenueFee); 
     });
 
     /* HELPERS */
@@ -221,7 +242,7 @@ describe("Payout service tests", function () {
         isCanceled: boolean;
         asset: string;
         totalAssetAmount: BigNumber;
-        ignoredAssetAddresses: string[];
+        ignoredHolderAddresses: string[];
         assetSnapshotMerkleRoot: string;
         assetSnapshotMerkleDepth: BigNumber;
         assetSnapshotBlockNumber: BigNumber;
@@ -244,7 +265,7 @@ describe("Payout service tests", function () {
         expect(fetchedPayoutForIssuerItem.payoutInfo).to.be.equal(expectedPayoutInfo.payoutInfo);
         expect(fetchedPayoutForIssuerItem.isCanceled).to.be.false;
         expect(fetchedPayoutForIssuerItem.totalAssetAmount).to.be.equal(expectedPayoutInfo.totalAssetAmount);
-        expect(fetchedPayoutForIssuerItem.ignoredAssetAddresses.length).to.be.equal(0);
+        expect(fetchedPayoutForIssuerItem.ignoredHolderAddresses.length).to.be.equal(0);
         expect(fetchedPayoutForIssuerItem.assetSnapshotMerkleRoot).to.be.equal(expectedPayoutInfo.assetSnapshotMerkleRoot);
         expect(fetchedPayoutForIssuerItem.assetSnapshotMerkleDepth).to.be.equal(expectedPayoutInfo.assetSnapshotMerkleDepth);
         expect(fetchedPayoutForIssuerItem.assetSnapshotBlockNumber).to.be.equal(expectedPayoutInfo.assetSnapshotBlockNumber);
