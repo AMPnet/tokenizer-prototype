@@ -271,7 +271,7 @@ contract DeployerService is IDeployerService {
         
         // Transfer ownerships from address(this) to the actual owner wallets
         issuer.changeWalletApprover(request.issuerWalletApprover);
-        issuer.changeOwnership(request.issuerOwner);
+        Ownable(address(issuer)).transferOwnership(request.issuerOwner);
         asset.changeOwnership(request.assetOwner);
         Ownable(address(campaign)).transferOwnership(request.cfManagerOwner);
 
@@ -394,7 +394,7 @@ contract DeployerService is IDeployerService {
         
         // Transfer ownerships from address(this) to the actual owner wallets
         issuer.changeWalletApprover(request.issuerWalletApprover);
-        issuer.changeOwnership(request.issuerOwner);
+        Ownable(address(issuer)).transferOwnership(request.cfManagerOwner);
         asset.changeOwnership(request.assetOwner);
         Ownable(address(campaign)).transferOwnership(request.cfManagerOwner);
 
