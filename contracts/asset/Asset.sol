@@ -14,11 +14,6 @@ import "../shared/Structs.sol";
 contract Asset is IAsset, ERC20 {
     using SafeERC20 for IERC20;
 
-    //------------------------
-    //  CONSTANTS
-    //------------------------
-    uint256 constant public override priceDecimalsPrecision = 10 ** 4;
-
     //-----------------------
     //  STATE
     //-----------------------
@@ -69,7 +64,7 @@ contract Asset is IAsset, ERC20 {
             params.info,
             params.name,
             params.symbol,
-            0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0,
             false,
             0, 0, 0
         );
@@ -183,6 +178,7 @@ contract Asset is IAsset, ERC20 {
         uint256 tokenValue = campaignState.fundsRaised;
         uint256 tokenAmount = campaignState.tokensSold;
         uint256 tokenPrice = campaignState.pricePerToken;
+        uint8 tokenPriceDecimals = campaignState.tokenPriceDecimals;
         require(
             tokenAmount > 0 && balanceOf(campaign) >= tokenAmount,
             "Asset: Campaign has signalled the sale finalization but campaign tokens are not present"
@@ -198,7 +194,14 @@ contract Asset is IAsset, ERC20 {
         );
         sellHistory.push(tokenSaleInfo);
         successfulTokenSalesMap[campaign] = tokenSaleInfo;
-        if (tokenPrice > state.highestTokenSellPrice) { state.highestTokenSellPrice = tokenPrice; }
+        if (
+            (state.highestTokenSellPrice == 0 && state.highestTokenSellPriceDecimals == 0) ||
+            _tokenValue(tokenAmount, tokenPrice, tokenPriceDecimals) >
+            _tokenValue(tokenAmount, state.highestTokenSellPrice, state.highestTokenSellPriceDecimals)
+        ) {
+            state.highestTokenSellPrice = tokenPrice;
+            state.highestTokenSellPriceDecimals = tokenPriceDecimals;
+        }
         emit FinalizeSale(
             msg.sender,
             tokenAmount,
@@ -209,7 +212,14 @@ contract Asset is IAsset, ERC20 {
 
     function liquidate() external override ownerOnly {
         require(!state.liquidated, "Asset: Action forbidden, asset liquidated.");
+        uint256 liquidationAmount;
         uint256 liquidationPrice;
+        uint8 liquidationPriceDecimals;
+        uint256 liquidationAmountPerLargestSalePrice = _tokenValue(
+            totalSupply(),
+            state.highestTokenSellPrice,
+            state.highestTokenSellPriceDecimals
+        );
         if (state.totalTokensLocked > 0) {
             IApxAssetsRegistry apxRegistry = IApxAssetsRegistry(state.apxRegistry);        
             Structs.AssetRecord memory assetRecord = apxRegistry.getMirroredFromOriginal(address(this));
@@ -217,21 +227,43 @@ contract Asset is IAsset, ERC20 {
             require(assetRecord.originalToken == address(this), "Asset: Invalid mirrored asset record");
             require(block.timestamp <= assetRecord.priceValidUntil, "Asset: Price expired");
             require(state.totalTokensLocked == assetRecord.capturedSupply, "Asset: MirroredToken supply inconsistent");
-            liquidationPrice = 
-                (state.highestTokenSellPrice > assetRecord.price) ? state.highestTokenSellPrice : assetRecord.price;
+            uint256 liquidationAmountPerMarketPrice = _tokenValue(
+                totalSupply(),
+                assetRecord.price,
+                assetRecord.priceDecimals
+            );
+            if (liquidationAmountPerLargestSalePrice > liquidationAmountPerMarketPrice) {
+                liquidationAmount = liquidationAmountPerLargestSalePrice;
+                liquidationPrice = state.highestTokenSellPrice;
+                liquidationPriceDecimals = state.highestTokenSellPriceDecimals;
+            } else {
+                liquidationAmount = liquidationAmountPerMarketPrice;
+                liquidationPrice = assetRecord.price;
+                liquidationPriceDecimals = assetRecord.priceDecimals;
+            }
         } else {
+            liquidationAmount = liquidationAmountPerLargestSalePrice;
             liquidationPrice = state.highestTokenSellPrice;
+            liquidationPriceDecimals = state.highestTokenSellPriceDecimals;
         }
 
         uint256 liquidatorApprovedTokenAmount = this.allowance(msg.sender, address(this));
-        uint256 liquidatorApprovedTokenValue = _tokenValue(liquidatorApprovedTokenAmount, liquidationPrice);
+        uint256 liquidatorApprovedTokenValue = _tokenValue(
+            liquidatorApprovedTokenAmount,
+            liquidationPrice,
+            liquidationPriceDecimals
+        );
         if (liquidatorApprovedTokenValue > 0) {
             liquidationClaimsMap[msg.sender] += liquidatorApprovedTokenValue;
             state.liquidationFundsClaimed += liquidatorApprovedTokenValue;
             this.transferFrom(msg.sender, address(this), liquidatorApprovedTokenAmount);
         }
 
-        uint256 liquidationFundsTotal = _tokenValue(totalSupply(), liquidationPrice);
+        uint256 liquidationFundsTotal = _tokenValue(
+            totalSupply(),
+            liquidationPrice,
+            liquidationPriceDecimals
+        );
         uint256 liquidationFundsToPull = liquidationFundsTotal - liquidatorApprovedTokenValue;
         if (liquidationFundsToPull > 0) {
             _stablecoin().safeTransferFrom(msg.sender, address(this), liquidationFundsToPull);
@@ -348,11 +380,12 @@ contract Asset is IAsset, ERC20 {
         return (campaignRecord.wallet == campaignAddress && campaignRecord.whitelisted);
     }
 
-    function _tokenValue(uint256 amount, uint256 price) private view returns (uint256) {
+    function _tokenValue(uint256 amount, uint256 price, uint8 priceDecimals) private view returns (uint256) {
         return amount
                 * price
                 * (10 ** IToken(_stablecoin_address()).decimals())
-                / ((10 ** decimals()) * priceDecimalsPrecision);
+                / (10 ** priceDecimals)
+                / (10 ** decimals());
     }
 
 }

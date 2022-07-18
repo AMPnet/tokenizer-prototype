@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "../issuer/IIssuer.sol";
 import "../shared/Structs.sol";
 
-contract Issuer is IIssuer {
+contract Issuer is IIssuer, Ownable {
 
     //------------------------
     //  STATE
@@ -19,7 +20,6 @@ contract Issuer is IIssuer {
     //------------------------
     event WalletWhitelist(address indexed approver, address indexed wallet);
     event WalletBlacklist(address indexed approver, address indexed wallet);
-    event ChangeOwnership(address caller, address newOwner, uint256 timestamp);
     event ChangeWalletApprover(address caller, address oldWalletApprover, address newWalletApprover, uint256 timestamp);
     event SetInfo(string info, address setter, uint256 timestamp);
 
@@ -35,7 +35,6 @@ contract Issuer is IIssuer {
         string memory info
     ) {
         require(owner != address(0), "Issuer: invalid owner address");
-        require(stablecoin != address(0), "Issuer: invalid stablecoin address");
         require(walletApprover != address(0), "Issuer: invalid wallet approver address");
         
         infoHistory.push(Structs.InfoEntry(
@@ -52,19 +51,12 @@ contract Issuer is IIssuer {
             info
         );
         _setWalletState(owner, true);
+        _transferOwnership(owner);
     }
 
     //------------------------
     //  MODIFIERS
     //------------------------
-    modifier ownerOnly {
-        require(
-            msg.sender == state.owner,
-            "Issuer: Only owner can make this action."
-        );
-        _;
-    }
-
     modifier walletApproverOnly {
         require(
             msg.sender == state.walletApprover,
@@ -76,7 +68,7 @@ contract Issuer is IIssuer {
     //------------------------
     //  IIssuer IMPL
     //------------------------
-    function setInfo(string memory info) external override ownerOnly {
+    function setInfo(string memory info) external override onlyOwner {
         infoHistory.push(Structs.InfoEntry(
             info,
             block.timestamp
@@ -95,9 +87,9 @@ contract Issuer is IIssuer {
         emit WalletBlacklist(msg.sender, wallet);
     }
 
-    function changeOwnership(address newOwner) external override ownerOnly {
+    function transferOwnership(address newOwner) public override onlyOwner {
+        super.transferOwnership(newOwner);
         state.owner = newOwner;
-        emit ChangeOwnership(msg.sender, newOwner, block.timestamp);
     }
 
     function changeWalletApprover(address newWalletApprover) external override {

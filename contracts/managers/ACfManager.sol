@@ -3,13 +3,14 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "../shared/Structs.sol";
 import "../tokens/erc20/IToken.sol";
 import "../shared/IAssetCommon.sol";
 import "../shared/IIssuerCommon.sol";
 import "./IACfManager.sol";
 
-abstract contract ACfManager is IVersioned, IACfManager {
+abstract contract ACfManager is IVersioned, IACfManager, Ownable {
     using SafeERC20 for IERC20;
 
     //------------------------
@@ -55,19 +56,10 @@ abstract contract ACfManager is IVersioned, IACfManager {
     );
     event CancelCampaign(address indexed owner, address asset, uint256 tokensReturned, uint256 timestamp);
     event SetInfo(string info, address setter, uint256 timestamp);
-    event ChangeOwnership(address caller, address newOwner, uint256 timestamp);
 
     //------------------------
     //  MODIFIERS
     //------------------------
-    modifier ownerOnly() {
-        require(
-            msg.sender == state.owner,
-            "ACfManager: Only owner can call this function."
-        );
-        _;
-    }
-
     modifier active() {
         require(
             !state.canceled,
@@ -129,7 +121,7 @@ abstract contract ACfManager is IVersioned, IACfManager {
         _cancel_investment(investor);
     }
 
-    function finalize() external ownerOnly active notFinalized {
+    function finalize() external onlyOwner active notFinalized {
         IERC20 sc = stablecoin();
         uint256 fundsRaised = sc.balanceOf(address(this));
         require(
@@ -140,21 +132,13 @@ abstract contract ACfManager is IVersioned, IACfManager {
         IERC20 assetERC20 = _assetERC20();
         uint256 tokensSold = state.totalTokensSold;
         uint256 tokensRefund = assetERC20.balanceOf(address(this)) - tokensSold;
-        IAssetCommon(state.asset).finalizeSale();
-        if (fundsRaised > 0) {
-            (address treasury, uint256 fee) = _calculateFee();
-            if (fee > 0 && treasury != address(0)) {
-                sc.safeTransfer(treasury, fee);
-                sc.safeTransfer(msg.sender, fundsRaised - fee);
-            } else {
-                sc.safeTransfer(msg.sender, fundsRaised);
-            }
-        }
+        _safeFinalizeSale();
+        _safeDistributeFunds(msg.sender, fundsRaised, sc);
         if (tokensRefund > 0) { assetERC20.safeTransfer(msg.sender, tokensRefund); }
         emit Finalize(msg.sender, state.asset, fundsRaised, tokensSold, tokensRefund, block.timestamp);
     }
 
-    function cancelCampaign() external ownerOnly active notFinalized {
+    function cancelCampaign() external onlyOwner active notFinalized {
         state.canceled = true;
         uint256 tokenBalance = _assetERC20().balanceOf(address(this));
         if(tokenBalance > 0) { _assetERC20().safeTransfer(msg.sender, tokenBalance); }
@@ -170,7 +154,7 @@ abstract contract ACfManager is IVersioned, IACfManager {
             state.flavor,
             state.version,
             state.contractAddress,
-            state.owner,
+            owner(),
             state.info,
             state.asset,
             state.stablecoin,
@@ -178,6 +162,7 @@ abstract contract ACfManager is IVersioned, IACfManager {
             state.finalized,
             state.canceled,
             state.tokenPrice,
+            state.tokenPriceDecimals,
             state.totalFundsRaised,
             state.totalTokensSold
         );
@@ -188,7 +173,7 @@ abstract contract ACfManager is IVersioned, IACfManager {
     function tokenAmount(address investor) external view override returns (uint256) { return tokenAmounts[investor]; }
     function claimedAmount(address investor) external view override returns (uint256) { return claims[investor]; }
 
-    function setInfo(string memory info) external override ownerOnly {
+    function setInfo(string memory info) external override onlyOwner {
         infoHistory.push(Structs.InfoEntry(
             info,
             block.timestamp
@@ -199,11 +184,6 @@ abstract contract ACfManager is IVersioned, IACfManager {
 
     function getInfoHistory() external override view returns (Structs.InfoEntry[] memory) {
         return infoHistory;
-    }
-
-    function changeOwnership(address newOwner) external override ownerOnly {
-        state.owner = newOwner;
-        emit ChangeOwnership(msg.sender, newOwner, block.timestamp);
     }
 
     function isWalletWhitelisted(address wallet) public view returns (bool) {
@@ -221,16 +201,40 @@ abstract contract ACfManager is IVersioned, IACfManager {
         require(amount > 0, "ACfManager: Investment amount has to be greater than 0.");
         uint256 tokenBalance = _assetERC20().balanceOf(address(this));
         require(
-            _token_value(tokenBalance, state.tokenPrice, state.asset) >= state.softCap,
+            _token_value(
+                tokenBalance,
+                state.tokenPrice,
+                state.tokenPriceDecimals,
+                state.asset,
+                state.stablecoin
+            ) >= state.softCap,
             "ACfManager: not enough tokens for sale to reach the softcap."
         );
         uint256 floatingTokens = tokenBalance - state.totalClaimableTokens;
 
-        uint256 tokens = _token_amount_for_investment(amount, state.tokenPrice, state.asset);
-        uint256 tokenValue = _token_value(tokens, state.tokenPrice, state.asset);
+        uint256 tokens = _token_amount_for_investment(
+            amount,
+            state.tokenPrice,
+            state.tokenPriceDecimals,
+            state.asset,
+            state.stablecoin
+        );
+        uint256 tokenValue = _token_value(
+            tokens,
+            state.tokenPrice,
+            state.tokenPriceDecimals,
+            state.asset,
+            state.stablecoin
+        );
         require(tokens > 0 && tokenValue > 0, "ACfManager: Investment amount too low.");
         require(floatingTokens >= tokens, "ACfManager: Not enough tokens left for this investment amount.");
-        uint256 totalInvestmentValue = _token_value(tokens + claims[investor], state.tokenPrice, state.asset);
+        uint256 totalInvestmentValue = _token_value(
+            tokens + claims[investor],
+            state.tokenPrice,
+            state.tokenPriceDecimals,
+            state.asset,
+            state.stablecoin
+        );
         require(
             totalInvestmentValue >= _adjusted_min_investment(floatingTokens),
             "ACfManager: Investment amount too low."
@@ -272,6 +276,24 @@ abstract contract ACfManager is IVersioned, IACfManager {
         emit CancelInvestment(investor, state.asset, tokens, tokenValue, block.timestamp);
     }
 
+    function _safeFinalizeSale() internal {
+        state.asset.call(
+            abi.encodeWithSignature("finalizeSale()")
+        );
+    }
+
+    function _safeDistributeFunds(address fundsDestination, uint256 fundsRaised, IERC20 sc) internal {
+        if (fundsRaised > 0) {
+            (address treasury, uint256 fee) = _calculateFee();
+            if (fee > 0 && treasury != address(0)) {
+                sc.safeTransfer(treasury, fee);
+                sc.safeTransfer(fundsDestination, fundsRaised - fee);
+            } else {
+                sc.safeTransfer(fundsDestination, fundsRaised);
+            }
+        }
+    }
+
     function _calculateFee() internal returns (address, uint256) {
         (bool success, bytes memory result) = state.feeManager.call(
             abi.encodeWithSignature("calculateFee(address)", address(this))
@@ -289,20 +311,21 @@ abstract contract ACfManager is IVersioned, IACfManager {
         return 10 ** IToken(asset).decimals();
     }
 
-    function _asset_price_precision(address asset) internal view returns (uint256) {
-        return IAssetCommon(asset).priceDecimalsPrecision();
-    }
-
     function _stablecoin_decimals_precision(address stable) internal view returns (uint256) {
         return 10 ** IToken(stable).decimals();
     }
 
-    function _token_value(uint256 tokens, uint256 tokenPrice, address asset) internal view returns (uint256) {
-        address stable = IIssuerCommon(IAssetCommon(asset).commonState().issuer).commonState().stablecoin;
+    function _token_value(
+        uint256 tokens,
+        uint256 tokenPrice,
+        uint8 tokenPriceDecimals,
+        address asset,
+        address stable
+    ) internal view returns (uint256) {
         return tokens
         * tokenPrice
         * _stablecoin_decimals_precision(stable)
-        / _asset_price_precision(asset)
+        / (10 ** tokenPriceDecimals)
         / _asset_decimals_precision(asset);
     }
 
@@ -311,7 +334,13 @@ abstract contract ACfManager is IVersioned, IACfManager {
     }
 
     function _adjusted_min_investment(uint256 remainingTokens) internal view returns (uint256) {
-        uint256 remainingTokensValue = _token_value(remainingTokens, state.tokenPrice, state.asset);
+        uint256 remainingTokensValue = _token_value(
+            remainingTokens,
+            state.tokenPrice,
+            state.tokenPriceDecimals,
+            state.asset,
+            state.stablecoin
+        );
         return (remainingTokensValue < state.minInvestment) ? remainingTokensValue : state.minInvestment;
     }
 
@@ -319,21 +348,40 @@ abstract contract ACfManager is IVersioned, IACfManager {
         uint256 tokenAmountForInvestment = _token_amount_for_investment(
             state.softCap - state.totalFundsRaised,
             state.tokenPrice,
-            state.asset
+            state.tokenPriceDecimals,
+            state.asset,
+            state.stablecoin
         );
-        return _token_value(tokenAmountForInvestment, state.tokenPrice, state.asset);
+        return _token_value(
+            tokenAmountForInvestment,
+            state.tokenPrice,
+            state.tokenPriceDecimals,
+            state.asset,
+            state.stablecoin
+        );
     }
 
     function _token_amount_for_investment(
         uint256 investment,
         uint256 tokenPrice,
-        address asset
+        uint8 tokenPriceDecimals,
+        address asset,
+        address stable
     ) internal view returns (uint256) {
-        address stable = IIssuerCommon(IAssetCommon(asset).commonState().issuer).commonState().stablecoin;
         return investment
-        * _asset_price_precision(asset)
+        * (10 ** tokenPriceDecimals)
         * _asset_decimals_precision(asset)
         / tokenPrice
         / _stablecoin_decimals_precision(stable);
+    }
+
+    function _safe_issuer_fetch(address asset) internal view returns (address) {
+        (bool success, bytes memory result) = asset.staticcall(
+            abi.encodeWithSignature("commonState()")
+        );
+        if (success) {
+            Structs.AssetCommonState memory assetCommonState = abi.decode(result, (Structs.AssetCommonState));
+            return assetCommonState.issuer;
+        } else { return address(0); }
     }
 }

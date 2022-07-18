@@ -6,6 +6,7 @@ import "./ICfManagerSoftcapVestingFactory.sol";
 import "../../shared/IAssetCommon.sol";
 import "../../shared/ICampaignCommon.sol";
 import "../../registry/INameRegistry.sol";
+import "../../shared/Structs.sol";
 
 contract CfManagerSoftcapVestingFactory is ICfManagerSoftcapVestingFactory {
     
@@ -28,40 +29,39 @@ contract CfManagerSoftcapVestingFactory is ICfManagerSoftcapVestingFactory {
         if (_oldFactory != address(0)) { _addInstances(ICfManagerSoftcapVestingFactory(_oldFactory).getInstances()); }
     }
 
-    function create(
-        address owner,
-        string memory mappedName,
-        address assetAddress,
-        uint256 initialPricePerToken,
-        uint256 softCap,
-        uint256 minInvestment,
-        uint256 maxInvestment,
-        bool whitelistRequired,
-        string memory info,
-        address nameRegistry,
-        address feeManager
-    ) external override returns (address) {
-        INameRegistry registry = INameRegistry(nameRegistry);
+    function create(Structs.CampaignFactoryParams memory params) external override returns (address) {
+        INameRegistry registry = INameRegistry(params.nameRegistry);
         require(
-            registry.getCampaign(mappedName) == address(0),
+            registry.getCampaign(params.mappedName) == address(0),
             "CfManagerSoftcapVestingFactory: campaign with this name already exists"
         );
-        address cfManagerSoftcap = address(new CfManagerSoftcapVesting(
-            FLAVOR,
-            VERSION,
-            owner,
-            assetAddress,
-            initialPricePerToken,
-            softCap,
-            minInvestment,
-            maxInvestment,
-            whitelistRequired,
-            info,
-            feeManager
+        address cfManagerSoftcap = address(
+            new CfManagerSoftcapVesting(
+                Structs.CampaignConstructor(
+                    FLAVOR,
+                    VERSION,
+                    params.owner,
+                    params.assetAddress,
+                    params.issuerAddress,
+                    params.paymentToken,
+                    params.initialPricePerToken,
+                    params.tokenPriceDecimals,
+                    params.softCap,
+                    params.minInvestment,
+                    params.maxInvestment,
+                    params.whitelistRequired,
+                    params.info,
+                    params.feeManager
+                )
         ));
         _addInstance(cfManagerSoftcap);
-        registry.mapCampaign(mappedName, cfManagerSoftcap);
-        emit CfManagerSoftcapVestingCreated(owner, cfManagerSoftcap, address(assetAddress), block.timestamp);
+        registry.mapCampaign(params.mappedName, cfManagerSoftcap);
+        emit CfManagerSoftcapVestingCreated(
+            params.owner,
+            cfManagerSoftcap,
+            address(params.assetAddress),
+            block.timestamp
+        );
         return cfManagerSoftcap;
     }
 

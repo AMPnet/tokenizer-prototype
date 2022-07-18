@@ -12,6 +12,5 @@ interface IAssetCommon is IVersioned {
     
     // READ
     function commonState() external view returns (Structs.AssetCommonState memory);
-    function priceDecimalsPrecision() external view returns (uint256);
 
 }

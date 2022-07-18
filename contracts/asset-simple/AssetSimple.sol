@@ -11,11 +11,6 @@ import "../shared/ICampaignCommon.sol";
 
 contract AssetSimple is IAssetSimple, ERC20 {
 
-    //------------------------
-    //  CONSTANTS
-    //------------------------
-    uint256 constant public override priceDecimalsPrecision = 10 ** 4;
-
     //-----------------------
     //  STATE
     //-----------------------

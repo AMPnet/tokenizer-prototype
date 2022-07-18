@@ -48,59 +48,90 @@ contract CfManagerSoftcapVesting is ICfManagerSoftcapVesting, ACfManager {
     //------------------------
     //  CONSTRUCTOR
     //------------------------
-    constructor(
-        string memory contractFlavor,
-        string memory contractVersion,
-        address owner,
-        address asset,
-        uint256 tokenPrice,
-        uint256 softCap,
-        uint256 minInvestment,
-        uint256 maxInvestment,
-        bool whitelistRequired,
-        string memory info,
-        address feeManager
-    ) {
-        require(owner != address(0), "CfManagerSoftcapVesting: Invalid owner address");
-        require(asset != address(0), "CfManagerSoftcapVesting: Invalid asset address");
-        require(tokenPrice > 0, "CfManagerSoftcapVesting: Initial price per token must be greater than 0.");
-        require(maxInvestment >= minInvestment, "CfManagerSoftcapVesting: Max has to be bigger than min investment.");
-        require(maxInvestment > 0, "CfManagerSoftcapVesting: Max investment has to be bigger than 0.");
-        IIssuerCommon issuer = IIssuerCommon(IAssetCommon(asset).commonState().issuer);
+    constructor(Structs.CampaignConstructor memory params) {
+        require(params.owner != address(0), "CfManagerSoftcapVesting: Invalid owner address");
+        require(params.asset != address(0), "CfManagerSoftcapVesting: Invalid asset address");
+        require(params.tokenPrice > 0, "CfManagerSoftcapVesting: Initial price per token must be greater than 0.");
+        require(
+            params.maxInvestment >= params.minInvestment,
+            "CfManagerSoftcapVesting: Max has to be bigger than min investment."
+        );
+        require(
+            params.maxInvestment > 0,
+            "CfManagerSoftcapVesting: Max investment has to be bigger than 0."
+        );
+
+        address fetchedIssuer = _safe_issuer_fetch(params.asset);
+        address issuerProcessed = fetchedIssuer != address(0) ? fetchedIssuer : params.issuer;
+        require(issuerProcessed == params.issuer, "CfManagerSoftcapVesting: Invalid issuer provided.");
+        if (params.whitelistRequired) {
+            require(
+                issuerProcessed != address(0),
+                "CfManagerSoftcapVesting: Issuer must be provided if wallet whitelisting is turned on."
+            );
+        }
+
+        address paymentTokenProcessed = params.paymentToken == address(0) ?
+            IIssuerCommon(issuerProcessed).commonState().stablecoin :
+            params.paymentToken;
         uint256 softCapNormalized = _token_value(
-            _token_amount_for_investment(softCap, tokenPrice, asset),
-            tokenPrice,
-            asset
+            _token_amount_for_investment(
+                params.softCap,
+                params.tokenPrice,
+                params.tokenPriceDecimals,
+                params.asset,
+                paymentTokenProcessed
+            ),
+            params.tokenPrice,
+            params.tokenPriceDecimals,
+            params.asset,
+            paymentTokenProcessed
         );
         uint256 minInvestmentNormalized = _token_value(
-            _token_amount_for_investment(minInvestment, tokenPrice, asset),
-            tokenPrice,
-            asset
+            _token_amount_for_investment(
+                params.minInvestment,
+                params.tokenPrice,
+                params.tokenPriceDecimals,
+                params.asset,
+                paymentTokenProcessed
+            ),
+            params.tokenPrice,
+            params.tokenPriceDecimals,
+            params.asset,
+            paymentTokenProcessed
         );
         state = Structs.CfManagerState(
-            contractFlavor,
-            contractVersion,
+            params.contractFlavor,
+            params.contractVersion,
             address(this),
-            owner,
-            asset,
-            address(issuer),
-            issuer.commonState().stablecoin,
-            tokenPrice,
+            params.owner,
+            params.asset,
+            issuerProcessed,
+            paymentTokenProcessed,
+            params.tokenPrice,
+            params.tokenPriceDecimals,
             softCapNormalized,
             minInvestmentNormalized,
-            maxInvestment,
-            whitelistRequired,
+            params.maxInvestment,
+            params.whitelistRequired,
             false,
             false,
             0, 0, 0, 0, 0,
-            info,
-            feeManager
+            params.info,
+            params.feeManager
         );
         vestingState = VestingState(false, 0, 0, 0, true, false);
         require(
-            _token_value(IToken(asset).totalSupply(), tokenPrice, asset) >= softCapNormalized,
+            _token_value(
+                IToken(params.asset).totalSupply(),
+                params.tokenPrice,
+                params.tokenPriceDecimals,
+                params.asset,
+                paymentTokenProcessed
+            ) >= softCapNormalized,
             "CfManagerSoftcapVesting: Invalid soft cap."
         );
+        _transferOwnership(params.owner);
     }
 
     //------------------------
@@ -119,7 +150,13 @@ contract CfManagerSoftcapVesting is ICfManagerSoftcapVesting, ACfManager {
     //------------------------
     function claim(address investor) external finalized vestingStarted {
         uint256 unreleased = _releasableAmount(investor);
-        uint256 unreleasedValue = _token_value(unreleased, state.tokenPrice, state.asset);
+        uint256 unreleasedValue = _token_value(
+            unreleased,
+            state.tokenPrice,
+            state.tokenPriceDecimals,
+            state.asset,
+            state.stablecoin
+        );
         require(unreleased > 0, "CfManagerSoftcapVesting: No tokens to be released.");
 
         state.totalClaimableTokens -= unreleased;
@@ -133,7 +170,7 @@ contract CfManagerSoftcapVesting is ICfManagerSoftcapVesting, ACfManager {
         uint256 start,
         uint256 cliffDuration,
         uint256 duration
-    ) external ownerOnly finalized {
+    ) external onlyOwner finalized {
         require(!vestingState.vestingStarted, "CfManagerSoftcapVesting: Vesting already started.");
         require(cliffDuration <= duration, "CfManagerSoftcapVesting: cliffDuration <= duration");
         require(duration > 0, "CfManagerSoftcapVesting: duration > 0");
@@ -152,7 +189,7 @@ contract CfManagerSoftcapVesting is ICfManagerSoftcapVesting, ACfManager {
         );
     }
 
-    function revoke() public ownerOnly finalized vestingStarted {
+    function revoke() public onlyOwner finalized vestingStarted {
         require(vestingState.revocable, "CfManagerSoftcapVesting: Campaign vesting configuration not revocable.");
         require(!vestingState.revoked, "CfManagerSoftcapVesting: Campaign vesting already revoked.");
 
@@ -175,7 +212,7 @@ contract CfManagerSoftcapVesting is ICfManagerSoftcapVesting, ACfManager {
             state.flavor,
             state.version,
             state.contractAddress,
-            state.owner,
+            owner(),
             state.asset,
             state.issuer,
             state.stablecoin,

@@ -121,7 +121,7 @@ describe("Asset transferable - full test", function () {
 
       // update market price for asset
       // price: $0.70, expiry: 60 seconds
-      await helpers.updatePrice(testData.priceManager, testData.apxRegistry, testData.asset, 11000, 60);
+      await helpers.updatePrice(testData.priceManager, testData.apxRegistry, testData.asset, 11000, 4, 60);
 
       //// Asset owner liquidates asset
       // Asset was crowdfunded at $1/token and is now trading at $1.10/token so the total supply must be liquidated

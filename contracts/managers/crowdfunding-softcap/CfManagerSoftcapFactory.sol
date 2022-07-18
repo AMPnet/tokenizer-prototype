@@ -27,40 +27,34 @@ contract CfManagerSoftcapFactory is ICfManagerSoftcapFactory {
         if (_oldFactory != address(0)) { _addInstances(ICfManagerSoftcapFactory(_oldFactory).getInstances()); }
     }
 
-    function create(
-        address owner,
-        string memory mappedName,
-        address assetAddress,
-        uint256 initialPricePerToken,
-        uint256 softCap,
-        uint256 minInvestment,
-        uint256 maxInvestment,
-        bool whitelistRequired,
-        string memory info,
-        address nameRegistry,
-        address feeManager
-    ) external override returns (address) {
-        INameRegistry registry = INameRegistry(nameRegistry);
+    function create(Structs.CampaignFactoryParams memory params) external override returns (address) {
+        INameRegistry registry = INameRegistry(params.nameRegistry);
         require(
-            registry.getCampaign(mappedName) == address(0),
+            registry.getCampaign(params.mappedName) == address(0),
             "CfManagerSoftcapFactory: campaign with this name already exists"
         );
-        address cfManagerSoftcap = address(new CfManagerSoftcap(
-            FLAVOR,
-            VERSION,
-            owner,
-            assetAddress,
-            initialPricePerToken,
-            softCap,
-            minInvestment,
-            maxInvestment,
-            whitelistRequired,
-            info,
-            feeManager
+        address cfManagerSoftcap = address(
+            new CfManagerSoftcap(
+                Structs.CampaignConstructor(
+                    FLAVOR,
+                    VERSION,
+                    params.owner,
+                    params.assetAddress,
+                    params.issuerAddress,
+                    params.paymentToken,
+                    params.initialPricePerToken,
+                    params.tokenPriceDecimals,
+                    params.softCap,
+                    params.minInvestment,
+                    params.maxInvestment,
+                    params.whitelistRequired,
+                    params.info,
+                    params.feeManager
+                )
         ));
         _addInstance(cfManagerSoftcap);
-        registry.mapCampaign(mappedName, cfManagerSoftcap);
-        emit CfManagerSoftcapCreated(owner, cfManagerSoftcap, address(assetAddress), block.timestamp);
+        registry.mapCampaign(params.mappedName, cfManagerSoftcap);
+        emit CfManagerSoftcapCreated(params.owner, cfManagerSoftcap, address(params.assetAddress), block.timestamp);
         return cfManagerSoftcap;
     }
 

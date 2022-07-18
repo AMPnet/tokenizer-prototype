@@ -26,7 +26,14 @@ contract ApxAssetsRegistry is IApxAssetsRegistry {
     //  EVENTS
     //------------------------
     event RegisterAsset(address caller, address original, address mirrored, bool state, uint256 timestamp);
-    event UpdatePrice(address priceManager, address asset, uint256 price, uint256 expiry, uint256 timestamp);
+    event UpdatePrice(
+        address priceManager,
+        address asset,
+        uint256 price,
+        uint8 priceDecimal,
+        uint256 expiry,
+        uint256 timestamp
+    );
     event UpdateState(address assetManager, address asset, bool active, uint256 timestamp);
     event TransferMasterOwnerRole(address oldMasterOwner, address newMasterOwner, uint256 timestamp);
     event TransferAssetManagerRole(address oldAssetManager, address newAssetManager, uint256 timestamp);
@@ -110,7 +117,7 @@ contract ApxAssetsRegistry is IApxAssetsRegistry {
             true,
             state,
             block.timestamp,
-            0, 0, 0, 0, address(0)
+            0, 0, 0, 0, 0, address(0)
         );
         assetsList.push(mirrored);
         emit RegisterAsset(msg.sender, original, mirrored, state, block.timestamp);
@@ -128,6 +135,7 @@ contract ApxAssetsRegistry is IApxAssetsRegistry {
     function updatePrice(
         address asset,
         uint256 price,
+        uint8 priceDecimals,
         uint256 expiry,
         uint256 capturedSupply
     ) external override onlyPriceManagerOrMasterOwner assetExists(asset) {
@@ -136,11 +144,12 @@ contract ApxAssetsRegistry is IApxAssetsRegistry {
         require(expiry > 0, "ApxAssetsRegistry: expiry has to be > 0;");
         require(capturedSupply == IToken(asset).totalSupply(), "ApxAssetsRegistry: inconsistent asset supply.");
         assets[asset].price = price;
+        assets[asset].priceDecimals = priceDecimals;
         assets[asset].priceUpdatedAt = block.timestamp;
         assets[asset].priceValidUntil = block.timestamp + expiry;
         assets[asset].capturedSupply = capturedSupply;
         assets[asset].priceProvider = msg.sender;
-        emit UpdatePrice(msg.sender, asset, price, expiry, block.timestamp);
+        emit UpdatePrice(msg.sender, asset, price, priceDecimals, expiry, block.timestamp);
     }
 
     function migrate(address newAssetsRegistry, address originalAsset) external override onlyMasterOwner {

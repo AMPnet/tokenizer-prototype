@@ -15,6 +15,7 @@ interface IApxAssetsRegistry is IVersioned {
     function updatePrice(
         address asset,
         uint256 price,
+        uint8 priceDecimals,
         uint256 expiry,
         uint256 capturedSupply
     ) external;
