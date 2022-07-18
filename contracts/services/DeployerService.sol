@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "../asset/IAsset.sol";
 import "../asset/IAssetFactory.sol";
 import "../asset-transferable/IAssetTransferable.sol";
@@ -272,7 +273,7 @@ contract DeployerService is IDeployerService {
         issuer.changeWalletApprover(request.issuerWalletApprover);
         issuer.changeOwnership(request.issuerOwner);
         asset.changeOwnership(request.assetOwner);
-        campaign.changeOwnership(request.cfManagerOwner);
+        Ownable(address(campaign)).transferOwnership(request.cfManagerOwner);
 
         emit DeployIssuerAssetCampaign(msg.sender, address(issuer), address(asset), address(campaign), block.timestamp);
     }
@@ -325,7 +326,7 @@ contract DeployerService is IDeployerService {
         // Transfer ownerships from address(this) to the actual owner wallets
         asset.freezeTransfer();
         asset.changeOwnership(request.assetOwner);
-        campaign.changeOwnership(request.cfManagerOwner);
+        Ownable(address(campaign)).transferOwnership(request.cfManagerOwner);
 
         emit DeployAssetCampaign(msg.sender, address(asset), address(campaign), block.timestamp);
     }
@@ -395,7 +396,7 @@ contract DeployerService is IDeployerService {
         issuer.changeWalletApprover(request.issuerWalletApprover);
         issuer.changeOwnership(request.issuerOwner);
         asset.changeOwnership(request.assetOwner);
-        campaign.changeOwnership(request.cfManagerOwner);
+        Ownable(address(campaign)).transferOwnership(request.cfManagerOwner);
 
         emit DeployIssuerAssetTransferableCampaign(
             msg.sender,
@@ -453,7 +454,7 @@ contract DeployerService is IDeployerService {
 
         // Transfer ownerships from address(this) to the actual owner wallets
         asset.changeOwnership(request.assetOwner);
-        campaign.changeOwnership(request.cfManagerOwner);
+        Ownable(address(campaign)).transferOwnership(request.cfManagerOwner);
 
         emit DeployAssetCampaign(msg.sender, address(asset), address(campaign), block.timestamp);
     }
@@ -503,7 +504,7 @@ contract DeployerService is IDeployerService {
 
         // Transfer ownerships from address(this) to the actual owner wallets
         asset.changeOwnership(request.assetOwner);
-        campaign.changeOwnership(request.cfManagerOwner);
+        Ownable(address(campaign)).transferOwnership(request.cfManagerOwner);
 
         emit DeployAssetCampaign(msg.sender, address(asset), address(campaign), block.timestamp);
     }

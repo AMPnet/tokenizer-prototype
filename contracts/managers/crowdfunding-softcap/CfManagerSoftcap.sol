@@ -30,10 +30,15 @@ contract CfManagerSoftcap is ICfManagerSoftcap, ACfManager {
             "CfManagerSoftcap: Max has to be bigger than min investment."
         );
         require(params.maxInvestment > 0, "CfManagerSoftcap: Max investment has to be bigger than 0.");
-        
         address fetchedIssuer = _safe_issuer_fetch(params.asset);
         address issuerProcessed = fetchedIssuer != address(0) ? fetchedIssuer : params.issuer;
         require(issuerProcessed == params.issuer, "CfManagerSoftcap: Invalid issuer provided.");
+        if (params.whitelistRequired) {
+            require(
+                issuerProcessed != address(0),
+                "CfManagerSoftcap: Issuer must be provided if wallet whitelisting is turned on."
+            );
+        }
 
         address paymentTokenProcessed = params.paymentToken == address(0) ?
             IIssuerCommon(issuerProcessed).commonState().stablecoin :
@@ -95,6 +100,7 @@ contract CfManagerSoftcap is ICfManagerSoftcap, ACfManager {
             ) >= softCapNormalized,
             "CfManagerSoftcap: Invalid soft cap."
         );
+        _transferOwnership(params.owner);
     }
 
     //------------------------
@@ -122,7 +128,7 @@ contract CfManagerSoftcap is ICfManagerSoftcap, ACfManager {
             state.flavor,
             state.version,
             state.contractAddress,
-            state.owner,
+            owner(),
             state.asset,
             state.issuer,
             state.stablecoin,

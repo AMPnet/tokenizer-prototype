@@ -64,6 +64,12 @@ contract CfManagerSoftcapVesting is ICfManagerSoftcapVesting, ACfManager {
         address fetchedIssuer = _safe_issuer_fetch(params.asset);
         address issuerProcessed = fetchedIssuer != address(0) ? fetchedIssuer : params.issuer;
         require(issuerProcessed == params.issuer, "CfManagerSoftcapVesting: Invalid issuer provided.");
+        if (params.whitelistRequired) {
+            require(
+                issuerProcessed != address(0),
+                "CfManagerSoftcapVesting: Issuer must be provided if wallet whitelisting is turned on."
+            );
+        }
 
         address paymentTokenProcessed = params.paymentToken == address(0) ?
             IIssuerCommon(issuerProcessed).commonState().stablecoin :
@@ -125,6 +131,7 @@ contract CfManagerSoftcapVesting is ICfManagerSoftcapVesting, ACfManager {
             ) >= softCapNormalized,
             "CfManagerSoftcapVesting: Invalid soft cap."
         );
+        _transferOwnership(params.owner);
     }
 
     //------------------------
@@ -163,7 +170,7 @@ contract CfManagerSoftcapVesting is ICfManagerSoftcapVesting, ACfManager {
         uint256 start,
         uint256 cliffDuration,
         uint256 duration
-    ) external ownerOnly finalized {
+    ) external onlyOwner finalized {
         require(!vestingState.vestingStarted, "CfManagerSoftcapVesting: Vesting already started.");
         require(cliffDuration <= duration, "CfManagerSoftcapVesting: cliffDuration <= duration");
         require(duration > 0, "CfManagerSoftcapVesting: duration > 0");
@@ -182,7 +189,7 @@ contract CfManagerSoftcapVesting is ICfManagerSoftcapVesting, ACfManager {
         );
     }
 
-    function revoke() public ownerOnly finalized vestingStarted {
+    function revoke() public onlyOwner finalized vestingStarted {
         require(vestingState.revocable, "CfManagerSoftcapVesting: Campaign vesting configuration not revocable.");
         require(!vestingState.revoked, "CfManagerSoftcapVesting: Campaign vesting already revoked.");
 
@@ -205,7 +212,7 @@ contract CfManagerSoftcapVesting is ICfManagerSoftcapVesting, ACfManager {
             state.flavor,
             state.version,
             state.contractAddress,
-            state.owner,
+            owner(),
             state.asset,
             state.issuer,
             state.stablecoin,

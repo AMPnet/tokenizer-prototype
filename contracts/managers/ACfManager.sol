@@ -3,13 +3,14 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "../shared/Structs.sol";
 import "../tokens/erc20/IToken.sol";
 import "../shared/IAssetCommon.sol";
 import "../shared/IIssuerCommon.sol";
 import "./IACfManager.sol";
 
-abstract contract ACfManager is IVersioned, IACfManager {
+abstract contract ACfManager is IVersioned, IACfManager, Ownable {
     using SafeERC20 for IERC20;
 
     //------------------------
@@ -55,19 +56,10 @@ abstract contract ACfManager is IVersioned, IACfManager {
     );
     event CancelCampaign(address indexed owner, address asset, uint256 tokensReturned, uint256 timestamp);
     event SetInfo(string info, address setter, uint256 timestamp);
-    event ChangeOwnership(address caller, address newOwner, uint256 timestamp);
 
     //------------------------
     //  MODIFIERS
     //------------------------
-    modifier ownerOnly() {
-        require(
-            msg.sender == state.owner,
-            "ACfManager: Only owner can call this function."
-        );
-        _;
-    }
-
     modifier active() {
         require(
             !state.canceled,
@@ -129,7 +121,7 @@ abstract contract ACfManager is IVersioned, IACfManager {
         _cancel_investment(investor);
     }
 
-    function finalize() external ownerOnly active notFinalized {
+    function finalize() external onlyOwner active notFinalized {
         IERC20 sc = stablecoin();
         uint256 fundsRaised = sc.balanceOf(address(this));
         require(
@@ -146,7 +138,7 @@ abstract contract ACfManager is IVersioned, IACfManager {
         emit Finalize(msg.sender, state.asset, fundsRaised, tokensSold, tokensRefund, block.timestamp);
     }
 
-    function cancelCampaign() external ownerOnly active notFinalized {
+    function cancelCampaign() external onlyOwner active notFinalized {
         state.canceled = true;
         uint256 tokenBalance = _assetERC20().balanceOf(address(this));
         if(tokenBalance > 0) { _assetERC20().safeTransfer(msg.sender, tokenBalance); }
@@ -162,7 +154,7 @@ abstract contract ACfManager is IVersioned, IACfManager {
             state.flavor,
             state.version,
             state.contractAddress,
-            state.owner,
+            owner(),
             state.info,
             state.asset,
             state.stablecoin,
@@ -181,7 +173,7 @@ abstract contract ACfManager is IVersioned, IACfManager {
     function tokenAmount(address investor) external view override returns (uint256) { return tokenAmounts[investor]; }
     function claimedAmount(address investor) external view override returns (uint256) { return claims[investor]; }
 
-    function setInfo(string memory info) external override ownerOnly {
+    function setInfo(string memory info) external override onlyOwner {
         infoHistory.push(Structs.InfoEntry(
             info,
             block.timestamp
@@ -192,11 +184,6 @@ abstract contract ACfManager is IVersioned, IACfManager {
 
     function getInfoHistory() external override view returns (Structs.InfoEntry[] memory) {
         return infoHistory;
-    }
-
-    function changeOwnership(address newOwner) external override ownerOnly {
-        state.owner = newOwner;
-        emit ChangeOwnership(msg.sender, newOwner, block.timestamp);
     }
 
     function isWalletWhitelisted(address wallet) public view returns (bool) {
