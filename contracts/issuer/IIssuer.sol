@@ -6,10 +6,6 @@ import "../shared/Structs.sol";
 
 interface IIssuer is IIssuerCommon {
 
-    // Write
-
-    function changeOwnership(address newOwner) external;
-
     // Read
     
     function getState() external view returns (Structs.IssuerState memory);

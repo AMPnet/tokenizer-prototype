@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "../asset/IAsset.sol";
 import "../asset/IAssetFactory.sol";
 import "../asset-transferable/IAssetTransferable.sol";
@@ -65,7 +66,9 @@ interface IDeployerService is IVersioned {
         string assetInfo;
         address cfManagerOwner;
         string cfManagerMappedName;
+        address cfManagerPaymentToken;
         uint256 cfManagerPricePerToken;
+        uint8 cfManagerTokenPriceDecimals;
         uint256 cfManagerSoftcap;
         uint256 cfManagerSoftcapMinInvestment;
         uint256 cfManagerSoftcapMaxInvestment;
@@ -91,7 +94,9 @@ interface IDeployerService is IVersioned {
         string assetInfo;
         address cfManagerOwner;
         string cfManagerMappedName;
+        address cfManagerPaymentToken;
         uint256 cfManagerPricePerToken;
+        uint8 cfManagerTokenPriceDecimals;
         uint256 cfManagerSoftcap;
         uint256 cfManagerSoftcapMinInvestment;
         uint256 cfManagerSoftcapMaxInvestment;
@@ -122,7 +127,9 @@ interface IDeployerService is IVersioned {
         string assetInfo;
         address cfManagerOwner;
         string cfManagerMappedName;
+        address cfManagerPaymentToken;
         uint256 cfManagerPricePerToken;
+        uint8 cfManagerTokenPriceDecimals;
         uint256 cfManagerSoftcap;
         uint256 cfManagerSoftcapMinInvestment;
         uint256 cfManagerSoftcapMaxInvestment;
@@ -148,7 +155,9 @@ interface IDeployerService is IVersioned {
         string assetInfo;
         address cfManagerOwner;
         string cfManagerMappedName;
+        address cfManagerPaymentToken;
         uint256 cfManagerPricePerToken;
+        uint8 cfManagerTokenPriceDecimals;
         uint256 cfManagerSoftcap;
         uint256 cfManagerSoftcapMinInvestment;
         uint256 cfManagerSoftcapMaxInvestment;
@@ -172,7 +181,9 @@ interface IDeployerService is IVersioned {
         string assetInfo;
         address cfManagerOwner;
         string cfManagerMappedName;
+        address cfManagerPaymentToken;
         uint256 cfManagerPricePerToken;
+        uint8 cfManagerTokenPriceDecimals;
         uint256 cfManagerSoftcap;
         uint256 cfManagerSoftcapMinInvestment;
         uint256 cfManagerSoftcapMaxInvestment;
@@ -226,18 +237,24 @@ contract DeployerService is IDeployerService {
                 request.assetInfo
             )
         ));
-        ICfManagerSoftcap campaign = ICfManagerSoftcap(request.cfManagerSoftcapFactory.create(
-            address(this),
-            request.cfManagerMappedName,
-            address(asset),
-            request.cfManagerPricePerToken,
-            request.cfManagerSoftcap,
-            request.cfManagerSoftcapMinInvestment,
-            request.cfManagerSoftcapMaxInvestment,
-            request.cfManagerWhitelistRequired,
-            request.cfManagerInfo,
-            request.nameRegistry,
-            request.feeManager
+        ICfManagerSoftcap campaign = ICfManagerSoftcap(
+            request.cfManagerSoftcapFactory.create(
+                Structs.CampaignFactoryParams(
+                    address(this),
+                    request.cfManagerMappedName,
+                    address(asset),
+                    address(issuer),
+                    request.cfManagerPaymentToken,
+                    request.cfManagerPricePerToken,
+                    request.cfManagerTokenPriceDecimals,
+                    request.cfManagerSoftcap,
+                    request.cfManagerSoftcapMinInvestment,
+                    request.cfManagerSoftcapMaxInvestment,
+                    request.cfManagerWhitelistRequired,
+                    request.cfManagerInfo,
+                    request.nameRegistry,
+                    request.feeManager
+                )
         ));
 
         // Whitelist owners
@@ -254,9 +271,9 @@ contract DeployerService is IDeployerService {
         
         // Transfer ownerships from address(this) to the actual owner wallets
         issuer.changeWalletApprover(request.issuerWalletApprover);
-        issuer.changeOwnership(request.issuerOwner);
+        Ownable(address(issuer)).transferOwnership(request.issuerOwner);
         asset.changeOwnership(request.assetOwner);
-        campaign.changeOwnership(request.cfManagerOwner);
+        Ownable(address(campaign)).transferOwnership(request.cfManagerOwner);
 
         emit DeployIssuerAssetCampaign(msg.sender, address(issuer), address(asset), address(campaign), block.timestamp);
     }
@@ -279,18 +296,24 @@ contract DeployerService is IDeployerService {
                 request.assetInfo
             )
         ));
-        ICfManagerSoftcap campaign = ICfManagerSoftcap(request.cfManagerSoftcapFactory.create(
-            address(this),
-            request.cfManagerMappedName,
-            address(asset),
-            request.cfManagerPricePerToken,
-            request.cfManagerSoftcap,
-            request.cfManagerSoftcapMinInvestment,
-            request.cfManagerSoftcapMaxInvestment,
-            request.cfManagerWhitelistRequired,
-            request.cfManagerInfo,
-            request.nameRegistry,
-            request.feeManager
+        ICfManagerSoftcap campaign = ICfManagerSoftcap(
+            request.cfManagerSoftcapFactory.create(
+                Structs.CampaignFactoryParams(
+                    address(this),
+                    request.cfManagerMappedName,
+                    address(asset),
+                    request.issuer,
+                    request.cfManagerPaymentToken,
+                    request.cfManagerPricePerToken,
+                    request.cfManagerTokenPriceDecimals,
+                    request.cfManagerSoftcap,
+                    request.cfManagerSoftcapMinInvestment,
+                    request.cfManagerSoftcapMaxInvestment,
+                    request.cfManagerWhitelistRequired,
+                    request.cfManagerInfo,
+                    request.nameRegistry,
+                    request.feeManager
+                )
         ));
 
         // Transfer tokens to sell to the campaign, transfer the rest to the asset owner's wallet
@@ -303,7 +326,7 @@ contract DeployerService is IDeployerService {
         // Transfer ownerships from address(this) to the actual owner wallets
         asset.freezeTransfer();
         asset.changeOwnership(request.assetOwner);
-        campaign.changeOwnership(request.cfManagerOwner);
+        Ownable(address(campaign)).transferOwnership(request.cfManagerOwner);
 
         emit DeployAssetCampaign(msg.sender, address(asset), address(campaign), block.timestamp);
     }
@@ -338,18 +361,25 @@ contract DeployerService is IDeployerService {
             )
         );
 
-        ICfManagerSoftcap campaign = ICfManagerSoftcap(request.cfManagerSoftcapFactory.create(
-            address(this),
-            request.cfManagerMappedName,
-            address(asset),
-            request.cfManagerPricePerToken,
-            request.cfManagerSoftcap,
-            request.cfManagerSoftcapMinInvestment,
-            request.cfManagerSoftcapMaxInvestment,
-            request.cfManagerWhitelistRequired,
-            request.cfManagerInfo,
-            request.nameRegistry,
-            request.feeManager
+        ICfManagerSoftcap campaign = ICfManagerSoftcap(
+            request.cfManagerSoftcapFactory.create(
+                Structs.CampaignFactoryParams(
+                    address(this),
+                    request.cfManagerMappedName,
+                    address(asset),
+                    address(issuer),
+                    request.cfManagerPaymentToken,
+                    request.cfManagerPricePerToken,
+                    request.cfManagerTokenPriceDecimals,
+                    request.cfManagerSoftcap,
+                    request.cfManagerSoftcapMinInvestment,
+                    request.cfManagerSoftcapMaxInvestment,
+                    request.cfManagerWhitelistRequired,
+                    request.cfManagerInfo,
+                    request.nameRegistry,
+                    request.feeManager
+                )
+
         ));
 
         // Whitelist issuer owner
@@ -364,9 +394,9 @@ contract DeployerService is IDeployerService {
         
         // Transfer ownerships from address(this) to the actual owner wallets
         issuer.changeWalletApprover(request.issuerWalletApprover);
-        issuer.changeOwnership(request.issuerOwner);
+        Ownable(address(issuer)).transferOwnership(request.cfManagerOwner);
         asset.changeOwnership(request.assetOwner);
-        campaign.changeOwnership(request.cfManagerOwner);
+        Ownable(address(campaign)).transferOwnership(request.cfManagerOwner);
 
         emit DeployIssuerAssetTransferableCampaign(
             msg.sender,
@@ -395,18 +425,24 @@ contract DeployerService is IDeployerService {
                     request.assetInfo
                 )
         ));
-        ICfManagerSoftcap campaign = ICfManagerSoftcap(request.cfManagerSoftcapFactory.create(
-            address(this),
-            request.cfManagerMappedName,
-            address(asset),
-            request.cfManagerPricePerToken,
-            request.cfManagerSoftcap,
-            request.cfManagerSoftcapMinInvestment,
-            request.cfManagerSoftcapMaxInvestment,
-            request.cfManagerWhitelistRequired,
-            request.cfManagerInfo,
-            request.nameRegistry,
-            request.feeManager
+        ICfManagerSoftcap campaign = ICfManagerSoftcap(
+            request.cfManagerSoftcapFactory.create(
+                Structs.CampaignFactoryParams(
+                    address(this),
+                    request.cfManagerMappedName,
+                    address(asset),
+                    request.issuer,
+                    request.cfManagerPaymentToken,
+                    request.cfManagerPricePerToken,
+                    request.cfManagerTokenPriceDecimals,
+                    request.cfManagerSoftcap,
+                    request.cfManagerSoftcapMinInvestment,
+                    request.cfManagerSoftcapMaxInvestment,
+                    request.cfManagerWhitelistRequired,
+                    request.cfManagerInfo,
+                    request.nameRegistry,
+                    request.feeManager
+                )
         ));
 
         // Transfer tokens to sell to the campaign, transfer the rest to the asset owner's wallet
@@ -418,7 +454,7 @@ contract DeployerService is IDeployerService {
 
         // Transfer ownerships from address(this) to the actual owner wallets
         asset.changeOwnership(request.assetOwner);
-        campaign.changeOwnership(request.cfManagerOwner);
+        Ownable(address(campaign)).transferOwnership(request.cfManagerOwner);
 
         emit DeployAssetCampaign(msg.sender, address(asset), address(campaign), block.timestamp);
     }
@@ -439,18 +475,24 @@ contract DeployerService is IDeployerService {
                 )
             )
         );
-        ICfManagerSoftcapVesting campaign = ICfManagerSoftcapVesting(request.cfManagerSoftcapVestingFactory.create(
-            address(this),
-            request.cfManagerMappedName,
-            address(asset),
-            request.cfManagerPricePerToken,
-            request.cfManagerSoftcap,
-            request.cfManagerSoftcapMinInvestment,
-            request.cfManagerSoftcapMaxInvestment,
-            request.cfManagerWhitelistRequired,
-            request.cfManagerInfo,
-            request.nameRegistry,
-            request.feeManager
+        ICfManagerSoftcapVesting campaign = ICfManagerSoftcapVesting(
+            request.cfManagerSoftcapVestingFactory.create(
+                Structs.CampaignFactoryParams(
+                    address(this),
+                    request.cfManagerMappedName,
+                    address(asset),
+                    request.issuer,
+                    request.cfManagerPaymentToken,
+                    request.cfManagerPricePerToken,
+                    request.cfManagerTokenPriceDecimals,
+                    request.cfManagerSoftcap,
+                    request.cfManagerSoftcapMinInvestment,
+                    request.cfManagerSoftcapMaxInvestment,
+                    request.cfManagerWhitelistRequired,
+                    request.cfManagerInfo,
+                    request.nameRegistry,
+                    request.feeManager
+                )
         ));
 
         // Transfer tokens to sell to the campaign, transfer the rest to the asset owner's wallet
@@ -462,7 +504,7 @@ contract DeployerService is IDeployerService {
 
         // Transfer ownerships from address(this) to the actual owner wallets
         asset.changeOwnership(request.assetOwner);
-        campaign.changeOwnership(request.cfManagerOwner);
+        Ownable(address(campaign)).transferOwnership(request.cfManagerOwner);
 
         emit DeployAssetCampaign(msg.sender, address(asset), address(campaign), block.timestamp);
     }

@@ -13,11 +13,6 @@ import "../shared/Structs.sol";
 contract AssetTransferable is IAssetTransferable, ERC20 {
     using SafeERC20 for IERC20;
 
-    //------------------------
-    //  CONSTANTS
-    //------------------------
-    uint256 constant public override priceDecimalsPrecision = 10 ** 4;
-
     //----------------------
     //  STATE
     //------------------------
@@ -72,7 +67,7 @@ contract AssetTransferable is IAssetTransferable, ERC20 {
             params.info,
             params.name,
             params.symbol,
-            0, 0, 0,
+            0, 0, 0, 0,
             false,
             0, 0, 0
         );
@@ -149,6 +144,7 @@ contract AssetTransferable is IAssetTransferable, ERC20 {
         uint256 tokenValue = campaignState.fundsRaised;
         uint256 tokenAmount = campaignState.tokensSold;
         uint256 tokenPrice = campaignState.pricePerToken;
+        uint8 tokenPriceDecimals = campaignState.tokenPriceDecimals;
         require(
             tokenAmount > 0 && balanceOf(campaign) >= tokenAmount,
             "AssetTransferable: Campaign has signalled the sale finalization but campaign tokens are not present"
@@ -164,7 +160,14 @@ contract AssetTransferable is IAssetTransferable, ERC20 {
         );
         sellHistory.push(tokenSaleInfo);
         successfulTokenSalesMap[campaign] = tokenSaleInfo;
-        if (tokenPrice > state.highestTokenSellPrice) { state.highestTokenSellPrice = tokenPrice; }
+        if (
+            (state.highestTokenSellPrice == 0 && state.highestTokenSellPriceDecimals == 0) ||
+            _tokenValue(tokenAmount, tokenPrice, tokenPriceDecimals) >
+            _tokenValue(tokenAmount, state.highestTokenSellPrice, state.highestTokenSellPriceDecimals)
+        ) {
+            state.highestTokenSellPrice = tokenPrice;
+            state.highestTokenSellPriceDecimals = tokenPriceDecimals;
+        }
         emit FinalizeSale(
             msg.sender,
             tokenAmount,
@@ -179,17 +182,47 @@ contract AssetTransferable is IAssetTransferable, ERC20 {
         require(assetRecord.exists, "AssetTransferable: Not registered in Apx Registry");
         require(assetRecord.state, "AssetTransferable: Asset blocked in Apx Registry");
         require(assetRecord.mirroredToken == address(this), "AssetTransferable: Invalid mirrored asset record");
-        require(block.timestamp <= assetRecord.priceValidUntil, "AssetTransferable: Price expired");
-        uint256 liquidationPrice = 
-            (state.highestTokenSellPrice > assetRecord.price) ? state.highestTokenSellPrice : assetRecord.price;
+        require(block.timestamp <= assetRecord.priceValidUntil, "AssetTransferable: Price expired");  
+        uint256 liquidationAmount;
+        uint256 liquidationPrice;
+        uint8 liquidationPriceDecimals;
+        uint256 liquidationAmountPerLargestSalePrice = _tokenValue(
+            totalSupply(),
+            state.highestTokenSellPrice,
+            state.highestTokenSellPriceDecimals
+        );
+        uint256 liquidationAmountPerMarketPrice = _tokenValue(
+                totalSupply(),
+                assetRecord.price,
+                assetRecord.priceDecimals
+        );
+        if (liquidationAmountPerLargestSalePrice > liquidationAmountPerMarketPrice) {
+            liquidationAmount = liquidationAmountPerLargestSalePrice;
+            liquidationPrice = state.highestTokenSellPrice;
+            liquidationPriceDecimals = state.highestTokenSellPriceDecimals;
+        } else {
+            liquidationAmount = liquidationAmountPerMarketPrice;
+            liquidationPrice = assetRecord.price;
+            liquidationPriceDecimals = assetRecord.priceDecimals;
+        }
+
         uint256 liquidatorApprovedTokenAmount = this.allowance(msg.sender, address(this));
-        uint256 liquidatorApprovedTokenValue = _tokenValue(liquidatorApprovedTokenAmount, liquidationPrice);
+        uint256 liquidatorApprovedTokenValue = _tokenValue(
+            liquidatorApprovedTokenAmount,
+            liquidationPrice,
+            liquidationPriceDecimals
+        );
+
         if (liquidatorApprovedTokenValue > 0) {
             liquidationClaimsMap[msg.sender] += liquidatorApprovedTokenValue;
             state.liquidationFundsClaimed += liquidatorApprovedTokenValue;
             this.transferFrom(msg.sender, address(this), liquidatorApprovedTokenAmount);
         }
-        uint256 liquidationFundsTotal = _tokenValue(totalSupply(), liquidationPrice);
+        uint256 liquidationFundsTotal = _tokenValue(
+            totalSupply(),
+            liquidationPrice,
+            liquidationPriceDecimals
+        );
         uint256 liquidationFundsToPull = liquidationFundsTotal - liquidatorApprovedTokenValue;
         if (liquidationFundsToPull > 0) {
             _stablecoin().safeTransferFrom(msg.sender, address(this), liquidationFundsToPull);
@@ -308,19 +341,16 @@ contract AssetTransferable is IAssetTransferable, ERC20 {
         return true;
     }
 
-    function _tokenValue(uint256 amount, uint256 price) private view returns (uint256) {
+    function _tokenValue(uint256 amount, uint256 price, uint8 priceDecimals) private view returns (uint256) {
         return amount
                 * price
                 * _stablecoin_decimals_precision()
-                / (_asset_decimals_precision() * priceDecimalsPrecision);
+                / (10 ** priceDecimals)
+                / (10 ** decimals());
     }
 
     function _stablecoin_decimals_precision() private view returns (uint256) {
         return 10 ** IToken(_stablecoin_address()).decimals();
-    }
-
-    function _asset_decimals_precision() private view returns (uint256) {
-        return 10 ** decimals();
     }
 
 }

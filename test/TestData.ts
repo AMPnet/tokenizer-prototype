@@ -71,6 +71,7 @@ export class TestData {
     assetWhitelistRequiredForLiquidationClaim = true;
     assetTokenSupply = 300000;              // 300k tokens total supply
     campaignInitialPricePerToken = 10000;   // 1$ per token
+    campaignTokenPriceDecimals = 4;         // 4 decimals token price precision
     maxTokensToBeSold = 200000;             // 200k tokens to be sold at most (200k $$$ to be raised at most)
     campaignSoftCap = 100000;               // minimum $100k funds raised has to be reached for campaign to succeed
     campaignMinInvestment = 10000;          // $10k min investment per user
@@ -175,7 +176,9 @@ export class TestData {
             this.assetInfoHash,
             issuerOwnerAddress,
             this.campaignAnsName,
+            this.stablecoin.address,
             this.campaignInitialPricePerToken,
+            this.campaignTokenPriceDecimals,
             this.campaignSoftCap,
             this.campaignMinInvestment,
             this.campaignMaxInvestment,
@@ -211,7 +214,9 @@ export class TestData {
             this.assetInfoHash,
             issuerOwnerAddress,
             this.campaignAnsName,
+            this.stablecoin.address,
             this.campaignInitialPricePerToken,
+            this.campaignTokenPriceDecimals,
             this.campaignSoftCap,
             this.campaignMinInvestment,
             this.campaignMaxInvestment,
@@ -246,7 +251,9 @@ export class TestData {
             this.assetInfoHash,
             issuerOwnerAddress,
             this.campaignAnsName,
+            this.stablecoin.address,
             this.campaignInitialPricePerToken,
+            this.campaignTokenPriceDecimals,
             this.campaignSoftCap,
             this.campaignMinInvestment,
             this.campaignMaxInvestment,
@@ -287,7 +294,7 @@ export class TestData {
             .approve(this.asset.address, await helpers.parseStablecoin(liquidationFunds, this.stablecoin));
         await helpers
             .registerAsset(this.assetManager, this.apxRegistry, this.asset.address, this.asset.address);
-        await helpers.updatePrice(this.priceManager, this.apxRegistry, this.asset, 1, 60);
+        await helpers.updatePrice(this.priceManager, this.apxRegistry, this.asset, 1, 4, 60);
         await helpers.liquidate(this.issuerOwner, this.asset, this.stablecoin, liquidationFunds);
     }
 }
